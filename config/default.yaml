@@ -1,1 +1,6 @@
 server.port: 8080
+database.user: postgres
+database.password: postgres
+database.dbname: watt-flow
+database.port: 5432
+database.host: localhost

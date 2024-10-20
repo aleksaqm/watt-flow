@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"watt-flow/config"
+	"watt-flow/db"
 	"watt-flow/server"
 )
 
@@ -16,4 +17,5 @@ func main() {
 
 	config.Init(*environment)
 	server.Init()
+	db.NewDatabase()
 }
