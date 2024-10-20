@@ -1,15 +1,19 @@
 package main
 
 import (
+	"flag"
 	"fmt"
+	"watt-flow/config"
+	"watt-flow/server"
 )
 
 func main() {
-	s := "gopher"
-	fmt.Println("Hello and welcome", s)
-
-	for i := 1; i <= 5; i++ {
-		fmt.Println("i =", 100/i)
+	environment := flag.String("e", "development", "use development configuration")
+	flag.Usage = func() {
+		fmt.Println("Usage: server -e {mode}")
 	}
-}
+	flag.Parse()
 
+	config.Init(*environment)
+	server.Init()
+}
