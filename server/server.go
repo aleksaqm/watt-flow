@@ -1,9 +1,21 @@
 package server
 
-import "watt-flow/config"
+import (
+	"watt-flow/controller"
+	"watt-flow/service"
+	"watt-flow/util"
+)
 
-func Init() {
-	serverConfig := config.GetConfig()
-	r := NewRouter()
-	r.Run(":" + serverConfig.GetString("server.port"))
+type Server struct {
+	Logger         util.Logger
+	UserController controller.UserController
+	userService    service.IUserService
+}
+
+func NewServer(logger util.Logger, userService service.IUserService, userController controller.UserController) *Server {
+	return &Server{
+		Logger:         logger,
+		UserController: userController,
+		userService:    userService,
+	}
 }
