@@ -2,43 +2,35 @@ package config
 
 import (
 	"log"
-	"path/filepath"
 
 	"github.com/spf13/viper"
 )
 
-var config *viper.Viper
-
-func Init(env string) {
-	var err error
-	config = viper.New()
-	config.SetConfigType("yaml")
-	config.SetConfigName("default")
-	config.AddConfigPath("config/")
-	err = config.ReadInConfig()
-	if err != nil {
-		log.Fatal("error on parsing default configuration file")
-	}
-
-	envConfig := viper.New()
-	envConfig.SetConfigType("yaml")
-	envConfig.AddConfigPath("config/")
-	envConfig.SetConfigName(env)
-	err = envConfig.ReadInConfig()
-	if err != nil {
-		log.Fatal("error on parsing env configuration file")
-	}
-
-	config.MergeConfigMap(envConfig.AllSettings())
+type Environment struct {
+	ServerPort  string `mapstructure:"SERVER_PORT"`
+	Environment string `mapstructure:"ENV"`
+	LogOutput   string `mapstructure:"LOG_OUTPUT"`
+	LogLevel    string `mapstructure:"LOG_LEVEL"`
+	DBUsername  string `mapstructure:"DB_USER"`
+	DBPassword  string `mapstructure:"DB_PASS"`
+	DBHost      string `mapstructure:"DB_HOST"`
+	DBPort      string `mapstructure:"DB_PORT"`
+	DBName      string `mapstructure:"DB_NAME"`
+	JWTSecret   string `mapstructure:"JWT_SECRET"`
 }
 
-func relativePath(basedir string, path *string) {
-	p := *path
-	if len(p) > 0 && p[0] != '/' {
-		*path = filepath.Join(basedir, p)
-	}
-}
+func Init() Environment {
+	env := Environment{}
+	viper.SetConfigFile("config/config.env")
 
-func GetConfig() *viper.Viper {
-	return config
+	err := viper.ReadInConfig()
+	if err != nil {
+		log.Fatal("Error when reading configuration file!")
+	}
+
+	err = viper.Unmarshal(&env)
+	if err != nil {
+		log.Fatal("Error when parsing configuration file!")
+	}
+	return env
 }
