@@ -13,7 +13,7 @@ func (r UserRoute) Register(server *server.Server) {
 	server.Logger.Info("Setting up user routes")
 	api := r.engine.Group("/api")
 	{
-		api.GET("/user", server.UserController.GetById)
+		api.GET("/user", server.UserHandler.GetById)
 	}
 }
 

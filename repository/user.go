@@ -10,8 +10,8 @@ type UserRepository struct {
 	logger   util.Logger
 }
 
-func NewUserRepository(db db.Database, logger util.Logger) UserRepository {
-	return UserRepository{
+func NewUserRepository(db db.Database, logger util.Logger) *UserRepository {
+	return &UserRepository{
 		database: db,
 		logger:   logger,
 	}

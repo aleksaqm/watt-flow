@@ -9,7 +9,7 @@ type IUserService interface {
 	FindById(id string) (*model.User, error)
 }
 type UserService struct {
-	repository repository.UserRepository
+	repository *repository.UserRepository
 }
 
 func (service *UserService) FindById(id string) (*model.User, error) {
@@ -21,7 +21,7 @@ func (service *UserService) FindById(id string) (*model.User, error) {
 
 	return &user, nil
 }
-func NewUserService(repository repository.UserRepository) *UserService {
+func NewUserService(repository *repository.UserRepository) *UserService {
 	return &UserService{
 		repository: repository,
 	}

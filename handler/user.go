@@ -17,8 +17,8 @@ func (u UserHandler) GetById(c *gin.Context) {
 	c.JSON(200, gin.H{"data": data})
 }
 
-func NewUserHandler(userService service.IUserService, logger util.Logger) UserHandler {
-	return UserHandler{
+func NewUserHandler(userService service.IUserService, logger util.Logger) *UserHandler {
+	return &UserHandler{
 		service: userService,
 		logger:  logger,
 	}
