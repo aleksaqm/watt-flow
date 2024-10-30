@@ -47,7 +47,5 @@ func Init() *Environment {
 	if err != nil {
 		log.Fatal("Error when parsing configuration", err)
 	}
-	fmt.Println(env)
-	fmt.Println(env.Environment)
 	return env
 }

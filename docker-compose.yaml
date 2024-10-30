@@ -56,10 +56,21 @@ services:
         target: /etc/influxdb2
     networks:
       - watt-flow-network
+  
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - 5672:5672
+      - 15672:15672
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
 
 volumes:
   postgres-db-volume:
   influxdb2-data:
   influxdb2-config:
+  rabbitmq_data:
 networks:
   watt-flow-network:
