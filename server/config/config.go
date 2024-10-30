@@ -1,9 +1,9 @@
 package config
 
 import (
-	"log"
-
+	"fmt"
 	"github.com/spf13/viper"
+	"log"
 )
 
 type Environment struct {
@@ -19,18 +19,35 @@ type Environment struct {
 	JWTSecret   string `mapstructure:"JWT_SECRET"`
 }
 
-func Init() Environment {
-	env := Environment{}
-	viper.SetConfigFile("config/config.env")
+func Init() *Environment {
+	env := &Environment{}
+	viper.SetConfigFile("config/local.env")
+	viper.SetEnvPrefix("")
+	viper.AllowEmptyEnv(true)
+	viper.AutomaticEnv()
 
 	err := viper.ReadInConfig()
 	if err != nil {
-		log.Fatal("Error when reading configuration file!")
+		log.Fatal("Error when reading configuration file!\n", err)
+		return env
 	}
 
-	err = viper.Unmarshal(&env)
+	// workaround for unmarshall not working with unbound env vars
+	viper.SetDefault("SERVER_PORT", "5000")
+	viper.SetDefault("ENV", "DEFAULT")
+	viper.SetDefault("LOG_OUTPUT", "DEFAULT")
+	viper.SetDefault("LOG_LEVEL", "DEFAULT")
+	viper.SetDefault("DB_USER", "DEFAULT")
+	viper.SetDefault("DB_PASS", "DEFAULT")
+	viper.SetDefault("DB_HOST", "DEFAULT")
+	viper.SetDefault("DB_PORT", "DEFAULT")
+	viper.SetDefault("DB_NAME", "DEFAULT")
+	viper.SetDefault("JWT_SECRET", "DEFAULT")
+	err = viper.Unmarshal(env)
 	if err != nil {
-		log.Fatal("Error when parsing configuration file!")
+		log.Fatal("Error when parsing configuration", err)
 	}
+	fmt.Println(env)
+	fmt.Println(env.Environment)
 	return env
 }
