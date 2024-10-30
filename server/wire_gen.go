@@ -9,7 +9,7 @@ package server
 import (
 	"github.com/google/wire"
 	"watt-flow/config"
-	"watt-flow/controller"
+	"watt-flow/handler"
 	"watt-flow/db"
 	"watt-flow/repository"
 	"watt-flow/service"
@@ -23,7 +23,7 @@ func InitDeps(env *config.Environment) *Server {
 	database := db.NewDatabase(env, logger)
 	userRepository := repository.NewUserRepository(database, logger)
 	userService := service.NewUserService(userRepository)
-	userController := controller.NewUserController(userService, logger)
+	userController := handler.NewUserHandler(userService, logger)
 	server := NewServer(logger, userService, userController)
 	return server
 }

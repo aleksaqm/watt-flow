@@ -1,18 +1,18 @@
 package server
 
 import (
-	"watt-flow/controller"
+	"watt-flow/handler"
 	"watt-flow/service"
 	"watt-flow/util"
 )
 
 type Server struct {
 	Logger         util.Logger
-	UserController controller.UserController
+	UserController handler.UserHandler
 	userService    service.IUserService
 }
 
-func NewServer(logger util.Logger, userService service.IUserService, userController controller.UserController) *Server {
+func NewServer(logger util.Logger, userService service.IUserService, userController handler.UserHandler) *Server {
 	return &Server{
 		Logger:         logger,
 		UserController: userController,
