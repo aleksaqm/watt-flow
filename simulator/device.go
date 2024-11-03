@@ -12,7 +12,10 @@ import (
 	"time"
 )
 
-var startTime = time.Now().Add(8 * time.Hour)
+type DeviceOptions struct {
+	downtime  time.Duration
+	startDate time.Time
+}
 
 type Device struct {
 	ID           string
@@ -22,6 +25,7 @@ type Device struct {
 	logger       *lumberjack.Logger
 	lastRotation time.Time
 	wg           sync.WaitGroup
+	config       *Config
 }
 
 func NewDevice(deviceID string, household *Household, exchangeName string) (*Device, error) {
@@ -37,20 +41,34 @@ func NewDevice(deviceID string, household *Household, exchangeName string) (*Dev
 		Compress:  false,
 		LocalTime: false,
 	}
+	config := &Config{
+		filename: "config/config.json",
+		data:     &ConfigEntry{},
+	}
 	return &Device{
-		ID:           deviceID,
-		Household:    household,
-		broker:       NewMessageBroker(exchangeName),
-		buffer:       NewMessageBuffer(),
-		logger:       logger,
-		lastRotation: startTime,
+		ID:        deviceID,
+		Household: household,
+		broker:    NewMessageBroker(exchangeName),
+		buffer:    NewMessageBuffer(),
+		logger:    logger,
+		config:    config,
 	}, nil
 }
 
-func (d *Device) Start(ctx context.Context) error {
+func (d *Device) Start(ctx context.Context, options *DeviceOptions) error {
 	if err := d.broker.Connect(); err != nil {
 		return err
 	}
+	if options == nil {
+		if err := d.config.LoadConfig(); err != nil {
+			return err
+		}
+	} else {
+		d.config.data.LastMeasurement = options.startDate
+		d.config.data.DowntimeSimulation = options.downtime
+	}
+	d.lastRotation = d.config.data.LastMeasurement
+	d.config.data.LastMeasurement = d.config.data.LastMeasurement.Add(d.config.data.DowntimeSimulation)
 
 	d.wg.Add(2)
 	go func() {
@@ -59,11 +77,14 @@ func (d *Device) Start(ctx context.Context) error {
 	}()
 	go func() {
 		defer d.wg.Done()
-		d.sendMeasurements(ctx, startTime)
+		d.sendMeasurements(ctx, d.config.data.LastMeasurement)
 	}()
 	return nil
 }
 func (d *Device) Shutdown(ctx context.Context) error {
+	if err := d.logger.Rotate(); err != nil {
+		return fmt.Errorf("failed to rotate logger: %v", err)
+	}
 	if err := d.logger.Close(); err != nil {
 		return fmt.Errorf("failed to close logger: %v", err)
 	}
@@ -72,6 +93,10 @@ func (d *Device) Shutdown(ctx context.Context) error {
 		if err := d.broker.conn.Close(); err != nil {
 			return fmt.Errorf("failed to close broker connection: %v", err)
 		}
+	}
+
+	if err := d.config.SaveConfig(); err != nil {
+		log.Printf("failed to save config: %v", err)
 	}
 
 	// Wait for all goroutines to finish
@@ -128,7 +153,7 @@ func (d *Device) sendMeasurements(ctx context.Context, currentTime time.Time) {
 			// On reconnect, try to send buffered messages
 			d.sendBufferedMessages(ctx)
 		case <-ticker.C:
-
+			d.config.data.LastMeasurement = currentTime
 			if err := d.checkAndRotateLog(currentTime); err != nil {
 				log.Printf("Error rotating log: %v", err)
 			}
@@ -178,6 +203,10 @@ func (d *Device) checkAndRotateLog(currentTime time.Time) error {
 		// Rotate the log file
 		if err := d.logger.Rotate(); err != nil {
 			return fmt.Errorf("failed to rotate log file: %v", err)
+		}
+		if err := d.config.SaveConfig(); err != nil {
+			return fmt.Errorf("failed to save config: %v", err)
+
 		}
 
 		d.lastRotation = currentTime

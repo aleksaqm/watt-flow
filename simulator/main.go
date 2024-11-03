@@ -68,7 +68,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	if err := device.Start(ctx); err != nil {
+	if err := device.Start(ctx, nil); err != nil {
 		cancel()
 		log.Fatal(err)
 	}
