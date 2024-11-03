@@ -6,7 +6,10 @@ import (
 	"encoding/binary"
 	"flag"
 	"log"
+	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/google/uuid"
@@ -47,6 +50,12 @@ func main() {
 		log.Fatal("city and country args are required!")
 	}
 
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+
+	// Create context that will be canceled on signal
+	ctx, cancel := context.WithCancel(context.Background())
+
 	address := newLocation(*country, *city, *street, *number)
 	deviceIDInt, err := uuidStrToInt64(*deviceID)
 	if err != nil {
@@ -59,11 +68,26 @@ func main() {
 		log.Fatal(err)
 	}
 
-	ctx := context.Background()
 	if err := device.Start(ctx); err != nil {
+		cancel()
 		log.Fatal(err)
 	}
 
-	// Keep the main goroutine running
-	select {}
+	// Wait for interrupt signal
+	sig := <-sigChan
+	log.Printf("Received signal: %v. Starting graceful shutdown...", sig)
+
+	// Cancel context to stop all routines
+	cancel()
+
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer shutdownCancel()
+
+	// Perform graceful shutdown
+	if err := device.Shutdown(shutdownCtx); err != nil {
+		log.Printf("Error during shutdown: %v", err)
+		os.Exit(1)
+	}
+
+	log.Println("Graceful shutdown completed")
 }
