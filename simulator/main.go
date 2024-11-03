@@ -16,11 +16,10 @@ import (
 )
 
 const (
-	reconnectDelay       = 5 * time.Second
-	heartbeatInterval    = 5 * time.Second
-	measurementInterval  = 1 * time.Minute
-	measurementRetention = 90 * 24 * time.Hour
-	exchangeName         = "watt-flow"
+	reconnectDelay      = 5 * time.Second
+	heartbeatInterval   = 5 * time.Second
+	measurementInterval = 1 * time.Minute
+	exchangeName        = "watt-flow"
 )
 
 func failOnError(err error, msg string) {
