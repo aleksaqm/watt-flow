@@ -1,21 +1,24 @@
 package main
 
 import (
-	"flag"
-	"fmt"
+	"github.com/gin-gonic/gin"
 	"watt-flow/config"
-	"watt-flow/db"
+	"watt-flow/middleware"
+	"watt-flow/route"
 	"watt-flow/server"
 )
 
 func main() {
-	environment := flag.String("e", "development", "use development configuration")
-	flag.Usage = func() {
-		fmt.Println("Usage: server -e {mode}")
-	}
-	flag.Parse()
+	env := config.Init()
+	dependencies := server.InitDeps(&env)
+	gin.DefaultWriter = dependencies.Logger.GetGinLogger()
+	engine := gin.New()
 
-	config.Init(*environment)
-	server.Init()
-	db.NewDatabase()
+	route.RegisterRoutes(engine, dependencies)
+	middleware.RegisterMiddlewares(engine, dependencies)
+	engine.Use(gin.Recovery())
+	engine.Use(gin.Logger())
+
+	engine.Run(":" + env.ServerPort)
+
 }
