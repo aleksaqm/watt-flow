@@ -1,16 +1,17 @@
 package main
 
 import (
-	"github.com/gin-gonic/gin"
 	"watt-flow/config"
 	"watt-flow/middleware"
 	"watt-flow/route"
 	"watt-flow/server"
+
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
 	env := config.Init()
-	dependencies := server.InitDeps(&env)
+	dependencies := server.InitDeps(env)
 	gin.DefaultWriter = dependencies.Logger.GetGinLogger()
 	engine := gin.New()
 
@@ -20,5 +21,4 @@ func main() {
 	engine.Use(gin.Logger())
 
 	engine.Run(":" + env.ServerPort)
-
 }
