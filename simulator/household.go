@@ -11,26 +11,24 @@ type Household struct {
 	baseLoad       float64
 	peakMultiplier float64
 	seasonImpact   float64
-	address        Location
+	address        *Location
 }
 
 type Location struct {
-	countryCode string
-	city        string
-	street      string
-	number      string
+	City   string
+	Street string
+	Number string
 }
 
-func newLocation(countryCode string, city string, street string, number string) *Location {
+func newLocation(city string, street string, number string) *Location {
 	return &Location{
-		countryCode: countryCode,
-		city:        city,
-		street:      street,
-		number:      number,
+		City:   city,
+		Street: street,
+		Number: number,
 	}
 }
 
-func newHousehold(seed int64, location Location) *Household {
+func newHousehold(seed int64, location *Location) *Household {
 	rng := rand.New(rand.NewSource(seed))
 	return &Household{
 		rng:            rng,

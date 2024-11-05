@@ -16,8 +16,9 @@ import (
 )
 
 const (
-	reconnectDelay      = 5 * time.Second
-	heartbeatInterval   = 5 * time.Second
+	reconnectDelay = 5 * time.Second
+	//heartbeatInterval   = 5 * time.Second
+	heartbeatInterval   = 50 * time.Millisecond // scaled and equal to one per 5 sec in real time
 	measurementInterval = 1 * time.Minute
 	exchangeName        = "watt-flow"
 )
@@ -39,14 +40,13 @@ func uuidStrToInt64(uStr string) (int64, error) {
 
 func main() {
 	deviceID := flag.String("device", "0", "uuid of the device")
-	country := flag.String("country", "0", "Country")
 	city := flag.String("city", "0", "city")
 	street := flag.String("street", "0", "street")
 	number := flag.String("number", "0", "street number")
 	flag.Parse()
 
-	if *city == "0" || *country == "0" {
-		log.Fatal("city and country args are required!")
+	if *city == "0" || *street == "0" || *number == "0" {
+		log.Fatal("city and address args are required!")
 	}
 
 	sigChan := make(chan os.Signal, 1)
@@ -55,13 +55,13 @@ func main() {
 	// Create context that will be canceled on signal
 	ctx, cancel := context.WithCancel(context.Background())
 
-	address := newLocation(*country, *city, *street, *number)
+	address := newLocation(*city, *street, *number)
 	deviceIDInt, err := uuidStrToInt64(*deviceID)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	household := newHousehold(deviceIDInt, *address)
+	household := newHousehold(deviceIDInt, address)
 	device, err := NewDevice(*deviceID, household, exchangeName)
 	if err != nil {
 		log.Fatal(err)

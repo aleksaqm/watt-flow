@@ -73,7 +73,7 @@ func (d *Device) Start(ctx context.Context, options *DeviceOptions) error {
 	d.wg.Add(2)
 	go func() {
 		defer d.wg.Done()
-		d.sendHeartbeats(ctx)
+		d.sendHeartbeats(ctx, d.config.data.LastMeasurement)
 	}()
 	go func() {
 		defer d.wg.Done()
@@ -114,7 +114,7 @@ func (d *Device) Shutdown(ctx context.Context) error {
 	}
 }
 
-func (d *Device) sendHeartbeats(ctx context.Context) {
+func (d *Device) sendHeartbeats(ctx context.Context, currentTime time.Time) {
 	ticker := time.NewTicker(heartbeatInterval)
 	defer ticker.Stop()
 
@@ -123,12 +123,12 @@ func (d *Device) sendHeartbeats(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			heartbeat := newHeartbeat(d.ID, time.Now())
+			heartbeat := newHeartbeat(d.ID, currentTime)
 			payload, _ := json.Marshal(heartbeat)
 			msg := Message{
 				Type:      "heartbeat",
 				Payload:   payload,
-				Queue:     "heartbeat." + d.Household.address.city,
+				Queue:     "heartbeat." + d.Household.address.City,
 				Timestamp: time.Now(),
 			}
 
@@ -137,6 +137,7 @@ func (d *Device) sendHeartbeats(ctx context.Context) {
 			} else {
 				log.Printf("Sent heartbeat")
 			}
+			currentTime = currentTime.Add(5 * time.Second)
 		}
 	}
 }
@@ -159,16 +160,14 @@ func (d *Device) sendMeasurements(ctx context.Context, currentTime time.Time) {
 			}
 
 			value := d.Household.SimulateConsumption(currentTime)
-			measurement := newMeasurement(d.ID, value, currentTime)
+			measurement := newMeasurement(d.ID, value, currentTime, *d.Household.address)
 			payload, _ := json.Marshal(measurement)
-
 			msg := Message{
 				Type:      "measurement",
 				Payload:   payload,
-				Queue:     "measurement." + d.Household.address.city,
+				Queue:     "measurement." + d.Household.address.City,
 				Timestamp: currentTime,
 			}
-
 			if err := d.logMeasurement(measurement); err != nil {
 				log.Printf("Failed to log measurement: %v", err)
 			}
@@ -220,10 +219,12 @@ func (d *Device) logMeasurement(m *Measurement) error {
 		Timestamp time.Time `json:"timestamp"`
 		DeviceID  string    `json:"device_id"`
 		Value     float64   `json:"value"`
+		Location  Location  `json:"location"`
 	}{
 		Timestamp: m.Timestamp,
 		DeviceID:  m.DeviceID,
 		Value:     m.Value,
+		Location:  m.Address,
 	}
 
 	data, err := json.Marshal(logEntry)

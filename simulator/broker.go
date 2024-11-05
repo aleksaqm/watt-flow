@@ -56,6 +56,52 @@ func (b *MessageBroker) Connect() error {
 		return fmt.Errorf("failed to declare exchange: %v", err)
 	}
 
+	measurementQueue, err := ch.QueueDeclare(
+		"measurements_queue",
+		true,
+		false,
+		false,
+		false,
+		nil,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to declare measurement queue: %v", err)
+	}
+
+	err = ch.QueueBind(
+		measurementQueue.Name,
+		"measurement.*",
+		exchangeName,
+		false,
+		nil,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to bind measurement queue: %v", err)
+	}
+
+	heartbeatQueue, err := ch.QueueDeclare(
+		"heartbeats_queue",
+		true,
+		false,
+		false,
+		false,
+		nil,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to declare heartbeat queue: %v", err)
+	}
+
+	err = ch.QueueBind(
+		heartbeatQueue.Name,
+		"heartbeat.*",
+		exchangeName,
+		false,
+		nil,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to bind heartbeat queue: %v", err)
+	}
+
 	b.mu.Lock()
 	b.conn = conn
 	b.channel = ch
