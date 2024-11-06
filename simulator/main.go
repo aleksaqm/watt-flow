@@ -16,9 +16,8 @@ import (
 )
 
 const (
-	reconnectDelay = 5 * time.Second
-	//heartbeatInterval   = 5 * time.Second
-	heartbeatInterval   = 50 * time.Millisecond // scaled and equal to one per 5 sec in real time
+	reconnectDelay      = 5 * time.Second
+	heartbeatInterval   = 5 * time.Second
 	measurementInterval = 1 * time.Minute
 	exchangeName        = "watt-flow"
 )

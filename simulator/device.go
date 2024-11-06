@@ -4,32 +4,34 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"gopkg.in/natefinch/lumberjack.v2"
 	"log"
 	"os"
 	"path/filepath"
+	"strconv"
 	"sync"
 	"time"
+
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 type DeviceOptions struct {
-	downtime  time.Duration
 	startDate time.Time
+	downtime  time.Duration
 }
 
 type Device struct {
-	ID           string
+	lastRotation time.Time
 	Household    *Household
 	broker       *MessageBroker
 	buffer       *MessageBuffer
 	logger       *lumberjack.Logger
-	lastRotation time.Time
-	wg           sync.WaitGroup
 	config       *Config
+	ID           string
+	wg           sync.WaitGroup
 }
 
 func NewDevice(deviceID string, household *Household, exchangeName string) (*Device, error) {
-	logsDir := "measurements"
+	logsDir := "measurements/" + deviceID
 	if err := os.MkdirAll(logsDir, 0755); err != nil {
 		return nil, fmt.Errorf("failed to create logs directory: %v", err)
 	}
@@ -73,7 +75,7 @@ func (d *Device) Start(ctx context.Context, options *DeviceOptions) error {
 	d.wg.Add(2)
 	go func() {
 		defer d.wg.Done()
-		d.sendHeartbeats(ctx, d.config.data.LastMeasurement)
+		d.sendHeartbeats(ctx)
 	}()
 	go func() {
 		defer d.wg.Done()
@@ -81,6 +83,7 @@ func (d *Device) Start(ctx context.Context, options *DeviceOptions) error {
 	}()
 	return nil
 }
+
 func (d *Device) Shutdown(ctx context.Context) error {
 	if err := d.logger.Rotate(); err != nil {
 		return fmt.Errorf("failed to rotate logger: %v", err)
@@ -114,7 +117,7 @@ func (d *Device) Shutdown(ctx context.Context) error {
 	}
 }
 
-func (d *Device) sendHeartbeats(ctx context.Context, currentTime time.Time) {
+func (d *Device) sendHeartbeats(ctx context.Context) {
 	ticker := time.NewTicker(heartbeatInterval)
 	defer ticker.Stop()
 
@@ -123,7 +126,7 @@ func (d *Device) sendHeartbeats(ctx context.Context, currentTime time.Time) {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			heartbeat := newHeartbeat(d.ID, currentTime)
+			heartbeat := newHeartbeat(d.ID, time.Now())
 			payload, _ := json.Marshal(heartbeat)
 			msg := Message{
 				Type:      "heartbeat",
@@ -137,7 +140,6 @@ func (d *Device) sendHeartbeats(ctx context.Context, currentTime time.Time) {
 			} else {
 				log.Printf("Sent heartbeat")
 			}
-			currentTime = currentTime.Add(5 * time.Second)
 		}
 	}
 }
@@ -195,9 +197,10 @@ func (d *Device) sendBufferedMessages(ctx context.Context) {
 		}
 	}
 }
+
 func (d *Device) checkAndRotateLog(currentTime time.Time) error {
 	if currentTime.Day() != d.lastRotation.Day() {
-		//d.logger.Filename = filepath.Join("logs", fmt.Sprintf("measurements_%s.log", currentTime.Format("2006-01-02")))
+		// d.logger.Filename = filepath.Join("logs", fmt.Sprintf("measurements_%s.log", currentTime.Format("2006-01-02")))
 
 		// Rotate the log file
 		if err := d.logger.Rotate(); err != nil {
@@ -205,7 +208,6 @@ func (d *Device) checkAndRotateLog(currentTime time.Time) error {
 		}
 		if err := d.config.SaveConfig(); err != nil {
 			return fmt.Errorf("failed to save config: %v", err)
-
 		}
 
 		d.lastRotation = currentTime
@@ -215,23 +217,8 @@ func (d *Device) checkAndRotateLog(currentTime time.Time) error {
 }
 
 func (d *Device) logMeasurement(m *Measurement) error {
-	logEntry := struct {
-		Timestamp time.Time `json:"timestamp"`
-		DeviceID  string    `json:"device_id"`
-		Value     float64   `json:"value"`
-		Location  Location  `json:"location"`
-	}{
-		Timestamp: m.Timestamp,
-		DeviceID:  m.DeviceID,
-		Value:     m.Value,
-		Location:  m.Address,
-	}
+	logEntry := m.Timestamp.Local().String() + "->" + strconv.FormatFloat(m.Value, 'f', -1, 64)
 
-	data, err := json.Marshal(logEntry)
-	if err != nil {
-		return err
-	}
-
-	_, err = d.logger.Write(append(data, '\n'))
+	_, err := d.logger.Write(append([]byte(logEntry), '\n'))
 	return err
 }

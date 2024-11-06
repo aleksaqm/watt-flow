@@ -31,8 +31,8 @@ type Consumer struct {
 }
 
 type DeviceStatus struct {
-	DeviceID string
 	LastSeen time.Time
+	DeviceID string
 	IsActive bool
 }
 

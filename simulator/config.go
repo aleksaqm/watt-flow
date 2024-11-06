@@ -14,8 +14,8 @@ type ConfigEntry struct {
 }
 
 type Config struct {
-	filename string
 	data     *ConfigEntry
+	filename string
 }
 
 func (c *Config) LoadConfig() error {
@@ -59,5 +59,4 @@ func (c *Config) SaveConfig() error {
 	log.Printf("wrote config file to %s", c.filename)
 
 	return nil
-
 }
