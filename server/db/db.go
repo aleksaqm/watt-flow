@@ -2,6 +2,8 @@ package db
 
 import (
 	"fmt"
+	"log"
+	"watt-flow/model"
 
 	"watt-flow/config"
 	"watt-flow/util"
@@ -26,6 +28,11 @@ func NewDatabase(env *config.Environment, logger util.Logger) Database {
 	})
 	if err != nil {
 		fmt.Println(err)
+	}
+
+	err = db.AutoMigrate(&model.User{})
+	if err != nil {
+		log.Fatal("Failed to migrate database:", err)
 	}
 	return Database{
 		DB: db,

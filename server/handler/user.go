@@ -2,18 +2,47 @@ package handler
 
 import (
 	"github.com/gin-gonic/gin"
+	"watt-flow/dto"
+	"watt-flow/model"
 	"watt-flow/service"
 	"watt-flow/util"
 )
 
 type UserHandler struct {
-	service service.IUserService
-	logger  util.Logger
+	service     service.IUserService
+	authService *service.AuthService
+	logger      util.Logger
+}
+
+func (u UserHandler) Login(c *gin.Context) {
+	var loginCredentials dto.LoginDto
+	if err := c.BindJSON(&loginCredentials); err != nil {
+		u.logger.Error(err)
+		c.JSON(400, gin.H{"error": err.Error()})
+	}
+	u.authService = service.NewAuthService(u.logger)
+	user, err := u.service.FindByEmail(loginCredentials.Username)
+	if err != nil {
+		u.logger.Error(err)
+		c.JSON(400, gin.H{"error": err.Error()})
+	}
+	token := u.authService.CreateToken(user)
+	c.JSON(200, gin.H{"data": token})
 }
 
 func (u UserHandler) GetById(c *gin.Context) {
-	data, _ := u.service.FindById("kdjfk")
+	data, _ := u.service.FindById(1)
 	u.logger.Info("radi handler")
+	c.JSON(200, gin.H{"data": data})
+}
+
+func (u UserHandler) Create(c *gin.Context) {
+	var user model.User
+	if err := c.BindJSON(&user); err != nil {
+		u.logger.Error(err)
+		c.JSON(400, gin.H{"error": err.Error()})
+	}
+	data, _ := u.service.Create(&user)
 	c.JSON(200, gin.H{"data": data})
 }
 

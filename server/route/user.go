@@ -14,6 +14,8 @@ func (r UserRoute) Register(server *server.Server) {
 	api := r.engine.Group("/api")
 	{
 		api.GET("/user", server.UserHandler.GetById)
+		api.POST("/create", server.UserHandler.Create)
+		api.POST("/login", server.UserHandler.Login)
 	}
 }
 
