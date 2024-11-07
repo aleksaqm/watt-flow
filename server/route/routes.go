@@ -17,4 +17,5 @@ func RegisterRoutes(
 	server *server.Server,
 ) {
 	NewUserRoute(engine).Register(server)
+	NewAuthRoute(engine).Register(server)
 }

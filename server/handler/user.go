@@ -9,9 +9,8 @@ import (
 )
 
 type UserHandler struct {
-	service     service.IUserService
-	authService *service.AuthService
-	logger      util.Logger
+	service service.IUserService
+	logger  util.Logger
 }
 
 func (u UserHandler) Login(c *gin.Context) {
@@ -20,19 +19,23 @@ func (u UserHandler) Login(c *gin.Context) {
 		u.logger.Error(err)
 		c.JSON(400, gin.H{"error": err.Error()})
 	}
-	u.authService = service.NewAuthService(u.logger)
-	user, err := u.service.FindByEmail(loginCredentials.Username)
+	token, err := u.service.Login(loginCredentials)
 	if err != nil {
 		u.logger.Error(err)
-		c.JSON(400, gin.H{"error": "Invalid credentials"})
-	}
-	if !util.ComparePasswords(user.Password, loginCredentials.Password) {
-		u.logger.Error("Invalid credentials")
-		c.JSON(400, gin.H{"error": "Invalid credentials"})
+		c.JSON(400, gin.H{"error": err.Error()})
 	} else {
-		token := u.authService.CreateToken(user)
-		c.JSON(200, gin.H{"data": token})
+		c.JSON(200, gin.H{"token": token})
 	}
+}
+
+func (u UserHandler) Register(c *gin.Context) {
+	var user model.User
+	if err := c.BindJSON(&user); err != nil {
+		u.logger.Error(err)
+		c.JSON(400, gin.H{"error": err.Error()})
+	}
+	data, _ := u.service.Create(&user)
+	c.JSON(200, gin.H{"data": data})
 }
 
 func (u UserHandler) GetById(c *gin.Context) {

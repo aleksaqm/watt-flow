@@ -1,6 +1,8 @@
 package service
 
 import (
+	"errors"
+	"watt-flow/dto"
 	"watt-flow/model"
 	"watt-flow/repository"
 	"watt-flow/util"
@@ -10,9 +12,11 @@ type IUserService interface {
 	FindById(id uint64) (*model.User, error)
 	Create(user *model.User) (*model.User, error)
 	FindByEmail(email string) (*model.User, error)
+	Login(loginCredentials dto.LoginDto) (string, error)
 }
 type UserService struct {
-	repository *repository.UserRepository
+	repository  *repository.UserRepository
+	authService *AuthService
 }
 
 func (service *UserService) FindById(id uint64) (*model.User, error) {
@@ -37,20 +41,22 @@ func (service *UserService) Create(user *model.User) (*model.User, error) {
 	return &createdUser, nil
 }
 
-//func (service *UserService) Login(loginDto dto.LoginDto) (string, error) {
-//	user, err := service.repository.FindByEmail(loginDto.Username)
-//	if err != nil {
-//		return "", err
-//	}
-//	hashedPassword := util.HashPassword(loginDto.Password)
-//	if user.Password != hashedPassword {
-//		return "", errors.New("Invalid credentials")
-//	}
-//
-//}
+func (service *UserService) Login(loginCredentials dto.LoginDto) (string, error) {
+	user, err := service.repository.FindByEmail(loginCredentials.Username)
+	if err != nil {
+		return "", err
+	}
+	if !util.ComparePasswords(user.Password, loginCredentials.Password) {
+		return "", errors.New("Invalid credentials")
+	} else {
+		token := service.authService.CreateToken(user)
+		return token, nil
+	}
+}
 
-func NewUserService(repository *repository.UserRepository) *UserService {
+func NewUserService(repository *repository.UserRepository, authService *AuthService) *UserService {
 	return &UserService{
-		repository: repository,
+		repository:  repository,
+		authService: authService,
 	}
 }
