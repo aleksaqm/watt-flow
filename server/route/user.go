@@ -15,7 +15,7 @@ func (r UserRoute) Register(server *server.Server) {
 	authMid := middleware.NewAuthMiddleware(server.AuthService, server.Logger)
 	api := r.engine.Group("/api").Use(authMid.Handler())
 	{
-		api.GET("/user/first", server.UserHandler.GetById)
+		api.GET("/user/first", authMid.RoleMiddleware([]string{"Regular", "SuperAdmin"}), server.UserHandler.GetById)
 		api.POST("/user", server.UserHandler.Create)
 	}
 }

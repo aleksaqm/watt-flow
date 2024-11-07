@@ -19,25 +19,26 @@ func NewAuthService(logger util.Logger) *AuthService {
 	}
 }
 
-func (s *AuthService) Authorize(tokenString string) (bool, error) {
+func (s *AuthService) Authorize(tokenString string) (bool, jwt.MapClaims, error) {
 	env := config.Init()
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		return []byte(env.JWTSecret), nil
 	})
 	if token.Valid {
-		return true, nil
+		claims := token.Claims.(jwt.MapClaims)
+		return true, claims, nil
 	}
 	var ve *jwt.ValidationError
 	if errors.As(err, &ve) {
 		if ve.Errors&jwt.ValidationErrorMalformed != 0 {
 			log.Println("malformed token")
-			return false, errors.New("malformed token")
+			return false, nil, errors.New("malformed token")
 		}
 		if ve.Errors&(jwt.ValidationErrorExpired|jwt.ValidationErrorNotValidYet) != 0 {
-			return false, errors.New("token expired or not active")
+			return false, nil, errors.New("token expired or not active")
 		}
 	}
-	return false, errors.New("invalid token")
+	return false, nil, errors.New("invalid token")
 }
 
 func (s *AuthService) CreateToken(user *model.User) string {
@@ -46,7 +47,7 @@ func (s *AuthService) CreateToken(user *model.User) string {
 		"id":       user.Id,
 		"username": user.Username,
 		"email":    user.Email,
-		"role":     user.Role,
+		"role":     user.Role.String(),
 	})
 
 	tokenString, err := token.SignedString([]byte(env.JWTSecret))
@@ -55,3 +56,5 @@ func (s *AuthService) CreateToken(user *model.User) string {
 	}
 	return tokenString
 }
+
+//jwt.MapClaims, error

@@ -8,15 +8,6 @@ const (
 	Suspended
 )
 
-type Role int
-
-const (
-	Regular Role = iota
-	Clerk
-	Admin
-	SuperAdmin
-)
-
 type User struct {
 	Id           uint64        `gorm:"primary_key" json:"id"`
 	Username     string        `gorm:"unique" json:"username"`
