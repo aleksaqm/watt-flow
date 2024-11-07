@@ -24,10 +24,15 @@ func (u UserHandler) Login(c *gin.Context) {
 	user, err := u.service.FindByEmail(loginCredentials.Username)
 	if err != nil {
 		u.logger.Error(err)
-		c.JSON(400, gin.H{"error": err.Error()})
+		c.JSON(400, gin.H{"error": "Invalid credentials"})
 	}
-	token := u.authService.CreateToken(user)
-	c.JSON(200, gin.H{"data": token})
+	if !util.ComparePasswords(user.Password, loginCredentials.Password) {
+		u.logger.Error("Invalid credentials")
+		c.JSON(400, gin.H{"error": "Invalid credentials"})
+	} else {
+		token := u.authService.CreateToken(user)
+		c.JSON(200, gin.H{"data": token})
+	}
 }
 
 func (u UserHandler) GetById(c *gin.Context) {

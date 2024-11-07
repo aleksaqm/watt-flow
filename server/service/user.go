@@ -21,7 +21,10 @@ func (service *UserService) FindById(id uint64) (*model.User, error) {
 }
 
 func (service *UserService) FindByEmail(email string) (*model.User, error) {
-	user, _ := service.repository.FindByEmail(email)
+	user, err := service.repository.FindByEmail(email)
+	if err != nil {
+		return nil, err
+	}
 	return user, nil
 }
 
