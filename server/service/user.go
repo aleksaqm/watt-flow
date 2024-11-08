@@ -2,6 +2,7 @@ package service
 
 import (
 	"errors"
+	"fmt"
 	"watt-flow/dto"
 	"watt-flow/model"
 	"watt-flow/repository"
@@ -63,6 +64,14 @@ func (service *UserService) Register(registrationDto *dto.RegistrationDto) (*mod
 	//user.ProfileImage = registrationDto.ProfileImage
 	user.Role = 0
 	user.Status = 1
+	activationToken := service.authService.CreateActivationToken(&user)
+	activationLink := fmt.Sprintf("http://localhost:5000/api/users/activate/%s", activationToken)
+	emailBody := fmt.Sprintf("<html><body><p>Click <a href='%s'>here</a> to activate your account.</p></body></html>", activationLink)
+
+	err := util.SendEmail(user.Email, "Activate your account", emailBody)
+	if err != nil {
+		return nil, err
+	}
 	createdUser, err := service.repository.Create(&user)
 	if err != nil {
 		return nil, err

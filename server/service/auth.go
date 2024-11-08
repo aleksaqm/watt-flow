@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/dgrijalva/jwt-go"
 	"log"
+	"time"
 	"watt-flow/config"
 	"watt-flow/model"
 	"watt-flow/util"
@@ -43,13 +44,28 @@ func (s *AuthService) Authorize(tokenString string) (bool, jwt.MapClaims, error)
 
 func (s *AuthService) CreateToken(user *model.User) string {
 	env := config.Init()
+	expirationTime := time.Now().Add(24 * time.Hour).Unix()
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"id":       user.Id,
 		"username": user.Username,
 		"email":    user.Email,
 		"role":     user.Role.RoleToString(),
+		"exp":      expirationTime,
 	})
+	tokenString, err := token.SignedString([]byte(env.JWTSecret))
+	if err != nil {
+		s.logger.Error(err)
+	}
+	return tokenString
+}
 
+func (s *AuthService) CreateActivationToken(user *model.User) string {
+	env := config.Init()
+	expirationTime := time.Now().Add(time.Hour).Unix()
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"email": user.Email,
+		"exp":   expirationTime,
+	})
 	tokenString, err := token.SignedString([]byte(env.JWTSecret))
 	if err != nil {
 		s.logger.Error(err)

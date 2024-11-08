@@ -34,7 +34,10 @@ func (u UserHandler) Register(c *gin.Context) {
 		u.logger.Error(err)
 		c.JSON(400, gin.H{"error": err.Error()})
 	}
-	data, _ := u.service.Register(&user)
+	data, err := u.service.Register(&user)
+	if err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
+	}
 	c.JSON(200, gin.H{"data": data})
 }
 
