@@ -27,14 +27,17 @@ const (
 	deviceStatusBucket = "device_status"
 	influxOrg          = "watt-flow"
 	redisTTL           = time.Second * 60
+	reconnectDelay     = time.Second * 10
 )
 
 type Consumer struct {
+	influxClient influxdb2.Client
 	conn         *amqp.Connection
 	channel      *amqp.Channel
-	influxClient influxdb2.Client
 	pgDB         *sql.DB
 	redisClient  *redis.Client
+	reconnecting chan bool
+	amqpURI      string
 	wg           sync.WaitGroup
 }
 
@@ -45,33 +48,18 @@ type DeviceStatus struct {
 }
 
 func NewConsumer(amqpURI, influxURI, influxToken, pgConnStr, redisAddr string) (*Consumer, error) {
-	conn, err := amqp.Dial(amqpURI)
-	if err != nil {
-		return nil, fmt.Errorf("failed to connect to RabbitMQ: %v", err)
-	}
-
-	channel, err := conn.Channel()
-	if err != nil {
-		conn.Close()
-		return nil, fmt.Errorf("failed to open channel: %v", err)
-	}
-
 	// Connect to InfluxDB
 	influxClient := influxdb2.NewClient(influxURI, influxToken)
 
 	// Connect to PostgreSQL
 	pgDB, err := sql.Open("postgres", pgConnStr)
 	if err != nil {
-		channel.Close()
-		conn.Close()
 		influxClient.Close()
 		return nil, fmt.Errorf("failed to connect to PostgreSQL: %v", err)
 	}
 
 	err = pgDB.Ping()
 	if err != nil {
-		channel.Close()
-		conn.Close()
 		influxClient.Close()
 		return nil, fmt.Errorf("failed to connect to PostgreSQL: %v", err)
 	}
@@ -95,16 +83,30 @@ func NewConsumer(amqpURI, influxURI, influxToken, pgConnStr, redisAddr string) (
 	}
 
 	return &Consumer{
-		conn:         conn,
-		channel:      channel,
+		reconnecting: make(chan bool),
+		amqpURI:      amqpURI,
 		influxClient: influxClient,
 		pgDB:         pgDB,
 		redisClient:  redisClient,
 	}, nil
 }
 
-func (c *Consumer) Start(ctx context.Context) error {
-	err := c.channel.ExchangeDeclare(
+func (c *Consumer) ConnectToBroker() error {
+	conn, err := amqp.Dial(c.amqpURI)
+	if err != nil {
+		return fmt.Errorf("failed to connect to RabbitMQ: %v", err)
+	}
+
+	channel, err := conn.Channel()
+	if err != nil {
+		conn.Close()
+		return fmt.Errorf("failed to open channel: %v", err)
+	}
+
+	c.conn = conn
+	c.channel = channel
+
+	err = c.channel.ExchangeDeclare(
 		exchangeName,
 		"topic",
 		true,
@@ -165,8 +167,13 @@ func (c *Consumer) Start(ctx context.Context) error {
 		return fmt.Errorf("failed to bind heartbeat queue: %v", err)
 	}
 
+	fmt.Println("Successfully initialized rabbitmq connection and exchange!")
+	return nil
+}
+
+func (c *Consumer) Start(ctx context.Context) error {
 	measurementMsgs, err := c.channel.Consume(
-		measurementQueue.Name,
+		"measurements_queue",
 		"",
 		true,
 		false,
@@ -179,7 +186,7 @@ func (c *Consumer) Start(ctx context.Context) error {
 	}
 
 	heartbeatMsgs, err := c.channel.Consume(
-		heartbeatQueue.Name,
+		"heartbeats_queue",
 		"",
 		true,
 		false,
@@ -190,9 +197,6 @@ func (c *Consumer) Start(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to start heartbeat consumer: %v", err)
 	}
-
-	fmt.Println("Successfully initialized rabbitmq connection and exchange!")
-
 	c.wg.Add(3)
 	go c.processMeasurements(ctx, measurementMsgs)
 	go c.processHeartbeats(ctx, heartbeatMsgs)
@@ -234,6 +238,11 @@ func (c *Consumer) processMeasurements(ctx context.Context, msgs <-chan amqp.Del
 			} else {
 				log.Printf("Successfully written measurement to InfluxDB")
 			}
+		case <-c.channel.NotifyClose(make(chan *amqp.Error)):
+			log.Println("Connection to RabbitMQ lost. Reconnecting...")
+			if err := c.reconnectBroker(); err != nil {
+				log.Printf("Failed to reconnect to RabbitMQ: %v", err)
+			}
 		}
 	}
 }
@@ -261,6 +270,11 @@ func (c *Consumer) processHeartbeats(ctx context.Context, msgs <-chan amqp.Deliv
 			}
 			c.redisClient.Expire(ctx, heartbeat.DeviceID, redisTTL)
 
+		case <-c.channel.NotifyClose(make(chan *amqp.Error)):
+			log.Println("Connection to RabbitMQ lost. Reconnecting...")
+			if err := c.reconnectBroker(); err != nil {
+				log.Printf("Failed to reconnect to RabbitMQ: %v", err)
+			}
 		}
 	}
 }
@@ -276,6 +290,11 @@ func (c *Consumer) updateDeviceStatus(ctx context.Context) {
 		select {
 		case <-ctx.Done():
 			return
+		case <-c.reconnecting:
+			log.Println("Cannot process device status! Waiting for connection!")
+			time.Sleep(20 * time.Second)
+			continue
+
 		case <-ticker.C:
 			keys, err := c.redisClient.Keys(ctx, "*").Result()
 			if err != nil {
@@ -355,6 +374,29 @@ func (c *Consumer) updateStatusInDB(key string, status bool, ctx *context.Contex
 	}
 }
 
+func (c *Consumer) reconnectBroker() error {
+	// Close existing connection and channel
+	if err := c.channel.Close(); err != nil {
+		log.Printf("Error closing channel: %v", err)
+	}
+	if err := c.conn.Close(); err != nil {
+		log.Printf("Error closing connection: %v", err)
+	}
+	c.reconnecting <- true
+
+	// Reconnect to RabbitMQ
+	for {
+		err := c.ConnectToBroker()
+		log.Println("Attempting to reconnect to RabbitMQ...")
+		if err == nil {
+			log.Println("Reconnected to RabbitMQ")
+			c.reconnecting <- false
+			return nil
+		}
+		time.Sleep(reconnectDelay)
+	}
+}
+
 func (c *Consumer) Shutdown(ctx context.Context) error {
 	// Wait for goroutines to finish
 	done := make(chan struct{})
@@ -404,6 +446,13 @@ func main() {
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
+
+	err = consumer.ConnectToBroker()
+	if err != nil {
+		consumer.Shutdown(ctx)
+		log.Printf("Failed connecting to broker")
+		os.Exit(1)
+	}
 
 	if err := consumer.Start(ctx); err != nil {
 		log.Fatal(err)
