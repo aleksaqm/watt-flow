@@ -49,8 +49,11 @@ func (service *UserService) Login(loginCredentials dto.LoginDto) (string, error)
 	if err != nil {
 		return "", err
 	}
+	if user.Status == model.Inactive {
+		return "", errors.New("user is inactive")
+	}
 	if !util.ComparePasswords(user.Password, loginCredentials.Password) {
-		return "", errors.New("Invalid credentials")
+		return "", errors.New("invalid credentials")
 	} else {
 		token := service.authService.CreateToken(user)
 		return token, nil
@@ -63,13 +66,9 @@ func (service *UserService) Register(registrationDto *dto.RegistrationDto) (*mod
 	user.Email = registrationDto.Email
 	user.Password = util.HashPassword(registrationDto.Password)
 	//user.ProfileImage = registrationDto.ProfileImage
-	user.Role = 0
-	user.Status = 1
-	activationToken := service.authService.CreateActivationToken(&user)
-	activationLink := fmt.Sprintf("http://localhost:5000/activate/%s", activationToken)
-	emailBody := fmt.Sprintf("<html><body><p>Click <a href='%s'>here</a> to activate your account.</p></body></html>", activationLink)
-
-	err := util.SendEmail(user.Email, "Activate your account", emailBody)
+	user.Role = model.Regular
+	user.Status = model.Inactive
+	err := service.SendActivationEmail(&user)
 	if err != nil {
 		return nil, err
 	}
@@ -108,4 +107,12 @@ func NewUserService(repository *repository.UserRepository, authService *AuthServ
 		repository:  repository,
 		authService: authService,
 	}
+}
+
+func (service *UserService) SendActivationEmail(user *model.User) error {
+	activationToken := service.authService.CreateActivationToken(user)
+	activationLink := fmt.Sprintf("http://localhost:5000/activate/%s", activationToken)
+	emailBody := fmt.Sprintf("<html><body><p>Click <a href='%s'>here</a> to activate your account.</p></body></html>", activationLink)
+	err := util.SendEmail(user.Email, "Activate your account", emailBody)
+	return err
 }
