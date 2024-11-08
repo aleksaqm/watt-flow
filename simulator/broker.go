@@ -80,28 +80,28 @@ func (b *MessageBroker) Connect() error {
 		return fmt.Errorf("failed to bind measurement queue: %v", err)
 	}
 
-	heartbeatQueue, err := ch.QueueDeclare(
-		"heartbeats_queue",
-		true,
-		false,
-		false,
-		false,
-		nil,
-	)
-	if err != nil {
-		return fmt.Errorf("failed to declare heartbeat queue: %v", err)
-	}
-
-	err = ch.QueueBind(
-		heartbeatQueue.Name,
-		"heartbeat.*",
-		exchangeName,
-		false,
-		nil,
-	)
-	if err != nil {
-		return fmt.Errorf("failed to bind heartbeat queue: %v", err)
-	}
+	// heartbeatQueue, err := ch.QueueDeclare(
+	// 	"heartbeats_queue",
+	// 	true,
+	// 	false,
+	// 	false,
+	// 	false,
+	// 	nil,
+	// )
+	// if err != nil {
+	// 	return fmt.Errorf("failed to declare heartbeat queue: %v", err)
+	// }
+	//
+	// err = ch.QueueBind(
+	// 	heartbeatQueue.Name,
+	// 	"heartbeat.*",
+	// 	exchangeName,
+	// 	false,
+	// 	nil,
+	// )
+	// if err != nil {
+	// 	return fmt.Errorf("failed to bind heartbeat queue: %v", err)
+	// }
 
 	b.mu.Lock()
 	b.conn = conn
@@ -149,6 +149,6 @@ func (mb *MessageBroker) PublishMessage(ctx context.Context, msg Message) error 
 		amqp.Publishing{
 			ContentType: "application/json",
 			Body:        msg.Payload,
-			Timestamp:   msg.Timestamp,
+			Timestamp:   time.Now(),
 		})
 }

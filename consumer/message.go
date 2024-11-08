@@ -4,7 +4,7 @@ import "time"
 
 type Heartbeat struct {
 	DeviceID  string
-	Timestamp time.Time
+	Timestamp string
 }
 
 type Measurement struct {

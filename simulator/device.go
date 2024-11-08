@@ -126,7 +126,7 @@ func (d *Device) sendHeartbeats(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			heartbeat := newHeartbeat(d.ID, time.Now())
+			heartbeat := newHeartbeat(d.ID, time.Now().Format(time.RFC3339))
 			payload, _ := json.Marshal(heartbeat)
 			msg := Message{
 				Type:      "heartbeat",

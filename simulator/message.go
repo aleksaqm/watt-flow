@@ -4,10 +4,10 @@ import "time"
 
 type Heartbeat struct {
 	DeviceID  string
-	Timestamp time.Time
+	Timestamp string
 }
 
-func newHeartbeat(device string, timestamp time.Time) *Heartbeat {
+func newHeartbeat(device string, timestamp string) *Heartbeat {
 	return &Heartbeat{
 		DeviceID:  device,
 		Timestamp: timestamp,
