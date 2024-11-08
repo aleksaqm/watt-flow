@@ -15,16 +15,18 @@ import (
 	"time"
 
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
+	"github.com/influxdata/influxdb-client-go/v2/api"
 	_ "github.com/lib/pq"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/redis/go-redis/v9"
 )
 
 const (
-	exchangeName = "watt-flow"
-	influxBucket = "power_measurements"
-	influxOrg    = "watt-flow"
-	redisTTL     = time.Second * 60
+	exchangeName       = "watt-flow"
+	measurementsBucket = "power_measurements"
+	deviceStatusBucket = "device_status"
+	influxOrg          = "watt-flow"
+	redisTTL           = time.Second * 60
 )
 
 type Consumer struct {
@@ -201,7 +203,7 @@ func (c *Consumer) Start(ctx context.Context) error {
 
 func (c *Consumer) processMeasurements(ctx context.Context, msgs <-chan amqp.Delivery) {
 	defer c.wg.Done()
-	writeAPI := c.influxClient.WriteAPIBlocking(influxOrg, influxBucket)
+	writeAPI := c.influxClient.WriteAPIBlocking(influxOrg, measurementsBucket)
 
 	for {
 		select {
@@ -265,6 +267,7 @@ func (c *Consumer) processHeartbeats(ctx context.Context, msgs <-chan amqp.Deliv
 
 func (c *Consumer) updateDeviceStatus(ctx context.Context) {
 	defer c.wg.Done()
+	writeAPI := c.influxClient.WriteAPIBlocking(influxOrg, deviceStatusBucket)
 
 	ticker := time.NewTicker(5 * time.Second)
 	defer ticker.Stop()
@@ -280,7 +283,7 @@ func (c *Consumer) updateDeviceStatus(ctx context.Context) {
 				continue
 			}
 
-			// Iterate through devices and update status in PostgreSQL
+			// Iterate through devices and update status
 			for _, key := range keys {
 				result, err := c.redisClient.HGetAll(ctx, key).Result()
 				if err != nil {
@@ -296,17 +299,21 @@ func (c *Consumer) updateDeviceStatus(ctx context.Context) {
 					log.Printf("Failed to parse last seen time for device %s: %v", key, err)
 					continue
 				}
+				// Checking device status
 				is_alive := time.Since(lastSeenTime) <= 30*time.Second
 
+				// If was not previously processed (new device)
 				if !exists {
-					c.updateStatusInDB(key, is_alive, &ctx)
-					log.Printf("Updated value in posgres on new entry!")
+					c.updateStatusInDB(key, is_alive, &ctx, writeAPI)
+					log.Printf("Updated value in postgres on new entry!")
 				} else {
+					// only update postgres on status change
 					if is_alive != was_alive {
-						c.updateStatusInDB(key, is_alive, &ctx)
-						log.Printf("Updated value in posgres on status change!")
+						c.updateStatusInDB(key, is_alive, &ctx, writeAPI)
+						log.Printf("Updated value in postgres on status change!")
 					}
 				}
+				// update status in redis db
 				err = c.redisClient.HSet(ctx, key, "lastStatus", is_alive).Err()
 				if err != nil {
 					log.Printf("Failed writing to redis!: %v", err)
@@ -317,7 +324,7 @@ func (c *Consumer) updateDeviceStatus(ctx context.Context) {
 	}
 }
 
-func (c *Consumer) updateStatusInDB(key string, status bool, ctx *context.Context) {
+func (c *Consumer) updateStatusInDB(key string, status bool, ctx *context.Context, writeAPI api.WriteAPIBlocking) {
 	_, err := c.pgDB.ExecContext(*ctx,
 		`INSERT INTO device_status (device_id, is_active)
                          VALUES ($1, $2)
@@ -328,6 +335,23 @@ func (c *Consumer) updateStatusInDB(key string, status bool, ctx *context.Contex
 	)
 	if err != nil {
 		log.Printf("Failed to update device status for %s: %v", key, err)
+	}
+
+	p := influxdb2.NewPoint(
+		"online_status",
+		map[string]string{
+			"device_id": key,
+		},
+		map[string]interface{}{
+			"value": status,
+		},
+		time.Now(),
+	)
+
+	if err := writeAPI.WritePoint(*ctx, p); err != nil {
+		log.Printf("Failed to write status change to InfluxDB: %v", err)
+	} else {
+		log.Printf("Successfully written device online status change to InfluxDB")
 	}
 }
 
