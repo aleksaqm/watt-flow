@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/md5"
 	"encoding/binary"
-	"flag"
 	"log"
 	"os"
 	"os/signal"
@@ -38,13 +37,18 @@ func uuidStrToInt64(uStr string) (int64, error) {
 }
 
 func main() {
-	deviceID := flag.String("device", "0", "uuid of the device")
-	city := flag.String("city", "0", "city")
-	street := flag.String("street", "0", "street")
-	number := flag.String("number", "0", "street number")
-	flag.Parse()
+	deviceID := os.Getenv("DEVICE_ID")
+	city := os.Getenv("DEVICE_CITY")
+	street := os.Getenv("DEVICE_STREET")
+	number := os.Getenv("DEVICE_NUMBER")
+	amqpURI := os.Getenv("AMQP_URI")
+	// deviceID := flag.String("device", "0", "uuid of the device")
+	// city := flag.String("city", "0", "city")
+	// street := flag.String("street", "0", "street")
+	// number := flag.String("number", "0", "street number")
+	// flag.Parse()
 
-	if *city == "0" || *street == "0" || *number == "0" {
+	if city == "" || street == "" || number == "" || amqpURI == "" {
 		log.Fatal("city and address args are required!")
 	}
 
@@ -54,14 +58,14 @@ func main() {
 	// Create context that will be canceled on signal
 	ctx, cancel := context.WithCancel(context.Background())
 
-	address := newLocation(*city, *street, *number)
-	deviceIDInt, err := uuidStrToInt64(*deviceID)
+	address := newLocation(city, street, number)
+	deviceIDInt, err := uuidStrToInt64(deviceID)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	household := newHousehold(deviceIDInt, address)
-	device, err := NewDevice(*deviceID, household, exchangeName)
+	device, err := NewDevice(deviceID, household, exchangeName, amqpURI)
 	if err != nil {
 		log.Fatal(err)
 	}

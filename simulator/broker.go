@@ -11,6 +11,7 @@ import (
 )
 
 type MessageBroker struct {
+	amqpURI      string
 	conn         *amqp.Connection
 	channel      *amqp.Channel
 	reconnecting chan struct{}
@@ -19,10 +20,11 @@ type MessageBroker struct {
 	isConnected  bool
 }
 
-func NewMessageBroker(exchange string) *MessageBroker {
+func NewMessageBroker(exchange string, amqpUri string) *MessageBroker {
 	return &MessageBroker{
 		reconnecting: make(chan struct{}),
 		exchange:     exchange,
+		amqpURI:      amqpUri,
 	}
 }
 
@@ -31,7 +33,7 @@ func (b *MessageBroker) Connect() error {
 		Heartbeat: 10 * time.Second,
 	}
 
-	conn, err := amqp.DialConfig("amqp://guest:guest@localhost:5672/", config)
+	conn, err := amqp.DialConfig(b.amqpURI, config)
 	if err != nil {
 		return fmt.Errorf("failed to connect to RabbitMQ: %v", err)
 	}

@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
-	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -219,7 +218,6 @@ func (c *Consumer) processMeasurements(ctx context.Context, msgs <-chan amqp.Del
 				log.Printf("Failed to unmarshal measurement: %v", err)
 				continue
 			}
-			log.Println(measurement)
 
 			p := influxdb2.NewPoint(
 				"power_consumption",
@@ -236,7 +234,7 @@ func (c *Consumer) processMeasurements(ctx context.Context, msgs <-chan amqp.Del
 			if err := writeAPI.WritePoint(ctx, p); err != nil {
 				log.Printf("Failed to write measurement to InfluxDB: %v", err)
 			} else {
-				log.Printf("Successfully written measurement to InfluxDB")
+				// log.Printf("Successfully written measurement to InfluxDB")
 			}
 		case <-c.channel.NotifyClose(make(chan *amqp.Error)):
 			log.Println("Connection to RabbitMQ lost. Reconnecting...")
@@ -260,7 +258,6 @@ func (c *Consumer) processHeartbeats(ctx context.Context, msgs <-chan amqp.Deliv
 				log.Printf("Failed to unmarshal heartbeat: %v", err)
 				continue
 			}
-			log.Println(heartbeat)
 			// err := c.redisClient.Set(ctx, heartbeat.DeviceID, heartbeat.Timestamp, redisTTL).Err()
 			err := c.redisClient.HSet(ctx, heartbeat.DeviceID, map[string]interface{}{
 				"lastSeen": heartbeat.Timestamp,
@@ -430,17 +427,31 @@ func (c *Consumer) Shutdown(ctx context.Context) error {
 }
 
 func main() {
-	amqpURI := flag.String("amqp", "amqp://guest:guest@localhost:5672/", "AMQP URI")
-	influxURI := flag.String("influx", "http://localhost:8086", "InfluxDB URI")
-	influxToken := flag.String("token", "", "InfluxDB token")
-	// pgConnStr := flag.String("pg", "postgres://postgres:postgres@localhost:5432/watt-flow?sslmode=disable", "PostgreSQL connection string")
-	redisAddr := flag.String("redis", "localhost:6379", "Redis address")
-	flag.Parse()
+	amqpURI := os.Getenv("AMQP_URI")
+	influxURI := os.Getenv("INFLUX_URI")
+	influxToken := os.Getenv("INFLUX_TOKEN")
+	redisAddr := os.Getenv("REDIS_ADDR")
+	DB_HOST := os.Getenv("DB_HOST")
+	DB_USER := os.Getenv("DB_USER")
+	DB_PASS := os.Getenv("DB_PASS")
+	DB_PORT := os.Getenv("DB_PORT")
+	DB_TABLE := os.Getenv("DB_TABLE")
+	// amqpURI := flag.String("amqp", "amqp://guest:guest@localhost:5672/", "AMQP URI")
+	// influxURI := flag.String("influx", "http://localhost:8086", "InfluxDB URI")
+	// influxToken := flag.String("token", "", "InfluxDB token")
+	// redisAddr := flag.String("redis", "localhost:6379", "Redis address")
+	// flag.Parse()
 
-	pgConnStr := fmt.Sprintf("host=%s port=%d user=%s "+
-		"password=%s dbname=%s sslmode=disable",
-		"localhost", 5432, "postgres", "postgres", "watt-flow")
-	consumer, err := NewConsumer(*amqpURI, *influxURI, *influxToken, pgConnStr, *redisAddr)
+	pgConnStr := fmt.Sprintf(
+		"host=%s port=%s user=%s "+
+			"password=%s dbname=%s sslmode=disable",
+		DB_HOST,
+		DB_PORT,
+		DB_USER,
+		DB_PASS,
+		DB_TABLE,
+	)
+	consumer, err := NewConsumer(amqpURI, influxURI, influxToken, pgConnStr, redisAddr)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -449,8 +460,7 @@ func main() {
 
 	err = consumer.ConnectToBroker()
 	if err != nil {
-		consumer.Shutdown(ctx)
-		log.Printf("Failed connecting to broker")
+		log.Printf("Failed connecting to broker: %v", err)
 		os.Exit(1)
 	}
 

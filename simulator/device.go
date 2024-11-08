@@ -30,7 +30,7 @@ type Device struct {
 	wg           sync.WaitGroup
 }
 
-func NewDevice(deviceID string, household *Household, exchangeName string) (*Device, error) {
+func NewDevice(deviceID string, household *Household, exchangeName string, amqpUri string) (*Device, error) {
 	logsDir := "measurements/" + deviceID
 	if err := os.MkdirAll(logsDir, 0755); err != nil {
 		return nil, fmt.Errorf("failed to create logs directory: %v", err)
@@ -50,7 +50,7 @@ func NewDevice(deviceID string, household *Household, exchangeName string) (*Dev
 	return &Device{
 		ID:        deviceID,
 		Household: household,
-		broker:    NewMessageBroker(exchangeName),
+		broker:    NewMessageBroker(exchangeName, amqpUri),
 		buffer:    NewMessageBuffer(),
 		logger:    logger,
 		config:    config,
