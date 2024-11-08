@@ -6,14 +6,15 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
-	amqp "github.com/rabbitmq/amqp091-go"
 	"log"
 	"os"
 	"os/signal"
 	"sync"
 	"syscall"
 	"time"
+
+	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
+	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 const (
@@ -63,8 +64,8 @@ func NewConsumer(amqpURI, influxURI, influxToken, pgConnStr string) (*Consumer, 
 	return &Consumer{
 		conn:    conn,
 		channel: channel,
-		//influxClient: influxClient,
-		//pgDB:         pgDB,
+		// influxClient: influxClient,
+		// pgDB:         pgDB,
 	}, nil
 }
 
@@ -165,7 +166,7 @@ func (c *Consumer) Start(ctx context.Context) error {
 
 func (c *Consumer) processMeasurements(ctx context.Context, msgs <-chan amqp.Delivery) {
 	defer c.wg.Done()
-	//writeAPI := c.influxClient.WriteAPIBlocking(influxOrg, influxBucket)
+	// writeAPI := c.influxClient.WriteAPIBlocking(influxOrg, influxBucket)
 
 	for {
 		select {

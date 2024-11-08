@@ -8,10 +8,10 @@ import (
 
 type Household struct {
 	rng            *rand.Rand
+	address        *Location
 	baseLoad       float64
 	peakMultiplier float64
 	seasonImpact   float64
-	address        *Location
 }
 
 type Location struct {

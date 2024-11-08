@@ -3,19 +3,20 @@ package main
 import (
 	"context"
 	"fmt"
-	amqp "github.com/rabbitmq/amqp091-go"
 	"log"
 	"sync"
 	"time"
+
+	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 type MessageBroker struct {
 	conn         *amqp.Connection
 	channel      *amqp.Channel
+	reconnecting chan struct{}
 	exchange     string
 	mu           sync.Mutex
 	isConnected  bool
-	reconnecting chan struct{}
 }
 
 func NewMessageBroker(exchange string) *MessageBroker {
@@ -112,6 +113,7 @@ func (b *MessageBroker) Connect() error {
 
 	return nil
 }
+
 func (mb *MessageBroker) handleConnectionClose() {
 	<-mb.conn.NotifyClose(make(chan *amqp.Error))
 	mb.mu.Lock()
@@ -130,6 +132,7 @@ func (mb *MessageBroker) handleConnectionClose() {
 		time.Sleep(reconnectDelay)
 	}
 }
+
 func (mb *MessageBroker) PublishMessage(ctx context.Context, msg Message) error {
 	mb.mu.Lock()
 	defer mb.mu.Unlock()
