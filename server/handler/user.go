@@ -2,6 +2,7 @@ package handler
 
 import (
 	"github.com/gin-gonic/gin"
+	"strconv"
 	"watt-flow/dto"
 	"watt-flow/model"
 	"watt-flow/service"
@@ -41,8 +42,22 @@ func (u UserHandler) Register(c *gin.Context) {
 	c.JSON(200, gin.H{"data": data})
 }
 
+func (u UserHandler) ActivateAccount(c *gin.Context) {
+	token := c.Param("token")
+	err := u.service.ActivateAccount(token)
+	if err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
+	}
+	c.JSON(200, "Account activated")
+}
+
 func (u UserHandler) GetById(c *gin.Context) {
-	data, _ := u.service.FindById(1)
+	id := c.Param("id")
+	userId, err := strconv.ParseUint(id, 10, 64)
+	if err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
+	}
+	data, _ := u.service.FindById(userId)
 	u.logger.Info("radi handler")
 	c.JSON(200, gin.H{"data": data})
 }

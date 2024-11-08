@@ -15,6 +15,7 @@ type IUserService interface {
 	FindByEmail(email string) (*model.User, error)
 	Login(loginCredentials dto.LoginDto) (string, error)
 	Register(registrationDto *dto.RegistrationDto) (*model.User, error)
+	ActivateAccount(token string) error
 }
 type UserService struct {
 	repository  *repository.UserRepository
@@ -65,7 +66,7 @@ func (service *UserService) Register(registrationDto *dto.RegistrationDto) (*mod
 	user.Role = 0
 	user.Status = 1
 	activationToken := service.authService.CreateActivationToken(&user)
-	activationLink := fmt.Sprintf("http://localhost:5000/api/users/activate/%s", activationToken)
+	activationLink := fmt.Sprintf("http://localhost:5000/activate/%s", activationToken)
 	emailBody := fmt.Sprintf("<html><body><p>Click <a href='%s'>here</a> to activate your account.</p></body></html>", activationLink)
 
 	err := util.SendEmail(user.Email, "Activate your account", emailBody)
@@ -77,6 +78,29 @@ func (service *UserService) Register(registrationDto *dto.RegistrationDto) (*mod
 		return nil, err
 	}
 	return &createdUser, nil
+}
+
+func (service *UserService) ActivateAccount(token string) error {
+	valid, claims, err := service.authService.Authorize(token)
+	if err != nil {
+		return err
+	}
+	if valid {
+		if claims != nil {
+			email := claims["email"].(string)
+			user, err := service.repository.FindByEmail(email)
+			if err != nil {
+				return err
+			}
+			user.Status = 0
+			_, err2 := service.repository.Update(user)
+			if err2 != nil {
+				return err2
+			}
+			return nil
+		}
+	}
+	return errors.New("invalid token")
 }
 
 func NewUserService(repository *repository.UserRepository, authService *AuthService) *UserService {

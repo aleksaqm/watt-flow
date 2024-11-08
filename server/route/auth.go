@@ -15,6 +15,7 @@ func (r *AuthRoute) Register(server *server.Server) {
 	{
 		api.POST("login", server.UserHandler.Login)
 		api.POST("register", server.UserHandler.Register)
+		api.GET("activate/:token", server.UserHandler.ActivateAccount)
 	}
 }
 

@@ -48,3 +48,12 @@ func (repository *UserRepository) FindById(id uint64) (*model.User, error) {
 	}
 	return &user, nil
 }
+
+func (repository *UserRepository) Update(user *model.User) (model.User, error) {
+	result := repository.database.Save(user)
+	if result.Error != nil {
+		repository.logger.Error("Error updating user", result.Error)
+		return *user, result.Error
+	}
+	return *user, nil
+}
