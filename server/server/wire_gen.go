@@ -22,9 +22,10 @@ func InitDeps(env *config.Environment) *Server {
 	logger := util.NewLogger(env)
 	database := db.NewDatabase(env, logger)
 	userRepository := repository.NewUserRepository(database, logger)
-	userService := service.NewUserService(userRepository)
+	authService := service.NewAuthService(logger)
+	userService := service.NewUserService(userRepository, authService)
 	userHandler := handler.NewUserHandler(userService, logger)
-	server := NewServer(logger, userService, userHandler, database)
+	server := NewServer(logger, userService, authService, userHandler, database)
 	return server
 }
 

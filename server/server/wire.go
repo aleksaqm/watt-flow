@@ -17,6 +17,6 @@ import (
 var userServiceSet = wire.NewSet(service.NewUserService, wire.Bind(new(service.IUserService), new(*service.UserService)))
 
 func InitDeps(env *config.Environment) *Server {
-	wire.Build(db.NewDatabase, util.NewLogger, repository.NewUserRepository, userServiceSet, handler.NewUserHandler, NewServer)
+	wire.Build(db.NewDatabase, util.NewLogger, repository.NewUserRepository, service.NewAuthService, userServiceSet, handler.NewUserHandler, NewServer)
 	return &Server{}
 }
