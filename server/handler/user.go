@@ -29,12 +29,12 @@ func (u UserHandler) Login(c *gin.Context) {
 }
 
 func (u UserHandler) Register(c *gin.Context) {
-	var user model.User
+	var user dto.RegistrationDto
 	if err := c.BindJSON(&user); err != nil {
 		u.logger.Error(err)
 		c.JSON(400, gin.H{"error": err.Error()})
 	}
-	data, _ := u.service.Create(&user)
+	data, _ := u.service.Register(&user)
 	c.JSON(200, gin.H{"data": data})
 }
 

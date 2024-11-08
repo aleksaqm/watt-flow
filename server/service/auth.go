@@ -47,7 +47,7 @@ func (s *AuthService) CreateToken(user *model.User) string {
 		"id":       user.Id,
 		"username": user.Username,
 		"email":    user.Email,
-		"role":     user.Role.String(),
+		"role":     user.Role.RoleToString(),
 	})
 
 	tokenString, err := token.SignedString([]byte(env.JWTSecret))

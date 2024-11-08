@@ -13,6 +13,7 @@ type IUserService interface {
 	Create(user *model.User) (*model.User, error)
 	FindByEmail(email string) (*model.User, error)
 	Login(loginCredentials dto.LoginDto) (string, error)
+	Register(registrationDto *dto.RegistrationDto) (*model.User, error)
 }
 type UserService struct {
 	repository  *repository.UserRepository
@@ -52,6 +53,21 @@ func (service *UserService) Login(loginCredentials dto.LoginDto) (string, error)
 		token := service.authService.CreateToken(user)
 		return token, nil
 	}
+}
+
+func (service *UserService) Register(registrationDto *dto.RegistrationDto) (*model.User, error) {
+	user := model.User{}
+	user.Username = registrationDto.Username
+	user.Email = registrationDto.Email
+	user.Password = util.HashPassword(registrationDto.Password)
+	//user.ProfileImage = registrationDto.ProfileImage
+	user.Role = 0
+	user.Status = 1
+	createdUser, err := service.repository.Create(&user)
+	if err != nil {
+		return nil, err
+	}
+	return &createdUser, nil
 }
 
 func NewUserService(repository *repository.UserRepository, authService *AuthService) *UserService {

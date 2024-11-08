@@ -11,15 +11,15 @@ const (
 	SuperAdmin
 )
 
-func (r Role) String() string {
+func (r Role) RoleToString() string {
 	switch r {
-	case Regular:
+	case 0:
 		return "Regular"
-	case Clerk:
+	case 1:
 		return "Clerk"
-	case Admin:
+	case 2:
 		return "Admin"
-	case SuperAdmin:
+	case 3:
 		return "SuperAdmin"
 	default:
 		return "Unknown"
