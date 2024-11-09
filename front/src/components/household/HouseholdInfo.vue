@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import Card from '../ui/card/Card.vue';
-import CardContent from '../ui/card/CardContent.vue';
-import CardHeader from '../ui/card/CardHeader.vue';
-import CardTitle from '../ui/card/CardTitle.vue';
+import Card from '@/shad/components/ui/card/Card.vue';
+import CardContent from '@/shad/components/ui/card/CardContent.vue';
+import CardHeader from '@/shad/components/ui/card/CardHeader.vue';
+import CardTitle from '@/shad/components/ui/card/CardTitle.vue';
 
 </script>
 <template>

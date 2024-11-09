@@ -9,8 +9,8 @@ import {
   NavigationMenuList,
   NavigationMenuTrigger,
   navigationMenuTriggerStyle,
-} from "@/components/ui/navigation-menu"
-import { Button } from "@/components/ui/button"
+} from "../shad/components/ui/navigation-menu"
+import { Button } from "../shad/components/ui/button"
 import { BoltIcon } from '@heroicons/vue/16/solid';
 
 interface MenuItem {
