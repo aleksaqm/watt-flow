@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { Button } from '@/components/ui/button'
+import Button from '../shad/components/ui/button/Button.vue';
+import Input from '../shad/components/ui/input/Input.vue';
 import Toaster from '@/components/ui/toast/Toaster.vue'
 import {
   FormControl,
@@ -8,7 +9,6 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form'
-import { Input } from '@/components/ui/input'
 import { toTypedSchema } from '@vee-validate/zod'
 import { useForm } from 'vee-validate'
 import axios from 'axios'

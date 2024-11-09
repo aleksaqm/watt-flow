@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 import RegisterView from '../views/RegisterView.vue'
+import HouseholdView from '@/views/HouseholdView.vue'
 import NotFoundView from '../views/NotFoundView.vue'
 
 const router = createRouter({
@@ -16,6 +17,11 @@ const router = createRouter({
       name: 'register',
       component: RegisterView
     },
+    {
+      path: '/household',
+      name: 'household',
+      component: HouseholdView
+    }
     {
       path: '/:catchAll(.*)',
       name: 'not-found',
