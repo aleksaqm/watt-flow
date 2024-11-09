@@ -72,6 +72,20 @@ func (u UserHandler) Create(c *gin.Context) {
 	c.JSON(200, gin.H{"data": data})
 }
 
+func (u UserHandler) ChangeAdminPassword(c *gin.Context) {
+	var passwords dto.NewPasswordDto
+	if err := c.BindJSON(&passwords); err != nil {
+		u.logger.Error(err)
+		c.JSON(400, gin.H{"error": err.Error()})
+	}
+	err := u.service.ChangeAdminPassword(passwords)
+	if err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
+	}
+	c.JSON(200, gin.H{"data": "Password changed successfully"})
+
+}
+
 func NewUserHandler(userService service.IUserService, logger util.Logger) *UserHandler {
 	return &UserHandler{
 		service: userService,

@@ -24,6 +24,5 @@ func main() {
 		_ = dependencies.RestartService.InitSuperAdmin()
 	}
 
-	//dependencies.UserService.InitSuperAdmin()
 	engine.Run(":" + env.ServerPort)
 }

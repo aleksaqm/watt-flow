@@ -17,6 +17,7 @@ type IUserService interface {
 	Register(registrationDto *dto.RegistrationDto) (*model.User, error)
 	ActivateAccount(token string) error
 	CreateSuperAdmin() (string, error)
+	ChangeAdminPassword(passwordDto dto.NewPasswordDto) error
 }
 type UserService struct {
 	repository  *repository.UserRepository
@@ -123,7 +124,7 @@ func (service *UserService) CreateSuperAdmin() (string, error) {
 	superAdmin := model.User{
 		Username: "admin",
 		Password: util.HashPassword(password),
-		Status:   model.Active,
+		Status:   model.Inactive,
 		Role:     model.SuperAdmin,
 	}
 	_, err = service.repository.Create(&superAdmin)
@@ -131,6 +132,23 @@ func (service *UserService) CreateSuperAdmin() (string, error) {
 		return "", errors.New("error creating superAdmin")
 	}
 	return password, nil
+}
+
+func (service *UserService) ChangeAdminPassword(passwordDto dto.NewPasswordDto) error {
+	admin, err := service.repository.FindByUsername("admin")
+	if err != nil {
+		return err
+	}
+	if !util.ComparePasswords(admin.Password, passwordDto.OldPassword) {
+		return errors.New("invalid credentials")
+	}
+	admin.Password = util.HashPassword(passwordDto.NewPassword)
+	admin.Status = model.Active
+	_, err = service.repository.Update(admin)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func NewUserService(repository *repository.UserRepository, authService *AuthService) *UserService {
