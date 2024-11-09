@@ -21,7 +21,7 @@ const router = createRouter({
       path: '/household',
       name: 'household',
       component: HouseholdView
-    }
+    },
     {
       path: '/:catchAll(.*)',
       name: 'not-found',
