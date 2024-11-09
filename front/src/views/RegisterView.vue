@@ -1,14 +1,16 @@
 <script setup lang="ts">
-import LoginForm from '../components/LoginForm.vue';
-import { RouterLink } from 'vue-router';
+import RegisterForm from '@/components/RegisterForm.vue'
+
 </script>
 
 
 <template>
   <main>
-    <div class="flex flew-row items-center justify-center">
-      <span>Register page</span>
+    <div class="flex flew-row items-center justify-center ">
+      <RegisterForm></RegisterForm>
     </div>
 
   </main>
 </template>
+
+<style></style>
