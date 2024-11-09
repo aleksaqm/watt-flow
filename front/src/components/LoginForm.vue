@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Button } from '@/components/ui/button'
-import { useToast } from 'vue-toastification'
+import Toaster from '@/components/ui/toast/Toaster.vue'
 import {
   FormControl,
   FormField,
@@ -14,7 +14,6 @@ import { useForm } from 'vee-validate'
 import axios from 'axios'
 import * as z from 'zod'
 
-const toast = useToast()
 
 const formSchema = toTypedSchema(z.object({
   username: z.string().min(2, { message: "Username must be at least 2 characters" }).max(50, { message: "Username cannot exceed 50 characters" }),
@@ -28,10 +27,8 @@ const { handleSubmit, errors } = useForm({
 const submitForm = async (formData: { username: string; password: string }) => {
   try {
     const response = await axios.post('/login', formData)
-    toast.success('Login successful!')
     console.log('Response:', response.data)
   } catch (error) {
-    toast.error('Login failed!')
     console.error('Error:', error)
   }
 }
