@@ -20,6 +20,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    volumes:
+      - ./data:/app/data
 
   postgres:
     image: postgres:13
@@ -32,11 +34,11 @@ services:
     networks:
       - watt-flow-network
     healthcheck:
-      test: ["CMD", "pg_isready", "-U", "postgres"]
+      test: [ "CMD", "pg_isready", "-U", "postgres" ]
       interval: 5s
       retries: 5
     restart: always
-  
+
   influxdb2:
     image: influxdb:2
     ports:
@@ -45,7 +47,7 @@ services:
       DOCKER_INFLUXDB_INIT_MODE: setup
       DOCKER_INFLUXDB_INIT_USERNAME: ${INFLUX_USER}
       DOCKER_INFLUXDB_INIT_PASSWORD: ${INFLUX_PASS}
-      DOCKER_INFLUXDB_INIT_ORG: watt-flow 
+      DOCKER_INFLUXDB_INIT_ORG: watt-flow
       DOCKER_INFLUXDB_INIT_BUCKET: flow
     volumes:
       - type: volume
@@ -56,7 +58,6 @@ services:
         target: /etc/influxdb2
     networks:
       - watt-flow-network
-  
 
   rabbitmq:
     image: rabbitmq:3-management

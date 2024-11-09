@@ -1,12 +1,11 @@
 package main
 
 import (
+	"github.com/gin-gonic/gin"
 	"watt-flow/config"
 	"watt-flow/middleware"
 	"watt-flow/route"
 	"watt-flow/server"
-
-	"github.com/gin-gonic/gin"
 )
 
 func main() {
@@ -20,5 +19,11 @@ func main() {
 	engine.Use(gin.Recovery())
 	engine.Use(gin.Logger())
 
+	if env.Restart {
+		_ = dependencies.RestartService.ResetDatabase()
+		_ = dependencies.RestartService.InitSuperAdmin()
+	}
+
+	//dependencies.UserService.InitSuperAdmin()
 	engine.Run(":" + env.ServerPort)
 }

@@ -49,6 +49,16 @@ func (repository *UserRepository) FindById(id uint64) (*model.User, error) {
 	return &user, nil
 }
 
+func (repository *UserRepository) FindByUsername(username string) (*model.User, error) {
+	var user model.User
+	result := repository.database.Where("username = ?", username).First(&user)
+	if result.Error != nil {
+		repository.logger.Error("Error finding user by username", result.Error)
+		return nil, result.Error
+	}
+	return &user, nil
+}
+
 func (repository *UserRepository) Update(user *model.User) (model.User, error) {
 	result := repository.database.Save(user)
 	if result.Error != nil {

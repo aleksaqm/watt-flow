@@ -16,6 +16,7 @@ type IUserService interface {
 	Login(loginCredentials dto.LoginDto) (string, error)
 	Register(registrationDto *dto.RegistrationDto) (*model.User, error)
 	ActivateAccount(token string) error
+	CreateSuperAdmin() (string, error)
 }
 type UserService struct {
 	repository  *repository.UserRepository
@@ -47,7 +48,10 @@ func (service *UserService) Create(user *model.User) (*model.User, error) {
 func (service *UserService) Login(loginCredentials dto.LoginDto) (string, error) {
 	user, err := service.repository.FindByEmail(loginCredentials.Username)
 	if err != nil {
-		return "", err
+		user, err = service.repository.FindByUsername(loginCredentials.Username)
+		if err != nil || user == nil {
+			return "", errors.New("invalid credentials")
+		}
 	}
 	if user.Status == model.Inactive {
 		return "", errors.New("user is inactive")
@@ -102,17 +106,36 @@ func (service *UserService) ActivateAccount(token string) error {
 	return errors.New("invalid token")
 }
 
-func NewUserService(repository *repository.UserRepository, authService *AuthService) *UserService {
-	return &UserService{
-		repository:  repository,
-		authService: authService,
-	}
-}
-
 func (service *UserService) SendActivationEmail(user *model.User) error {
 	activationToken := service.authService.CreateActivationToken(user)
 	activationLink := fmt.Sprintf("http://localhost:5000/activate/%s", activationToken)
 	emailBody := fmt.Sprintf("<html><body><p>Click <a href='%s'>here</a> to activate your account.</p></body></html>", activationLink)
 	err := util.SendEmail(user.Email, "Activate your account", emailBody)
 	return err
+}
+
+func (service *UserService) CreateSuperAdmin() (string, error) {
+	admin, err := service.repository.FindByUsername("admin")
+	if err == nil && admin != nil {
+		return "", errors.New("superAdmin already exists")
+	}
+	password := util.GenerateRandomPassword(16)
+	superAdmin := model.User{
+		Username: "admin",
+		Password: util.HashPassword(password),
+		Status:   model.Active,
+		Role:     model.SuperAdmin,
+	}
+	_, err = service.repository.Create(&superAdmin)
+	if err != nil {
+		return "", errors.New("error creating superAdmin")
+	}
+	return password, nil
+}
+
+func NewUserService(repository *repository.UserRepository, authService *AuthService) *UserService {
+	return &UserService{
+		repository:  repository,
+		authService: authService,
+	}
 }
