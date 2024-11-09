@@ -2,10 +2,23 @@ package main
 
 import (
 	"context"
+	"crypto/md5"
+	"encoding/binary"
 	"log"
+	"os"
+	"os/signal"
+	"strings"
+	"syscall"
 	"time"
 
-	amqp "github.com/rabbitmq/amqp091-go"
+	"github.com/google/uuid"
+)
+
+const (
+	reconnectDelay      = 5 * time.Second
+	heartbeatInterval   = 5 * time.Second
+	measurementInterval = 1 * time.Minute
+	exchangeName        = "watt-flow"
 )
 
 func failOnError(err error, msg string) {
@@ -14,47 +27,69 @@ func failOnError(err error, msg string) {
 	}
 }
 
+func uuidStrToInt64(uStr string) (int64, error) {
+	u, err := uuid.Parse(strings.TrimSpace(uStr))
+	if err != nil {
+		log.Panic("Invalid device ID")
+	}
+	hash := md5.Sum(u[:])
+	return int64(binary.BigEndian.Uint64(hash[:8])), nil
+}
+
 func main() {
-	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
-	failOnError(err, "Failed to connect to RabbitMQ")
-	defer conn.Close()
+	deviceID := os.Getenv("DEVICE_ID")
+	city := os.Getenv("DEVICE_CITY")
+	street := os.Getenv("DEVICE_STREET")
+	number := os.Getenv("DEVICE_NUMBER")
+	amqpURI := os.Getenv("AMQP_URI")
+	// deviceID := flag.String("device", "0", "uuid of the device")
+	// city := flag.String("city", "0", "city")
+	// street := flag.String("street", "0", "street")
+	// number := flag.String("number", "0", "street number")
+	// flag.Parse()
 
-	ch, err := conn.Channel()
-	failOnError(err, "Failed to open a channel")
-	defer ch.Close()
+	if city == "" || street == "" || number == "" || amqpURI == "" {
+		log.Fatal("city and address args are required!")
+	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	_, err = ch.QueueDeclare(
-		"heartbeat",
-		false,
-		false,
-		false,
-		false,
-		nil)
-	failOnError(err, "Failed declaring heartbeat queue")
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
-	_, err = ch.QueueDeclare(
-		"measurment",
-		false,
-		false,
-		false,
-		false,
-		nil)
+	// Create context that will be canceled on signal
+	ctx, cancel := context.WithCancel(context.Background())
 
-	failOnError(err, "Failed declaring heartbeat queue")
+	address := newLocation(city, street, number)
+	deviceIDInt, err := uuidStrToInt64(deviceID)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	body := "danilo"
-	err = ch.PublishWithContext(ctx,
-		"",
-		"heartbeat", // routing key
-		false,       // mandatory
-		false,       // immediate
-		amqp.Publishing{
-			ContentType: "text/plain",
-			Body:        []byte(body),
-		})
-	failOnError(err, "Failed to publish a message")
+	household := newHousehold(deviceIDInt, address)
+	device, err := NewDevice(deviceID, household, exchangeName, amqpURI)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	log.Printf(" [x] Sent %s", body)
+	if err := device.Start(ctx, nil); err != nil {
+		cancel()
+		log.Fatal(err)
+	}
+
+	// Wait for interrupt signal
+	sig := <-sigChan
+	log.Printf("Received signal: %v. Starting graceful shutdown...", sig)
+
+	// Cancel context to stop all routines
+	cancel()
+
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer shutdownCancel()
+
+	// Perform graceful shutdown
+	if err := device.Shutdown(shutdownCtx); err != nil {
+		log.Printf("Error during shutdown: %v", err)
+		os.Exit(1)
+	}
+
+	log.Println("Graceful shutdown completed")
 }
