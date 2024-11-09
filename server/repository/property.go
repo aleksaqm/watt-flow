@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"gorm.io/gorm/clause"
 	"watt-flow/db"
 	"watt-flow/model"
 	"watt-flow/util"
@@ -23,7 +24,7 @@ func NewPropertyRepository(db db.Database, logger util.Logger) *PropertyReposito
 }
 
 func (repository *PropertyRepository) Create(property *model.Property) (model.Property, error) {
-	result := repository.database.Create(property)
+	result := repository.database.Preload("Owner").Preload("Address").Create(property)
 	if result.Error != nil {
 		repository.logger.Error("Error creating property", result.Error)
 		return *property, result.Error
@@ -33,7 +34,7 @@ func (repository *PropertyRepository) Create(property *model.Property) (model.Pr
 
 func (repository *PropertyRepository) FindById(id uint64) (*model.Property, error) {
 	var property model.Property
-	if err := repository.database.First(&property, id).Error; err != nil {
+	if err := repository.database.Preload(clause.Associations).First(&property, id).Error; err != nil {
 		repository.logger.Error("Error finding property by ID", err)
 		return nil, err
 	}

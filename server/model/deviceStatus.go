@@ -5,3 +5,7 @@ type DeviceStatus struct {
 	IsActive    bool   `json:"is_active"`
 	HouseholdID uint64 `gorm:"column:household_id;unique" json:"household_id"`
 }
+
+func (DeviceStatus) TableName() string {
+	return "device_status"
+}

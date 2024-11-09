@@ -1,13 +1,15 @@
 package service
 
 import (
+	"time"
+	"watt-flow/dto"
 	"watt-flow/model"
 	"watt-flow/repository"
 )
 
 type IPropertyService interface {
 	FindById(id uint64) (*model.Property, error)
-	Create(property *model.Property) (*model.Property, error)
+	Create(property *dto.CreatePropertyDto) (*model.Property, error)
 	Update(property *model.Property) (*model.Property, error)
 	Delete(id uint64) error
 	FindByStatus(status model.PropertyStatus) ([]model.Property, error)
@@ -39,8 +41,18 @@ func (service *PropertyService) FindByStatus(status model.PropertyStatus) ([]mod
 	return properties, nil
 }
 
-func (service *PropertyService) Create(property *model.Property) (*model.Property, error) {
-	createdProperty, err := service.repository.Create(property)
+func (service *PropertyService) Create(propertyDto *dto.CreatePropertyDto) (*model.Property, error) {
+	property := model.Property{}
+	property.CreatedAt = time.Now()
+	property.Images = propertyDto.Images
+	property.Documents = propertyDto.Documents
+	property.AddressID = propertyDto.AddressID
+	property.Floors = propertyDto.Floors
+
+	//TESTING
+	property.OwnerID = 1
+
+	createdProperty, err := service.repository.Create(&property)
 	if err != nil {
 		return nil, err
 	}

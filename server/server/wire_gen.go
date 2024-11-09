@@ -25,10 +25,15 @@ func InitDeps(env *config.Environment) *Server {
 	authService := service.NewAuthService(logger)
 	userService := service.NewUserService(userRepository, authService)
 	userHandler := handler.NewUserHandler(userService, logger)
-	server := NewServer(logger, userService, authService, userHandler, database)
+	propertyRepository := repository.NewPropertyRepository(database, logger)
+	propertyService := service.NewPropertyService(propertyRepository)
+	propertyHandler := handler.NewPropertyHandler(propertyService, logger)
+	server := NewServer(logger, userService, authService, userHandler, propertyService, propertyHandler, database)
 	return server
 }
 
 // wire.go:
 
 var userServiceSet = wire.NewSet(service.NewUserService, wire.Bind(new(service.IUserService), new(*service.UserService)))
+
+var propertyServiceSet = wire.NewSet(service.NewPropertyService, wire.Bind(new(service.IPropertyService), new(*service.PropertyService)))

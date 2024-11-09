@@ -30,7 +30,7 @@ func NewDatabase(env *config.Environment, logger util.Logger) Database {
 		fmt.Println(err)
 	}
 
-	err = db.AutoMigrate(&model.User{})
+	err = db.AutoMigrate(&model.User{}, &model.Property{}, &model.Address{}, &model.Household{}, &model.DeviceStatus{})
 	if err != nil {
 		log.Fatal("Failed to migrate database:", err)
 	}
