@@ -9,7 +9,7 @@ import {
 } from '@/shad/components/ui/form'
 import { Input } from '@/shad/components/ui/input'
 import { toTypedSchema } from '@vee-validate/zod'
-import { useForm } from 'vee-validate'
+import { Field, useForm } from 'vee-validate'
 import axios from 'axios'
 import * as z from 'zod'
 import { ref } from 'vue'
@@ -19,7 +19,7 @@ const formSchema = toTypedSchema(z.object({
   username: z.string().min(2, { message: "Username must be at least 2 characters" }).max(50, { message: "Username cannot exceed 50 characters" }),
   password: z.string().min(6, { message: "Password must be at least 6 characters" }),
   confirmPassword: z.string().min(6, { message: "Password must be at least 6 characters" }),
-  email: z.string().email()
+  email: z.string().email(),
 }));
 
 const { handleSubmit, errors } = useForm({
@@ -45,13 +45,14 @@ const submitForm = async (formData: { username: string; password: string }) => {
 }
 
 const onSubmit = handleSubmit((values) => {
-  submitForm(values)
+  //submitForm(values)
+  console.log(values)
 })
 </script>
 
 <template>
-  <div class="w-1/3 p-10 flex flex-col justify-center items-center bg-white shadow-lg">
-    <div class="p-10 flex flex-col justify-center items-center gap-5 w-full">
+  <div class="w-1/3 p-7 flex flex-col justify-center items-center bg-white shadow-lg">
+    <div class="flex flex-col justify-center items-center gap-5 w-full">
       <span class="text-gray-800 text-lg">Sign Up</span>
       <form class="w-full space-y-6" @submit="onSubmit">
         <FormField name="username" v-slot="{ field }">
@@ -94,7 +95,7 @@ const onSubmit = handleSubmit((values) => {
           </FormItem>
         </FormField>
 
-        <h3 class="pt-2 text-black b">Profile picture:</h3>
+        <h3 class="pt-2 text-black text-bold">Profile picture:</h3>
         <FormField name="profilePicture">
           <FormItem>
             <FormControl>

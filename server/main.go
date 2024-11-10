@@ -14,8 +14,8 @@ func main() {
 	gin.DefaultWriter = dependencies.Logger.GetGinLogger()
 	engine := gin.New()
 
-	route.RegisterRoutes(engine, dependencies)
 	middleware.RegisterMiddlewares(engine, dependencies)
+	route.RegisterRoutes(engine, dependencies)
 	engine.Use(gin.Recovery())
 	engine.Use(gin.Logger())
 

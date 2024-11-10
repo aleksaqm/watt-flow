@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import Button from '../shad/components/ui/button/Button.vue';
 import Input from '../shad/components/ui/input/Input.vue';
+import { useToast } from '../shad/components/ui/toast/use-toast'
+import Toaster  from '../shad/components/ui/toast/Toaster.vue';
 import {
   FormControl,
   FormField,
@@ -13,6 +15,7 @@ import { useForm } from 'vee-validate'
 import axios from 'axios'
 import * as z from 'zod'
 
+const {toast} = useToast()
 
 const formSchema = toTypedSchema(z.object({
   username: z.string().min(2, { message: "Username must be at least 2 characters" }).max(50, { message: "Username cannot exceed 50 characters" }),
@@ -27,8 +30,19 @@ const submitForm = async (formData: { username: string; password: string }) => {
   try {
     const response = await axios.post('/login', formData)
     console.log('Response:', response.data)
+    localStorage.setItem("authToken", response.data['token'])
+    toast({
+      title: 'Login Successful',
+      description: 'You have successfully logged in!',
+      variant: 'default'
+    })
   } catch (error) {
     console.error('Error:', error)
+    toast({
+      title: 'Login Failed',
+      description: 'Please check your username and password and try again.',
+      variant: 'destructive'
+    })
   }
 }
 
@@ -68,6 +82,7 @@ const onSubmit = handleSubmit((values) => {
       </form>
     </div>
   </div>
+  <Toaster />
 </template>
 
 <style scoped></style>
