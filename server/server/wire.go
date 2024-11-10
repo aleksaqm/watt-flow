@@ -25,9 +25,14 @@ var householdServiceSet = wire.NewSet(
 	service.NewHouseholdService,
 	wire.Bind(new(service.IHouseholdService), new(*service.HouseholdService)))
 
+var deviceStatusServiceSet = wire.NewSet(
+	service.NewDeviceStatusService,
+	wire.Bind(new(service.IDeviceStatusService), new(*service.DeviceStatusService)))
+
 func InitDeps(env *config.Environment) *Server {
 	wire.Build(db.NewDatabase, util.NewLogger, repository.NewUserRepository, service.NewAuthService, userServiceSet, handler.NewUserHandler,
 		repository.NewPropertyRepository, propertyServiceSet, handler.NewPropertyHandler,
-		repository.NewHouseholdRepository, householdServiceSet, handler.NewHouseholdHandler, NewServer)
+		repository.NewHouseholdRepository, householdServiceSet, handler.NewHouseholdHandler,
+		repository.NewDeviceStatusRepository, deviceStatusServiceSet, handler.NewDeviceStatusHandler, NewServer)
 	return &Server{}
 }

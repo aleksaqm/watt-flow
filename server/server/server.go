@@ -8,29 +8,34 @@ import (
 )
 
 type Server struct {
-	Logger           util.Logger
-	UserHandler      *handler.UserHandler
-	userService      service.IUserService
-	PropertyHandler  *handler.PropertyHandler
-	propertyService  service.IPropertyService
-	HouseholdHandler *handler.HouseholdHandler
-	householdService service.IHouseholdService
-	AuthService      *service.AuthService
-	Db               db.Database
+	Logger              util.Logger
+	UserHandler         *handler.UserHandler
+	userService         service.IUserService
+	PropertyHandler     *handler.PropertyHandler
+	propertyService     service.IPropertyService
+	HouseholdHandler    *handler.HouseholdHandler
+	householdService    service.IHouseholdService
+	DeviceStatusHandler *handler.DeviceStatusHandler
+	deviceStatusService service.IDeviceStatusService
+	AuthService         *service.AuthService
+	Db                  db.Database
 }
 
 func NewServer(logger util.Logger, userService service.IUserService, authService *service.AuthService, userHandler *handler.UserHandler,
 	propertyService service.IPropertyService, propertyHandler *handler.PropertyHandler,
-	householdService service.IHouseholdService, householdHandler *handler.HouseholdHandler, db db.Database) *Server {
+	householdService service.IHouseholdService, householdHandler *handler.HouseholdHandler,
+	deviceStatusService service.IDeviceStatusService, deviceStatusHandler *handler.DeviceStatusHandler, db db.Database) *Server {
 	return &Server{
-		Logger:           logger,
-		UserHandler:      userHandler,
-		userService:      userService,
-		AuthService:      authService,
-		PropertyHandler:  propertyHandler,
-		propertyService:  propertyService,
-		HouseholdHandler: householdHandler,
-		householdService: householdService,
-		Db:               db,
+		Logger:              logger,
+		UserHandler:         userHandler,
+		userService:         userService,
+		AuthService:         authService,
+		PropertyHandler:     propertyHandler,
+		propertyService:     propertyService,
+		HouseholdHandler:    householdHandler,
+		householdService:    householdService,
+		DeviceStatusHandler: deviceStatusHandler,
+		deviceStatusService: deviceStatusService,
+		Db:                  db,
 	}
 }
