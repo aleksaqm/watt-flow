@@ -19,4 +19,5 @@ func RegisterRoutes(
 	NewUserRoute(engine).Register(server)
 	NewAuthRoute(engine).Register(server)
 	NewPropertyRoute(engine).Register(server)
+	NewHouseholdRoute(engine).Register(server)
 }
