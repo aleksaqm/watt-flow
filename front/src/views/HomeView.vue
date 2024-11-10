@@ -6,8 +6,8 @@ import { ref, onMounted } from 'vue';
 const username = ref<string | null>(null);
 
 onMounted(() => {
-//   const decodedUsername = getUsernameFromToken();
-  console.log(1)
+  const decodedUsername = getUsernameFromToken();
+  console.log(decodedUsername)
   // Check if the username is defined, then assign it to the ref
 //   if (decodedUsername) {
 //     username.value = decodedUsername;
