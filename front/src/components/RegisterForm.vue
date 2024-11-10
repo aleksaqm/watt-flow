@@ -10,10 +10,12 @@ import {
 import { Input } from '@/shad/components/ui/input'
 import { toTypedSchema } from '@vee-validate/zod'
 import { Field, useForm } from 'vee-validate'
+import {useRouter} from 'vue-router'
+import { useToast } from '../shad/components/ui/toast/use-toast'
+import Toaster  from '../shad/components/ui/toast/Toaster.vue';
 import axios from 'axios'
 import * as z from 'zod'
 import { ref } from 'vue'
-
 
 const formSchema = toTypedSchema(z.object({
   username: z.string().min(2, { message: "Username must be at least 2 characters" }).max(50, { message: "Username cannot exceed 50 characters" }),
@@ -26,27 +28,69 @@ const { handleSubmit, errors } = useForm({
   validationSchema: formSchema,
 })
 
+const { toast } = useToast()
+const router = useRouter()
+
+const profilePicture = ref<File | null>(null)
 const profilePicturePreview = ref<string | null>(null)
 
 const onFileChange = (event: Event) => {
   const target = event.target as HTMLInputElement
-  const file = target.files ? target.files[0] : null
-//   formData.profilePicture = file
-    profilePicturePreview.value = file ? URL.createObjectURL(file) : null
+  profilePicture.value = target.files ? target.files[0] : null
+  profilePicturePreview.value = profilePicture.value ? URL.createObjectURL(profilePicture.value) : null
 }
 
-const submitForm = async (formData: { username: string; password: string }) => {
+const convertToBase64 = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      if (reader.result) {
+        resolve(reader.result as string)
+      } else {
+        reject('Failed to convert file to base64')
+      }
+    }
+    reader.onerror = () => reject('Failed to read file')
+    reader.readAsDataURL(file)
+  })
+}
+
+const submitForm = async (formData: { username: string; password: string; email: string }) => {
   try {
-    const response = await axios.post('/login', formData)
+    let profileImageBase64 = ''
+    if (profilePicture.value) {
+      profileImageBase64 = await convertToBase64(profilePicture.value)
+    }
+
+    const data = {
+      username: formData.username,
+      password: formData.password,
+      email: formData.email,
+      profile_image: profileImageBase64,
+    }
+
+    console.log(data)
+
+    const response = await axios.post('/register', data)
     console.log('Response:', response.data)
+    toast({
+      title: 'Registration Successful',
+      description: 'You will have to activate account before logging in!',
+      variant: 'default'
+    })
+    router.push({name: 'home'})
   } catch (error) {
     console.error('Error:', error)
+    toast({
+      title: 'Registration Failed',
+      description: 'Please check your information again and try again.',
+      variant: 'destructive'
+    })
   }
 }
 
 const onSubmit = handleSubmit((values) => {
-  //submitForm(values)
-  console.log(values)
+  submitForm(values)
 })
 </script>
 
@@ -114,6 +158,7 @@ const onSubmit = handleSubmit((values) => {
       </form>
     </div>
   </div>
+  <Toaster />
 </template>
 
 <style scoped></style>

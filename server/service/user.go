@@ -3,6 +3,7 @@ package service
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"watt-flow/dto"
 	"watt-flow/model"
 	"watt-flow/repository"
@@ -70,9 +71,19 @@ func (service *UserService) Register(registrationDto *dto.RegistrationDto) (*mod
 	user.Username = registrationDto.Username
 	user.Email = registrationDto.Email
 	user.Password = util.HashPassword(registrationDto.Password)
-	//user.ProfileImage = registrationDto.ProfileImage
 	user.Role = model.Regular
 	user.Status = model.Inactive
+	if registrationDto.ProfileImage != "" {
+		base64String := registrationDto.ProfileImage
+		if strings.HasPrefix(base64String, "data:image/") {
+			base64String = strings.SplitN(base64String, ",", 2)[1]
+		}
+		filePath, err := util.SaveFile(user.Username, base64String, "jpg", "profile_pictures")
+		if err != nil {
+			return nil, err
+		}
+		user.ProfileImage = filePath
+	}
 	err := service.SendActivationEmail(&user)
 	if err != nil {
 		return nil, err
