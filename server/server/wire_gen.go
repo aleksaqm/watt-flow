@@ -24,6 +24,7 @@ func InitDeps(env *config.Environment) *Server {
 	userRepository := repository.NewUserRepository(database, logger)
 	authService := service.NewAuthService(logger)
 	userService := service.NewUserService(userRepository, authService)
+	restartService := service.NewRestartService(database, userService)
 	userHandler := handler.NewUserHandler(userService, logger)
 	propertyRepository := repository.NewPropertyRepository(database, logger)
 	propertyService := service.NewPropertyService(propertyRepository)
@@ -37,7 +38,7 @@ func InitDeps(env *config.Environment) *Server {
 	addressRepository := repository.NewAddressRepository(database, logger)
 	addressService := service.NewAddressService(addressRepository)
 	addressHandler := handler.NewAddressHandler(addressService, logger)
-	server := NewServer(logger, userService, authService, userHandler, propertyService, propertyHandler, householdService, householdHandler, deviceStatusService, deviceStatusHandler, addressService, addressHandler, database)
+	server := NewServer(logger, userService, authService, restartService, userHandler, propertyService, propertyHandler, householdService, householdHandler, deviceStatusService, deviceStatusHandler, addressService, addressHandler, database)
 	return server
 }
 

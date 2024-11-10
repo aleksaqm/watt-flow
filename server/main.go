@@ -1,12 +1,11 @@
 package main
 
 import (
+	"github.com/gin-gonic/gin"
 	"watt-flow/config"
 	"watt-flow/middleware"
 	"watt-flow/route"
 	"watt-flow/server"
-
-	"github.com/gin-gonic/gin"
 )
 
 func main() {
@@ -15,10 +14,15 @@ func main() {
 	gin.DefaultWriter = dependencies.Logger.GetGinLogger()
 	engine := gin.New()
 
-	route.RegisterRoutes(engine, dependencies)
 	middleware.RegisterMiddlewares(engine, dependencies)
+	route.RegisterRoutes(engine, dependencies)
 	engine.Use(gin.Recovery())
 	engine.Use(gin.Logger())
+
+	if env.Restart {
+		_ = dependencies.RestartService.ResetDatabase()
+		_ = dependencies.RestartService.InitSuperAdmin()
+	}
 
 	engine.Run(":" + env.ServerPort)
 }

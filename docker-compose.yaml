@@ -20,6 +20,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    volumes:
+      - ./data:/app/data
 
   postgres:
     image: postgres:13
@@ -27,16 +29,18 @@ services:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASS}
       POSTGRES_DB: ${DB_NAME}
+    ports:
+      - 5432:5432
     volumes:
       - postgres-db-volume:/var/lib/postgresql/data
     networks:
       - watt-flow-network
     healthcheck:
-      test: ["CMD", "pg_isready", "-U", "postgres"]
+      test: [ "CMD", "pg_isready", "-U", "postgres" ]
       interval: 5s
       retries: 5
     restart: always
-  
+
   influxdb2:
     image: influxdb:2
     ports:
@@ -45,7 +49,7 @@ services:
       DOCKER_INFLUXDB_INIT_MODE: setup
       DOCKER_INFLUXDB_INIT_USERNAME: ${INFLUX_USER}
       DOCKER_INFLUXDB_INIT_PASSWORD: ${INFLUX_PASS}
-      DOCKER_INFLUXDB_INIT_ORG: watt-flow 
+      DOCKER_INFLUXDB_INIT_ORG: watt-flow
       DOCKER_INFLUXDB_INIT_BUCKET: flow
     volumes:
       - type: volume
@@ -56,7 +60,6 @@ services:
         target: /etc/influxdb2
     networks:
       - watt-flow-network
-  
 
   rabbitmq:
     image: rabbitmq:3-management
@@ -66,11 +69,104 @@ services:
       - 15672:15672
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+        test: [ "CMD", "rabbitmqctl", "status"]
+        interval: 5s
+        timeout: 20s
+        retries: 5
+    networks:
+      - watt-flow-network
+
+  redis:
+      image: redis:latest
+      restart: always
+      ports:
+        - "6379:6379"
+      volumes:
+        - redis-data:/root/redis
+        - ./config/redis.conf:/usr/local/etc/redis/redis.conf
+      environment:
+        - REDIS_PASSWORD=password
+        - REDIS_PORT=6379
+      networks:
+        - watt-flow-network
+
+  consumer:
+    build: ./consumer/
+    restart: always
+    networks:
+      - watt-flow-network
+    environment:
+      DB_USER: ${DB_USER}
+      DB_PASS: ${DB_PASS}
+      DB_HOST: postgres
+      DB_TABLE: ${DB_NAME}
+      DB_PORT: ${DB_PORT}
+      AMQP_URI: "amqp://guest:guest@rabbitmq:5672/"
+      INFLUX_URI: "http://influxdb2:8086"
+      INFLUX_TOKEN: -nua9ItUoqiYqUS7UZVtz5gU92-H5kdJI1Yr89Aifx2vzAVAMNfWHI4xouZaKZzC1eL5uljiCuI-CMln-CFSkQ==
+      REDIS_ADDR: "redis:6379"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  simulator-1:
+    build: ./simulator/
+    restart: always
+    networks:
+      - watt-flow-network
+    environment:
+      DEVICE_ID: "be781b42-c3b0-475b-bdc5-cb467d0f4fa1"
+      DEVICE_CITY: "Novi Sad"
+      DEVICE_STREET: "Street"
+      DEVICE_NUMBER: "34"
+      AMQP_URI: "amqp://guest:guest@rabbitmq:5672/"
+    volumes:
+      - ./config/simulator1.json:/usr/src/app/config/config.json
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    
+
+  simulator-2:
+    build: ./simulator/
+    restart: always
+    networks:
+      - watt-flow-network
+    environment:
+      DEVICE_ID: "ff781b42-c3b0-475b-bdc5-cb467d0f4222"
+      DEVICE_CITY: "Novi Sad"
+      DEVICE_STREET: "Street"
+      DEVICE_NUMBER: "34"
+      AMQP_URI: "amqp://guest:guest@rabbitmq:5672/"
+    volumes:
+      - ./config/simulator2.json:/usr/src/app/config/config.json
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  simulator-3:
+    build: ./simulator/
+    restart: always
+    networks:
+      - watt-flow-network
+    environment:
+      DEVICE_ID: "be7ffb42-c3b0-475b-bdc5-cb467d0f4111"
+      DEVICE_CITY: "Novi Sad"
+      DEVICE_STREET: "Street"
+      DEVICE_NUMBER: "34"
+      AMQP_URI: "amqp://guest:guest@rabbitmq:5672/"
+    volumes:
+      - ./config/simulator3.json:/usr/src/app/config/config.json
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
 
 volumes:
   postgres-db-volume:
   influxdb2-data:
   influxdb2-config:
   rabbitmq_data:
+  redis-data:
 networks:
   watt-flow-network:
