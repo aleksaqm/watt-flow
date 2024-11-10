@@ -52,11 +52,11 @@ const menuItems = ref<MenuItem[]>([
   },
   {
     title: 'Households',
-    href: '/households',
+    href: '/household',
     children: [
       {
         title: 'Search',
-        href: '/households/search',
+        href: '/household/search',
         description: 'Search for households',
       },
       {
