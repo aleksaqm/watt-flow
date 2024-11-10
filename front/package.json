@@ -17,6 +17,7 @@
     "axios": "^1.7.7",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
+    "jwt-decode": "^4.0.0",
     "lucide-vue-next": "^0.456.0",
     "pinia": "^2.2.4",
     "radix-vue": "^1.9.9",
@@ -29,6 +30,7 @@
   },
   "devDependencies": {
     "@tsconfig/node20": "^20.1.4",
+    "@types/jsonwebtoken": "^9.0.7",
     "@types/node": "^20.17.6",
     "@vitejs/plugin-vue": "^5.1.4",
     "@vitejs/plugin-vue-jsx": "^4.0.1",

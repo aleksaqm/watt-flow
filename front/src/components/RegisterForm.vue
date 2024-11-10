@@ -78,7 +78,7 @@ const submitForm = async (formData: { username: string; password: string; email:
       description: 'You will have to activate account before logging in!',
       variant: 'default'
     })
-    router.push({name: 'home'})
+    router.push({name: 'login'})
   } catch (error) {
     console.error('Error:', error)
     toast({

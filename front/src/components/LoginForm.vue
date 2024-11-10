@@ -14,8 +14,11 @@ import { toTypedSchema } from '@vee-validate/zod'
 import { useForm } from 'vee-validate'
 import axios from 'axios'
 import * as z from 'zod'
+import { useRouter } from 'vue-router';
 
 const {toast} = useToast()
+const router = useRouter()
+
 
 const formSchema = toTypedSchema(z.object({
   username: z.string().min(2, { message: "Username must be at least 2 characters" }).max(50, { message: "Username cannot exceed 50 characters" }),
@@ -36,11 +39,13 @@ const submitForm = async (formData: { username: string; password: string }) => {
       description: 'You have successfully logged in!',
       variant: 'default'
     })
-  } catch (error) {
+    router.push({name: 'home'})
+  } catch (error : any) {
     console.error('Error:', error)
+    const errorMessage = error.response?.data?.error || 'An unexpected error occurred'
     toast({
       title: 'Login Failed',
-      description: 'Please check your username and password and try again.',
+      description: errorMessage,
       variant: 'destructive'
     })
   }
