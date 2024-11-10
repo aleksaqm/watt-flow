@@ -34,7 +34,10 @@ func InitDeps(env *config.Environment) *Server {
 	deviceStatusRepository := repository.NewDeviceStatusRepository(database, logger)
 	deviceStatusService := service.NewDeviceStatusService(deviceStatusRepository)
 	deviceStatusHandler := handler.NewDeviceStatusHandler(deviceStatusService, logger)
-	server := NewServer(logger, userService, authService, userHandler, propertyService, propertyHandler, householdService, householdHandler, deviceStatusService, deviceStatusHandler, database)
+	addressRepository := repository.NewAddressRepository(database, logger)
+	addressService := service.NewAddressService(addressRepository)
+	addressHandler := handler.NewAddressHandler(addressService, logger)
+	server := NewServer(logger, userService, authService, userHandler, propertyService, propertyHandler, householdService, householdHandler, deviceStatusService, deviceStatusHandler, addressService, addressHandler, database)
 	return server
 }
 
@@ -47,3 +50,5 @@ var propertyServiceSet = wire.NewSet(service.NewPropertyService, wire.Bind(new(s
 var householdServiceSet = wire.NewSet(service.NewHouseholdService, wire.Bind(new(service.IHouseholdService), new(*service.HouseholdService)))
 
 var deviceStatusServiceSet = wire.NewSet(service.NewDeviceStatusService, wire.Bind(new(service.IDeviceStatusService), new(*service.DeviceStatusService)))
+
+var addressServiceSet = wire.NewSet(service.NewAddressService, wire.Bind(new(service.IAddressService), new(*service.AddressService)))

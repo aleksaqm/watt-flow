@@ -21,4 +21,5 @@ func RegisterRoutes(
 	NewPropertyRoute(engine).Register(server)
 	NewHouseholdRoute(engine).Register(server)
 	NewDeviceStatusRoute(engine).Register(server)
+	NewAddressRoute(engine).Register(server)
 }

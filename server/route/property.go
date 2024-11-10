@@ -13,7 +13,7 @@ func (r PropertyRoute) Register(server *server.Server) {
 	server.Logger.Info("Setting up property routes")
 	//authMid := middleware.NewAuthMiddleware(server.AuthService, server.Logger)
 
-	api := r.engine.Group("/api2")
+	api := r.engine.Group("/api")
 	{
 		api.GET("/property/:id", server.PropertyHandler.GetById)
 		api.POST("/property", server.PropertyHandler.Create)

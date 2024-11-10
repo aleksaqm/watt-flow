@@ -13,7 +13,7 @@ func (r HouseholdRoute) Register(server *server.Server) {
 	server.Logger.Info("Setting up household routes")
 	// authMid := middleware.NewAuthMiddleware(server.AuthService, server.Logger)
 
-	api := r.engine.Group("/api2")
+	api := r.engine.Group("/api")
 	{
 		api.GET("/household/:id", server.HouseholdHandler.GetById)
 		api.POST("/household", server.HouseholdHandler.Create)
