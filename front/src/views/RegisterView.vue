@@ -5,10 +5,8 @@ import RegisterForm from '@/components/RegisterForm.vue'
 
 
 <template>
-  <main>
-    <div class="flex flew-row items-center justify-center ">
-      <RegisterForm></RegisterForm>
-    </div>
+  <main class="flex-1 flex justify-center items-center">
+    <RegisterForm></RegisterForm>
 
   </main>
 </template>

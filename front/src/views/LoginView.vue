@@ -4,7 +4,7 @@ import RegisterLink from '@/components/RegisterLink.vue'
 </script>
 
 <template>
-  <main class="flex h-screen items-center justify-center">
+  <main class="flex-1 flex items-center justify-center">
     <div class="flex w-full max-w-4xl shadow-lg">
       <LoginForm />
       <RegisterLink />
@@ -13,7 +13,8 @@ import RegisterLink from '@/components/RegisterLink.vue'
 </template>
 
 <style scoped>
-html, body {
+html,
+body {
   height: 100%;
 }
 </style>

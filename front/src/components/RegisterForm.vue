@@ -10,9 +10,9 @@ import {
 import { Input } from '@/shad/components/ui/input'
 import { toTypedSchema } from '@vee-validate/zod'
 import { Field, useForm } from 'vee-validate'
-import {useRouter} from 'vue-router'
+import { useRouter } from 'vue-router'
 import { useToast } from '../shad/components/ui/toast/use-toast'
-import Toaster  from '../shad/components/ui/toast/Toaster.vue';
+import Toaster from '../shad/components/ui/toast/Toaster.vue';
 import axios from 'axios'
 import * as z from 'zod'
 import { ref } from 'vue'
@@ -78,7 +78,7 @@ const submitForm = async (formData: { username: string; password: string; email:
       description: 'You will have to activate account before logging in!',
       variant: 'default'
     })
-    router.push({name: 'login'})
+    router.push({ name: 'login' })
   } catch (error) {
     console.error('Error:', error)
     toast({
@@ -97,45 +97,49 @@ const onSubmit = handleSubmit((values) => {
 <template>
   <div class="w-1/3 p-7 flex flex-col justify-center items-center bg-white shadow-lg">
     <div class="flex flex-col justify-center items-center gap-5 w-full">
-      <span class="text-gray-800 text-lg">Sign Up</span>
+      <span class="text-gray-800 text-2xl">Sign Up</span>
       <form class="w-full space-y-6" @submit="onSubmit">
         <FormField name="username" v-slot="{ field }">
-          <FormItem>
+          <FormItem class="relative pb-2">
             <FormLabel>Username</FormLabel>
             <FormControl>
               <Input type="text" v-bind="field" placeholder="Enter your username" />
             </FormControl>
-            <FormMessage v-if="errors.username">{{ errors.username }}</FormMessage>
+            <FormMessage class="absolute -bottom-2 left-0 text-xs" v-if="errors.username">{{ errors.username }}
+            </FormMessage>
           </FormItem>
         </FormField>
 
         <FormField name="password" v-slot="{ field }">
-          <FormItem>
+          <FormItem class="relative pb-2">
             <FormLabel>Password</FormLabel>
             <FormControl>
               <Input type="password" v-bind="field" placeholder="Enter your password" />
             </FormControl>
-            <FormMessage v-if="errors.password">{{ errors.password }}</FormMessage>
+            <FormMessage class="absolute -bottom-2 left-0 text-xs" v-if="errors.password">{{ errors.password }}
+            </FormMessage>
           </FormItem>
         </FormField>
 
         <FormField name="confirmPassword" v-slot="{ field }">
-          <FormItem>
+          <FormItem class="relative pb-2">
             <FormLabel>Confirm password</FormLabel>
             <FormControl>
               <Input type="password" v-bind="field" placeholder="Enter same password" />
             </FormControl>
-            <FormMessage v-if="errors.confirmPassword">{{ errors.confirmPassword }}</FormMessage>
+            <FormMessage class="absolute -bottom-2 left-0 text-xs" v-if="errors.confirmPassword">{{
+              errors.confirmPassword }}</FormMessage>
           </FormItem>
         </FormField>
-        
+
         <FormField name="email" v-slot="{ field }">
-          <FormItem>
+          <FormItem class="relative pb-2">
             <FormLabel>Email</FormLabel>
             <FormControl>
               <Input type="text" v-bind="field" placeholder="Enter your email" />
             </FormControl>
-            <FormMessage v-if="errors.email">{{ errors.email }}</FormMessage>
+            <FormMessage class="absolute -bottom-2 left-0 text-xs" v-if="errors.email">{{ errors.email }}
+            </FormMessage>
           </FormItem>
         </FormField>
 
