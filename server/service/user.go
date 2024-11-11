@@ -19,6 +19,7 @@ type IUserService interface {
 	ActivateAccount(token string) error
 	CreateSuperAdmin() (string, error)
 	ChangeAdminPassword(passwordDto dto.NewPasswordDto) error
+	IsAdminActive() bool
 }
 type UserService struct {
 	repository  *repository.UserRepository
@@ -88,7 +89,7 @@ func (service *UserService) Register(registrationDto *dto.RegistrationDto) (*mod
 	if err != nil {
 		return nil, err
 	}
-	createdUser, err := service.repository.Create(&user)
+	createdUser, err := service.repository.Create(&user) //conver to dto
 	if err != nil {
 		return nil, err
 	}
@@ -147,6 +148,9 @@ func (service *UserService) CreateSuperAdmin() (string, error) {
 
 func (service *UserService) ChangeAdminPassword(passwordDto dto.NewPasswordDto) error {
 	admin, err := service.repository.FindByUsername("admin")
+	if admin.Status == model.Active {
+		return errors.New("admin is already active")
+	}
 	if err != nil {
 		return err
 	}
@@ -160,6 +164,14 @@ func (service *UserService) ChangeAdminPassword(passwordDto dto.NewPasswordDto) 
 		return err
 	}
 	return nil
+}
+
+func (service *UserService) IsAdminActive() bool {
+	admin, err := service.repository.FindByUsername("admin")
+	if err != nil {
+		return false
+	}
+	return admin.Status == model.Active
 }
 
 func NewUserService(repository *repository.UserRepository, authService *AuthService) *UserService {

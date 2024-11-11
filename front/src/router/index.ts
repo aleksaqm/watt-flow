@@ -4,6 +4,7 @@ import RegisterView from '../views/RegisterView.vue'
 import HouseholdView from '@/views/HouseholdView.vue'
 import NotFoundView from '../views/NotFoundView.vue'
 import HomeView from '@/views/HomeView.vue'
+import SuperAdminChangePasswordView from '@/views/SuperAdminChangePasswordView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -27,6 +28,11 @@ const router = createRouter({
       path: '/household',
       name: 'household',
       component: HouseholdView
+    },
+    {
+      path: '/superadmin',
+      name: 'superadmin',
+      component: SuperAdminChangePasswordView
     },
     {
       path: '/:catchAll(.*)',

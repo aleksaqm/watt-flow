@@ -7,7 +7,6 @@ import RegisterForm from '@/components/RegisterForm.vue'
 <template>
   <main class="flex-1 flex justify-center items-center">
     <RegisterForm></RegisterForm>
-
   </main>
 </template>
 

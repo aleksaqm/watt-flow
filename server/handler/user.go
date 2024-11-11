@@ -77,13 +77,19 @@ func (u UserHandler) ChangeAdminPassword(c *gin.Context) {
 	if err := c.BindJSON(&passwords); err != nil {
 		u.logger.Error(err)
 		c.JSON(400, gin.H{"error": err.Error()})
+		return
 	}
 	err := u.service.ChangeAdminPassword(passwords)
 	if err != nil {
 		c.JSON(400, gin.H{"error": err.Error()})
+	} else {
+		c.JSON(200, gin.H{"data": "Password changed successfully"})
 	}
-	c.JSON(200, gin.H{"data": "Password changed successfully"})
+}
 
+func (u UserHandler) IsAdminActive(c *gin.Context) {
+	isActive := u.service.IsAdminActive()
+	c.JSON(200, gin.H{"active": isActive})
 }
 
 func NewUserHandler(userService service.IUserService, logger util.Logger) *UserHandler {

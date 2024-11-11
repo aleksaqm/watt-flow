@@ -14,6 +14,7 @@ func (r *AdminRoute) Register(server *server.Server) {
 	api := r.engine.Group("/api/admin")
 	{
 		api.POST("/password", server.UserHandler.ChangeAdminPassword)
+		api.GET("/active", server.UserHandler.IsAdminActive)
 	}
 }
 

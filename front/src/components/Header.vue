@@ -12,6 +12,9 @@ import {
 } from "../shad/components/ui/navigation-menu"
 import { Button } from "../shad/components/ui/button"
 import { BoltIcon } from '@heroicons/vue/16/solid';
+import { useRouter } from 'vue-router';
+
+const router = useRouter()
 
 interface MenuItem {
   title: string;
@@ -93,6 +96,17 @@ const isMenuOpen = ref(false)
 const toggleMenu = () => {
   isMenuOpen.value = !isMenuOpen.value
 }
+
+const handleLogout = () => {
+  // Perform logout logic here (e.g., clear tokens, make API call, etc.)
+  console.log("Logging out...");
+
+  // Redirect to login page after logout logic
+  router.push({name: "login"});
+}
+
+
+
 </script>
 
 <template>
