@@ -37,7 +37,6 @@ onBeforeMount(async () => {
             <SuperAdminWelcome />
             <SuperAdminChangePasswordForm />
         </div>
-        <!-- <h1>Super Admin, Go change your password</h1> -->
          
     </main>
 </template>

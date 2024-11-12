@@ -31,7 +31,7 @@ const { handleSubmit, errors } = useForm({
 
 const submitForm = async (formData: { username: string; password: string }) => {
   try {
-    const response = await axios.post('/login', formData)
+    const response = await axios.post('/api/login', formData)
     console.log('Response:', response.data)
     localStorage.setItem("authToken", response.data['token'])
     router.push({ name: 'home' })

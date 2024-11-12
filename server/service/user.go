@@ -158,7 +158,7 @@ func (service *UserService) ActivateAccount(token string) error {
 
 func (service *UserService) SendActivationEmail(user *model.User) error {
 	activationToken := service.authService.CreateActivationToken(user)
-	activationLink := fmt.Sprintf("http://localhost:5000/activate/%s", activationToken)
+	activationLink := fmt.Sprintf("http://localhost:5000/api/activate/%s", activationToken)
 	emailBody := util.GenerateActivationEmailBody(activationLink)
 	err := util.SendEmail(user.Email, "Activate your account", emailBody)
 	return err

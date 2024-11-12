@@ -11,7 +11,7 @@ const app = createApp(App)
 app.use(createPinia())
 app.use(router)
 app.config.globalProperties.$axios = axios
-axios.defaults.baseURL = 'http://localhost:5000'
+axios.defaults.baseURL = 'http://localhost:8080'
 axios.interceptors.request.use((config) => {
     const token = localStorage.getItem('authToken')
     if (token) {

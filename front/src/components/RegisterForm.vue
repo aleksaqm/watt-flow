@@ -70,7 +70,7 @@ const submitForm = async (formData: { username: string; password: string; email:
     }
     console.log(data)
 
-    const response = await axios.post('/register', data)
+    const response = await axios.post('/api/register', data)
     console.log('Response:', response.data)
     toast({
       title: 'Registration Successful',
