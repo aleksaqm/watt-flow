@@ -47,7 +47,8 @@ func (u UserHandler) ActivateAccount(c *gin.Context) {
 	if err != nil {
 		c.JSON(400, gin.H{"error": err.Error()})
 	}
-	c.JSON(200, "Account activated")
+	loginLink := "http://localhost:5173/"
+	c.Data(200, "text/html; charset=utf-8", []byte(util.GenerateSuccessfulActivationEmailBody(loginLink)))
 }
 
 func (u UserHandler) GetById(c *gin.Context) {
