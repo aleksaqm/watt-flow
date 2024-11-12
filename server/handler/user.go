@@ -4,7 +4,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"strconv"
 	"watt-flow/dto"
-	"watt-flow/model"
 	"watt-flow/service"
 	"watt-flow/util"
 )
@@ -63,7 +62,7 @@ func (u UserHandler) GetById(c *gin.Context) {
 }
 
 func (u UserHandler) Create(c *gin.Context) {
-	var user model.User
+	var user dto.UserCreateDto
 	if err := c.BindJSON(&user); err != nil {
 		u.logger.Error(err)
 		c.JSON(400, gin.H{"error": err.Error()})
@@ -90,6 +89,14 @@ func (u UserHandler) ChangeAdminPassword(c *gin.Context) {
 func (u UserHandler) IsAdminActive(c *gin.Context) {
 	isActive := u.service.IsAdminActive()
 	c.JSON(200, gin.H{"active": isActive})
+}
+
+func (u UserHandler) FindAdmins(c *gin.Context) {
+	data, err := u.service.FindAllByRole("Admin")
+	if err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
+	}
+	c.JSON(200, data)
 }
 
 func NewUserHandler(userService service.IUserService, logger util.Logger) *UserHandler {

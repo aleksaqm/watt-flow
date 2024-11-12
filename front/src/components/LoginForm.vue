@@ -34,11 +34,6 @@ const submitForm = async (formData: { username: string; password: string }) => {
     const response = await axios.post('/login', formData)
     console.log('Response:', response.data)
     localStorage.setItem("authToken", response.data['token'])
-    toast({
-      title: 'Login Successful',
-      description: 'You have successfully logged in!',
-      variant: 'default'
-    })
     router.push({ name: 'home' })
   } catch (error: any) {
     console.error('Error:', error)

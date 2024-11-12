@@ -12,14 +12,15 @@ import (
 
 type IUserService interface {
 	FindById(id uint64) (*model.User, error)
-	Create(user *model.User) (*model.User, error)
+	Create(user *dto.UserCreateDto) (*dto.UserDto, error)
 	FindByEmail(email string) (*model.User, error)
 	Login(loginCredentials dto.LoginDto) (string, error)
-	Register(registrationDto *dto.RegistrationDto) (*model.User, error)
+	Register(registrationDto *dto.RegistrationDto) (*dto.UserDto, error)
 	ActivateAccount(token string) error
 	CreateSuperAdmin() (string, error)
 	ChangeAdminPassword(passwordDto dto.NewPasswordDto) error
 	IsAdminActive() bool
+	FindAllByRole(role string) (*[]dto.UserDto, error)
 }
 type UserService struct {
 	repository  *repository.UserRepository
@@ -39,13 +40,30 @@ func (service *UserService) FindByEmail(email string) (*model.User, error) {
 	return user, nil
 }
 
-func (service *UserService) Create(user *model.User) (*model.User, error) {
-	user.Password = util.HashPassword(user.Password)
-	createdUser, err := service.repository.Create(user)
+func (service *UserService) Create(userDto *dto.UserCreateDto) (*dto.UserDto, error) {
+	userDto.Password = util.HashPassword(userDto.Password)
+	role, err := model.ParseRole(userDto.Role)
 	if err != nil {
 		return nil, err
 	}
-	return &createdUser, nil
+	user := model.User{
+		Username: userDto.Username,
+		Password: userDto.Password,
+		Email:    userDto.Email,
+		Role:     role,
+		Status:   model.Active,
+	}
+	createdUser, err := service.repository.Create(&user)
+	if err != nil {
+		return nil, err
+	}
+	userReturn := dto.UserDto{
+		Id:       createdUser.Id,
+		Username: createdUser.Username,
+		Email:    createdUser.Email,
+		Role:     createdUser.Role.RoleToString(),
+	}
+	return &userReturn, nil
 }
 
 func (service *UserService) Login(loginCredentials dto.LoginDto) (string, error) {
@@ -67,7 +85,7 @@ func (service *UserService) Login(loginCredentials dto.LoginDto) (string, error)
 	}
 }
 
-func (service *UserService) Register(registrationDto *dto.RegistrationDto) (*model.User, error) {
+func (service *UserService) Register(registrationDto *dto.RegistrationDto) (*dto.UserDto, error) {
 	user := model.User{}
 	user.Username = registrationDto.Username
 	user.Email = registrationDto.Email
@@ -89,11 +107,17 @@ func (service *UserService) Register(registrationDto *dto.RegistrationDto) (*mod
 	if err != nil {
 		return nil, err
 	}
-	createdUser, err := service.repository.Create(&user) //conver to dto
+	createdUser, err := service.repository.Create(&user)
 	if err != nil {
 		return nil, err
 	}
-	return &createdUser, nil
+	userDto := dto.UserDto{
+		Id:       createdUser.Id,
+		Username: createdUser.Username,
+		Email:    createdUser.Email,
+		Role:     createdUser.Role.RoleToString(),
+	}
+	return &userDto, nil
 }
 
 func (service *UserService) ActivateAccount(token string) error {
@@ -172,6 +196,27 @@ func (service *UserService) IsAdminActive() bool {
 		return false
 	}
 	return admin.Status == model.Active
+}
+
+func (service *UserService) FindAllByRole(roleStr string) (*[]dto.UserDto, error) {
+	role, err := model.ParseRole(roleStr)
+	if err != nil {
+		return nil, err
+	}
+	users, err := service.repository.FindAllByRole(role)
+	if err != nil {
+		return nil, err
+	}
+	usersDto := make([]dto.UserDto, len(*users))
+	for i, user := range *users {
+		usersDto[i] = dto.UserDto{
+			Id:       user.Id,
+			Username: user.Username,
+			Email:    user.Email,
+			Role:     user.Role.RoleToString(),
+		}
+	}
+	return &usersDto, nil
 }
 
 func NewUserService(repository *repository.UserRepository, authService *AuthService) *UserService {

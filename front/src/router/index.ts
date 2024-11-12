@@ -5,6 +5,7 @@ import HouseholdView from '@/views/HouseholdView.vue'
 import NotFoundView from '../views/NotFoundView.vue'
 import HomeView from '@/views/HomeView.vue'
 import SuperAdminChangePasswordView from '@/views/SuperAdminChangePasswordView.vue'
+import ManageAdminsView from '@/views/ManageAdminsView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -33,6 +34,11 @@ const router = createRouter({
       path: '/superadmin',
       name: 'superadmin',
       component: SuperAdminChangePasswordView
+    },
+    {
+      path: '/manage/admins',
+      name: 'manageAdmin',
+      component: ManageAdminsView
     },
     {
       path: '/:catchAll(.*)',

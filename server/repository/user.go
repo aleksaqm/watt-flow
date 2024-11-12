@@ -67,3 +67,14 @@ func (repository *UserRepository) Update(user *model.User) (model.User, error) {
 	}
 	return *user, nil
 }
+
+func (repository *UserRepository) FindAllByRole(role model.Role) (*[]model.User, error) {
+	var users []model.User
+	repository.logger.Info("FindAllByRole", role)
+	result := repository.database.Where("role = ?", role).Find(&users)
+	if result.Error != nil {
+		repository.logger.Error("Error finding users by role", result.Error)
+		return nil, result.Error
+	}
+	return &users, nil
+}

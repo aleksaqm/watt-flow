@@ -14,8 +14,8 @@ const loading = ref(true);
 onBeforeMount(async () => {
     try{
         const response = await axios.get("/api/admin/active")
-        // console.log(response.data)
-        if (response.data['data']){
+        console.log(response.data)
+        if (response.data['active']){
             router.push({name: 'login'})
         }
         loading.value = false;

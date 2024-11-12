@@ -17,6 +17,8 @@ func (r UserRoute) Register(server *server.Server) {
 	{
 		api.GET("/user/:id", authMid.RoleMiddleware([]string{"Regular", "Clerk", "SuperAdmin"}), server.UserHandler.GetById)
 		api.POST("/user", server.UserHandler.Create)
+		api.GET("/user/admins", authMid.RoleMiddleware([]string{"SuperAdmin"}), server.UserHandler.FindAdmins)
+		api.POST("user/admin", authMid.RoleMiddleware([]string{"SuperAdmin"}), server.UserHandler.Create)
 	}
 }
 
