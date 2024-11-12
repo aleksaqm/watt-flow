@@ -78,17 +78,26 @@ const submitForm = async (formData: { username: string; password: string; email:
       variant: 'default'
     })
     router.push({ name: 'login' })
-  } catch (error) {
+  } catch (error: any) {
+    const errorMessage = error.response?.data?.error || 'Please check your information again and try again.'
     console.error('Error:', error)
     toast({
       title: 'Registration Failed',
-      description: 'Please check your information again and try again.',
+      description: errorMessage,
       variant: 'destructive'
     })
   }
 }
 
 const onSubmit = handleSubmit((values) => {
+  if (values.password != values.confirmPassword){
+    toast({
+      title: 'Creation Failed',
+      description: "Passwords aren't the same.",
+      variant: 'destructive'
+    })
+    return
+  }
   submitForm(values)
 })
 </script>

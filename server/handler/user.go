@@ -18,6 +18,7 @@ func (u UserHandler) Login(c *gin.Context) {
 	if err := c.BindJSON(&loginCredentials); err != nil {
 		u.logger.Error(err)
 		c.JSON(400, gin.H{"error": err.Error()})
+		return
 	}
 	token, err := u.service.Login(loginCredentials)
 	if err != nil {
@@ -33,10 +34,12 @@ func (u UserHandler) Register(c *gin.Context) {
 	if err := c.BindJSON(&user); err != nil {
 		u.logger.Error(err)
 		c.JSON(400, gin.H{"error": err.Error()})
+		return
 	}
 	data, err := u.service.Register(&user)
 	if err != nil {
 		c.JSON(400, gin.H{"error": err.Error()})
+		return
 	}
 	c.JSON(200, gin.H{"data": data})
 }
@@ -46,6 +49,7 @@ func (u UserHandler) ActivateAccount(c *gin.Context) {
 	err := u.service.ActivateAccount(token)
 	if err != nil {
 		c.JSON(400, gin.H{"error": err.Error()})
+		return
 	}
 	loginLink := "http://localhost:5173/"
 	c.Data(200, "text/html; charset=utf-8", []byte(util.GenerateSuccessfulActivationEmailBody(loginLink)))
@@ -56,6 +60,7 @@ func (u UserHandler) GetById(c *gin.Context) {
 	userId, err := strconv.ParseUint(id, 10, 64)
 	if err != nil {
 		c.JSON(400, gin.H{"error": err.Error()})
+		return
 	}
 	data, _ := u.service.FindById(userId)
 	u.logger.Info("radi handler")

@@ -12,7 +12,7 @@ type User struct {
 	Id           uint64        `gorm:"primary_key" json:"id"`
 	Username     string        `gorm:"unique" json:"username"`
 	Password     string        `json:"password,omitempty"`
-	Email        string        `gorm:"unique" json:"email"`
+	Email        string        `json:"email"`
 	ProfileImage string        `json:"profile_image,omitempty"`
 	Status       AccountStatus `json:"status"`
 	Role         Role          `json:"role"`

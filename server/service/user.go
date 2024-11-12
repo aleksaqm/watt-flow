@@ -33,7 +33,7 @@ func (service *UserService) FindById(id uint64) (*model.User, error) {
 }
 
 func (service *UserService) FindByEmail(email string) (*model.User, error) {
-	user, err := service.repository.FindByEmail(email)
+	user, err := service.repository.FindActiveByEmail(email)
 	if err != nil {
 		return nil, err
 	}
@@ -67,9 +67,9 @@ func (service *UserService) Create(userDto *dto.UserCreateDto) (*dto.UserDto, er
 }
 
 func (service *UserService) Login(loginCredentials dto.LoginDto) (string, error) {
-	user, err := service.repository.FindByEmail(loginCredentials.Username)
+	user, err := service.repository.FindByUsername(loginCredentials.Username)
 	if err != nil {
-		user, err = service.repository.FindByUsername(loginCredentials.Username)
+		user, err = service.repository.FindActiveByEmail(loginCredentials.Username)
 		if err != nil || user == nil {
 			return "", errors.New("invalid credentials")
 		}
@@ -86,6 +86,14 @@ func (service *UserService) Login(loginCredentials dto.LoginDto) (string, error)
 }
 
 func (service *UserService) Register(registrationDto *dto.RegistrationDto) (*dto.UserDto, error) {
+	existingUser, _ := service.repository.FindByUsername(registrationDto.Username)
+	if existingUser != nil {
+		return nil, errors.New("username already taken")
+	}
+	existingUser, _ = service.repository.FindActiveByEmail(registrationDto.Email)
+	if existingUser != nil {
+		return nil, errors.New("already have account with this email")
+	}
 	user := model.User{}
 	user.Username = registrationDto.Username
 	user.Email = registrationDto.Email
@@ -128,7 +136,12 @@ func (service *UserService) ActivateAccount(token string) error {
 	if valid {
 		if claims != nil {
 			email := claims["email"].(string)
-			user, err := service.repository.FindByEmail(email)
+			existingUser, _ := service.repository.FindActiveByEmail(email)
+			if existingUser != nil {
+				return errors.New("user is already active")
+			}
+			username := claims["username"].(string)
+			user, err := service.repository.FindByEmailAndUsername(email, username)
 			if err != nil {
 				return err
 			}
@@ -146,7 +159,6 @@ func (service *UserService) ActivateAccount(token string) error {
 func (service *UserService) SendActivationEmail(user *model.User) error {
 	activationToken := service.authService.CreateActivationToken(user)
 	activationLink := fmt.Sprintf("http://localhost:5000/activate/%s", activationToken)
-	//emailBody := fmt.Sprintf("<html><body><p>Click <a href='%s'>here</a> to activate your account.</p></body></html>", activationLink)
 	emailBody := util.GenerateActivationEmailBody(activationLink)
 	err := util.SendEmail(user.Email, "Activate your account", emailBody)
 	return err

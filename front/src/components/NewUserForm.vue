@@ -63,7 +63,7 @@ const onSubmit = handleSubmit((values) => {
   if (values.password != values.confirmPassword){
     toast({
       title: 'Creation Failed',
-      description: 'Please check information again and try again.',
+      description: "Passwords aren't the same.",
       variant: 'destructive'
     })
     return
