@@ -13,7 +13,7 @@ type UserHandler struct {
 	logger  util.Logger
 }
 
-func (u UserHandler) Login(c *gin.Context) {
+func (u *UserHandler) Login(c *gin.Context) {
 	var loginCredentials dto.LoginDto
 	if err := c.BindJSON(&loginCredentials); err != nil {
 		u.logger.Error(err)
@@ -29,7 +29,7 @@ func (u UserHandler) Login(c *gin.Context) {
 	}
 }
 
-func (u UserHandler) Register(c *gin.Context) {
+func (u *UserHandler) Register(c *gin.Context) {
 	var user dto.RegistrationDto
 	if err := c.BindJSON(&user); err != nil {
 		u.logger.Error(err)
@@ -44,7 +44,7 @@ func (u UserHandler) Register(c *gin.Context) {
 	c.JSON(200, gin.H{"data": data})
 }
 
-func (u UserHandler) ActivateAccount(c *gin.Context) {
+func (u *UserHandler) ActivateAccount(c *gin.Context) {
 	token := c.Param("token")
 	err := u.service.ActivateAccount(token)
 	if err != nil {
@@ -55,7 +55,7 @@ func (u UserHandler) ActivateAccount(c *gin.Context) {
 	c.Data(200, "text/html; charset=utf-8", []byte(util.GenerateSuccessfulActivationEmailBody(loginLink)))
 }
 
-func (u UserHandler) GetById(c *gin.Context) {
+func (u *UserHandler) GetById(c *gin.Context) {
 	id := c.Param("id")
 	userId, err := strconv.ParseUint(id, 10, 64)
 	if err != nil {
@@ -67,7 +67,7 @@ func (u UserHandler) GetById(c *gin.Context) {
 	c.JSON(200, gin.H{"data": data})
 }
 
-func (u UserHandler) Create(c *gin.Context) {
+func (u *UserHandler) Create(c *gin.Context) {
 	var user dto.UserCreateDto
 	if err := c.BindJSON(&user); err != nil {
 		u.logger.Error(err)
@@ -77,7 +77,7 @@ func (u UserHandler) Create(c *gin.Context) {
 	c.JSON(200, gin.H{"data": data})
 }
 
-func (u UserHandler) ChangeAdminPassword(c *gin.Context) {
+func (u *UserHandler) ChangeAdminPassword(c *gin.Context) {
 	var passwords dto.NewPasswordDto
 	if err := c.BindJSON(&passwords); err != nil {
 		u.logger.Error(err)
@@ -92,12 +92,12 @@ func (u UserHandler) ChangeAdminPassword(c *gin.Context) {
 	}
 }
 
-func (u UserHandler) IsAdminActive(c *gin.Context) {
+func (u *UserHandler) IsAdminActive(c *gin.Context) {
 	isActive := u.service.IsAdminActive()
 	c.JSON(200, gin.H{"active": isActive})
 }
 
-func (u UserHandler) FindAdmins(c *gin.Context) {
+func (u *UserHandler) FindAdmins(c *gin.Context) {
 	data, err := u.service.FindAllByRole("Admin")
 	if err != nil {
 		c.JSON(400, gin.H{"error": err.Error()})
