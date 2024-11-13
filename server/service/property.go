@@ -16,12 +16,14 @@ type IPropertyService interface {
 }
 
 type PropertyService struct {
-	repository *repository.PropertyRepository
+	repository       *repository.PropertyRepository
+	householdService IHouseholdService
 }
 
-func NewPropertyService(repository *repository.PropertyRepository) *PropertyService {
+func NewPropertyService(repository *repository.PropertyRepository, householdService IHouseholdService) *PropertyService {
 	return &PropertyService{
-		repository: repository,
+		repository:       repository,
+		householdService: householdService,
 	}
 }
 
@@ -49,7 +51,7 @@ func (service *PropertyService) Create(propertyDto *dto.CreatePropertyDto) (*mod
 	property.AddressID = propertyDto.AddressID
 	property.Floors = propertyDto.Floors
 
-	//TESTING
+	// TESTING
 	property.OwnerID = 1
 
 	createdProperty, err := service.repository.Create(&property)
@@ -57,6 +59,24 @@ func (service *PropertyService) Create(propertyDto *dto.CreatePropertyDto) (*mod
 		return nil, err
 	}
 	return &createdProperty, nil
+}
+
+func (s *PropertyService) SearchHouseholds(searchDto dto.SearchHouseholdDto) ([]model.Household, error) {
+	var households []model.Household
+	if searchDto.Id != "" {
+		household, err := s.householdService.FindByCadastralNumber(searchDto.Id)
+		if err != nil {
+			return nil, err
+		}
+		households = make([]model.Household, 0)
+		households = append(households, *household)
+		return households, nil
+	}
+	households, err := s.householdService.Search(searchDto)
+	if err != nil {
+		return nil, err
+	}
+	return households, nil
 }
 
 func (service *PropertyService) Update(property *model.Property) (*model.Property, error) {

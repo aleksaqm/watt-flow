@@ -12,6 +12,8 @@ type IHouseholdService interface {
 	Update(household *model.Household) (*model.Household, error)
 	Delete(id uint64) error
 	FindByStatus(status model.HouseholdStatus) ([]model.Household, error)
+	FindByCadastralNumber(id string) (*model.Household, error)
+	Search(searchDto dto.SearchHouseholdDto) ([]model.Household, error)
 }
 
 type HouseholdService struct {
@@ -26,6 +28,22 @@ func NewHouseholdService(repository *repository.HouseholdRepository) *HouseholdS
 
 func (service *HouseholdService) FindById(id uint64) (*model.Household, error) {
 	household, err := service.repository.FindById(id)
+	if err != nil {
+		return nil, err
+	}
+	return household, nil
+}
+
+func (service *HouseholdService) Search(searchDto dto.SearchHouseholdDto) ([]model.Household, error) {
+	households, err := service.repository.Search(searchDto)
+	if err != nil {
+		return nil, err
+	}
+	return households, nil
+}
+
+func (service *HouseholdService) FindByCadastralNumber(id string) (*model.Household, error) {
+	household, err := service.repository.FindByCadastralNumber(id)
 	if err != nil {
 		return nil, err
 	}

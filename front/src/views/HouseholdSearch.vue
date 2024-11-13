@@ -2,8 +2,6 @@
 import SearchForm from '@/components/household/SearchForm.vue';
 
 </script>
-
-
 <template>
   <main>
     <div class="w-10/12 h-screen wrapper">
