@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import HouseholdInfo from '@/components/household/HouseholdInfo.vue';
+import SimulatorAvailabilty from '../components/household/SimulatorAvailabilty.vue';
 
 </script>
 
@@ -8,6 +9,7 @@ import HouseholdInfo from '@/components/household/HouseholdInfo.vue';
   <main>
     <div class="w-10/12 h-screen wrapper">
       <HouseholdInfo> </HouseholdInfo>
+      <SimulatorAvailabilty></SimulatorAvailabilty>
     </div>
   </main>
 </template>
