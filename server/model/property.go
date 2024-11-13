@@ -34,9 +34,8 @@ type Property struct {
 	Status      PropertyStatus `json:"status"`
 	CreatedAt   time.Time      `json:"created_at"`
 	ConfirmedAt time.Time      `json:"confirmed_at"`
-	AddressID   uint64         `gorm:"column:address_id" json:"address_id"`
 	OwnerID     uint64         `gorm:"column:owner_id" json:"owner_id"`
-	Address     *Address       `gorm:"foreignKey:AddressID" json:"address"`
+	Address     Address        `gorm:"foreignKey:Id;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;" json:"address"`
 	Owner       *User          `gorm:"foreignKey:OwnerID" json:"owner"`
 	Household   []Household    `gorm:"foreignKey:PropertyID" json:"household"`
 }

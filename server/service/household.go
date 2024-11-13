@@ -43,11 +43,11 @@ func (service *HouseholdService) FindByStatus(status model.HouseholdStatus) ([]m
 func (service *HouseholdService) Create(householdDto *dto.CreateHouseholdDto) (*model.Household, error) {
 	household := model.Household{
 		// Initialize fields from the DTO
-		Floor:           householdDto.Floor,
-		Suite:           householdDto.Suite,
-		SqFootage:       householdDto.SqFootage,
-		Status:          model.InactiveHousehold,
-		OwnerID:         1,
+		Floor:     householdDto.Floor,
+		Suite:     householdDto.Suite,
+		SqFootage: householdDto.SqFootage,
+		Status:    model.InactiveHousehold,
+		//OwnerID:         1,
 		PropertyID:      householdDto.PropertyId,
 		CadastralNumber: householdDto.CadastralNumber,
 	}

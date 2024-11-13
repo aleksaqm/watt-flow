@@ -5,6 +5,7 @@ import HouseholdView from '@/views/HouseholdView.vue'
 import NotFoundView from '../views/NotFoundView.vue'
 import HomeView from '@/views/HomeView.vue'
 import HouseholdSearch from '@/views/HouseholdSearch.vue'
+import PropertyRequestView from '@/views/PropertyRequestView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -33,6 +34,11 @@ const router = createRouter({
       path: '/household/search',
       name: 'household-search',
       component: HouseholdSearch
+    },
+    {
+      path: '/property-request',
+      name: 'property-request',
+      component: PropertyRequestView
     },
     {
       path: '/:catchAll(.*)',

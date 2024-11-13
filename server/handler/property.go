@@ -3,7 +3,6 @@ package handler
 import (
 	"github.com/gin-gonic/gin"
 	"strconv"
-	"watt-flow/dto"
 	"watt-flow/model"
 	"watt-flow/service"
 	"watt-flow/util"
@@ -33,16 +32,17 @@ func (p PropertyHandler) GetById(c *gin.Context) {
 }
 
 func (p PropertyHandler) Create(c *gin.Context) {
-	var property dto.CreatePropertyDto
+	var property model.Property
 	if err := c.BindJSON(&property); err != nil {
 		p.logger.Error(err)
 		c.JSON(400, gin.H{"error": "Invalid property data"})
 		return
 	}
+	p.logger.Info(property)
 	data, err := p.service.Create(&property)
 	if err != nil {
 		p.logger.Error(err)
-		c.JSON(500, gin.H{"error": "Failed to create property"})
+		c.JSON(500, gin.H{"error": err.Error()})
 		return
 	}
 	c.JSON(201, gin.H{"data": data})
