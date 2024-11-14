@@ -1,12 +1,13 @@
 package handler
 
 import (
-	"github.com/gin-gonic/gin"
 	"net/http"
 	"strconv"
 	"watt-flow/model"
 	"watt-flow/service"
 	"watt-flow/util"
+
+	"github.com/gin-gonic/gin"
 )
 
 type AddressHandler struct {

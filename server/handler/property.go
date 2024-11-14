@@ -1,12 +1,13 @@
 package handler
 
 import (
-	"github.com/gin-gonic/gin"
 	"strconv"
 	"watt-flow/dto"
 	"watt-flow/model"
 	"watt-flow/service"
 	"watt-flow/util"
+
+	"github.com/gin-gonic/gin"
 )
 
 type PropertyHandler struct {

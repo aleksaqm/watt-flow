@@ -2,11 +2,12 @@ package repository
 
 import (
 	"fmt"
-	"gorm.io/gorm/clause"
 	"watt-flow/db"
 	"watt-flow/dto"
 	"watt-flow/model"
 	"watt-flow/util"
+
+	"gorm.io/gorm/clause"
 )
 
 type PropertyRepository struct {
@@ -49,6 +50,25 @@ func (repository *PropertyRepository) FindByStatus(status model.PropertyStatus) 
 	if result.Error != nil {
 		repository.Logger.Error("Error finding properties by status", result.Error)
 		return nil, result.Error
+	}
+	return properties, nil
+}
+
+func (repository *PropertyRepository) FindByAddress(city string, street string, number string) ([]model.Property, error) {
+	var properties []model.Property
+	query := repository.Database.Model(&model.Property{}).Joins("Address")
+	if city != "" {
+		query = query.Where("Address.city = ?", city)
+	}
+	if street != "" {
+		query = query.Where("Address.street LIKE ?", "%"+street+"%")
+	}
+	if number != "" {
+		query = query.Where("Address.number = ?", number)
+	}
+	if err := query.Find(&properties).Error; err != nil {
+		fmt.Println("Error finding properties:", err)
+		return properties, err
 	}
 	return properties, nil
 }

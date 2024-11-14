@@ -61,7 +61,7 @@ const onSubmit = handleSubmit((values) => {
       Search household
     </div>
 
-    <form class="w-full flex flex-wrap gap-10 items-center border rounded-2xl border-gray-300 shadow-gray-500 p-10"
+    <form class="w-full flex flex-wrap gap-5 items-center border rounded-2xl border-gray-300 shadow-gray-500 p-10"
       @submit="onSubmit">
 
       <FormField name="city" v-slot="{ field }">

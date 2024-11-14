@@ -1,10 +1,13 @@
 package repository
 
 import (
-	"gorm.io/gorm/clause"
+	"fmt"
 	"watt-flow/db"
+	"watt-flow/dto"
 	"watt-flow/model"
 	"watt-flow/util"
+
+	"gorm.io/gorm/clause"
 )
 
 type HouseholdRepository struct {
@@ -49,6 +52,44 @@ func (repository *HouseholdRepository) FindByStatus(status model.HouseholdStatus
 		return nil, result.Error
 	}
 	return households, nil
+}
+
+func (repository *HouseholdRepository) Search(searchDto dto.SearchHouseholdDto) ([]model.Household, error) {
+	var households []model.Household
+
+	query := repository.Database.Model(&model.Property{}).Joins("Property").Joins("Property.Address")
+	if searchDto.City != "" {
+		query = query.Where("Property.Address.city = ?", searchDto.City)
+	}
+	if searchDto.Street != "" {
+		query = query.Where("Property.Address.street LIKE ?", "%"+searchDto.Street+"%")
+	}
+	if searchDto.Number != "" {
+		query = query.Where("Property.Address.number = ?", searchDto.Number)
+	}
+	if searchDto.Floor != 0 {
+		query = query.Where("floor = ?", searchDto.Floor)
+	}
+
+	if searchDto.Suite != "" {
+		query = query.Where("suite = ?", searchDto.Suite)
+	}
+
+	if err := query.Find(&households).Error; err != nil {
+		fmt.Println("Error finding households:", err)
+		return households, err
+	}
+	return households, nil
+}
+
+func (repository *HouseholdRepository) FindByCadastralNumber(cadastralNumber string) (*model.Household, error) {
+	var household model.Household
+	result := repository.Database.Where("cadastral_number = ?", cadastralNumber).Find(&household)
+	if result.Error != nil {
+		repository.Logger.Error("Error finding households by cadastralNumber", result.Error)
+		return nil, result.Error
+	}
+	return &household, nil
 }
 
 func (repository *HouseholdRepository) Update(household *model.Household) (model.Household, error) {

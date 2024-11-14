@@ -9,8 +9,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '../../shad/components/ui/table'
-import { Button } from '../../shad/components/ui/button'
+} from '@/shad/components/ui/table'
+import { Button } from '@/shad/components/ui/button'
 import {
   Pagination,
   PaginationEllipsis,
@@ -20,7 +20,7 @@ import {
   PaginationListItem,
   PaginationNext,
   PaginationPrev,
-} from '../../shad/components/ui/pagination'
+} from '@/shad/components/ui/pagination'
 
 interface Property {
   id: number
@@ -132,13 +132,8 @@ function formatDate(date: string): string {
   <div class="p-7 flex flex-col bg-white shadow-lg">
     <div class="mb-4 text-lg font-bold text-gray-800">Your property requests</div>
     <div class="flex items-center gap-4 mb-4">
-      <input
-        v-model="searchQuery"
-        @input="fetchProperties"
-        type="text"
-        placeholder="Search properties..."
-        class="border p-2 rounded w-full"
-      />
+      <input v-model="searchQuery" @input="fetchProperties" type="text" placeholder="Search properties..."
+        class="border p-2 rounded w-full" />
       <Button variant="outline" @click="fetchProperties">Search</Button>
     </div>
     <Table>
@@ -166,13 +161,15 @@ function formatDate(date: string): string {
       </TableBody>
     </Table>
 
-    <Pagination v-slot="{ page }" :total="pagination.total" :sibling-count="1" show-edges :default-page="pagination.page" :items-per-page="pagination.perPage">
+    <Pagination v-slot="{ page }" :total="pagination.total" :sibling-count="1" show-edges
+      :default-page="pagination.page" :items-per-page="pagination.perPage">
       <PaginationList v-slot="{ items }" class="flex items-center gap-1">
         <PaginationFirst @click="onPageChange(1)" :disabled="pagination.page === 1" />
         <PaginationPrev @click="onPageChange(pagination.page - 1)" :disabled="pagination.page === 1" />
         <template v-for="(item, index) in items">
           <PaginationListItem v-if="item.type === 'page'" :key="index" :value="item.value" as-child>
-            <Button class="w-10 h-10 p-0 hover:bg-indigo-300" :class="getButtonStyle(item.value === page)"  :variant="item.value === page ? 'default' : 'outline'" @click="onPageChange(item.value)">
+            <Button class="w-10 h-10 p-0 hover:bg-indigo-300" :class="getButtonStyle(item.value === page)"
+              :variant="item.value === page ? 'default' : 'outline'" @click="onPageChange(item.value)">
               {{ item.value }}
             </Button>
           </PaginationListItem>
