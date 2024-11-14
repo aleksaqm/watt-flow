@@ -11,7 +11,7 @@ import (
 )
 
 type IUserService interface {
-	FindById(id uint64) (*model.User, error)
+	FindById(id uint64) (*dto.UserDto, error)
 	Create(user *dto.UserCreateDto) (*dto.UserDto, error)
 	FindByEmail(email string) (*model.User, error)
 	Login(loginCredentials dto.LoginDto) (string, error)
@@ -27,9 +27,15 @@ type UserService struct {
 	authService *AuthService
 }
 
-func (service *UserService) FindById(id uint64) (*model.User, error) {
+func (service *UserService) FindById(id uint64) (*dto.UserDto, error) {
 	user, _ := service.repository.FindById(id)
-	return user, nil
+	userReturn := dto.UserDto{
+		Id:       user.Id,
+		Username: user.Username,
+		Email:    user.Email,
+		Role:     user.Role.RoleToString(),
+	}
+	return &userReturn, nil
 }
 
 func (service *UserService) FindByEmail(email string) (*model.User, error) {

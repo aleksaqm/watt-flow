@@ -90,6 +90,10 @@ const menuItems = ref<MenuItem[]>([
     ],
   },
   {
+    title: 'Profile',
+    href: '/profile',
+  },
+  {
     title: 'Logout',
     href: '/logout',
   },

@@ -6,6 +6,7 @@ import NotFoundView from '../views/NotFoundView.vue'
 import HomeView from '@/views/HomeView.vue'
 import SuperAdminChangePasswordView from '@/views/SuperAdminChangePasswordView.vue'
 import ManageAdminsView from '@/views/ManageAdminsView.vue'
+import UserProfileView from '@/views/UserProfileView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -37,8 +38,13 @@ const router = createRouter({
     },
     {
       path: '/manage/admins',
-      name: 'manageAdmin',
+      name: 'manageAdmins',
       component: ManageAdminsView
+    },
+    {
+      path: '/profile',
+      name: 'profile',
+      component: UserProfileView
     },
     {
       path: '/:catchAll(.*)',

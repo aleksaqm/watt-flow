@@ -21,7 +21,7 @@ const router = useRouter()
 
 
 const formSchema = toTypedSchema(z.object({
-  defaultPassword: z.string().min(2, { message: "Password must be at least 6 characters" }).max(50, { message: "Username cannot exceed 50 characters" }),
+  defaultPassword: z.string().min(2, { message: "Password must be at least 6 characters" }).max(50, { message: "Password cannot exceed 50 characters" }),
   newPassword: z.string().min(6, { message: "Password must be at least 6 characters" }),
   confirmPassword: z.string().min(6, { message: "Password must be at least 6 characters" }),
 }))
@@ -75,7 +75,7 @@ const onSubmit = handleSubmit((values) => {
             <FormControl>
               <Input type="text" v-bind="field" placeholder="Enter default password" />
             </FormControl>
-            <FormMessage class="absolute -bottom-2 left-0 text-xs" v-if="errors.username">{{ errors.username }}
+            <FormMessage class="absolute -bottom-2 left-0 text-xs" v-if="errors.defaultPassword">{{ errors.defaultPassword }}
             </FormMessage>
           </FormItem>
         </FormField>
@@ -86,7 +86,7 @@ const onSubmit = handleSubmit((values) => {
             <FormControl>
               <Input type="password" v-bind="field" placeholder="Enter your new password" />
             </FormControl>
-            <FormMessage class="absolute -bottom-2 left-0 text-xs" v-if="errors.newPassword">{{ errors.password }}
+            <FormMessage class="absolute -bottom-2 left-0 text-xs" v-if="errors.newPassword">{{ errors.newPassword }}
             </FormMessage>
           </FormItem>
         </FormField>
@@ -97,7 +97,7 @@ const onSubmit = handleSubmit((values) => {
             <FormControl>
               <Input type="password" v-bind="field" placeholder="Confirm your new password" />
             </FormControl>
-            <FormMessage class="absolute -bottom-2 left-0 text-xs" v-if="errors.confirmPassword">{{ errors.password }}
+            <FormMessage class="absolute -bottom-2 left-0 text-xs" v-if="errors.confirmPassword">{{ errors.confirmPassword }}
             </FormMessage>
           </FormItem>
         </FormField>
