@@ -15,7 +15,8 @@ func SaveFile(filename string, data string, filetype string, fileFolder string) 
 	filePath := "/app/data/" + fileFolder
 	_ = os.Mkdir(filePath, os.ModePerm)
 
-	file, err3 := os.Create(filePath + "/" + fileName)
+	filePath = filePath + "/" + fileName
+	file, err3 := os.Create(filePath)
 	if err3 != nil {
 		return "", fmt.Errorf("failed to create file for profile images: %w", err3)
 	}

@@ -162,6 +162,20 @@ services:
       rabbitmq:
         condition: service_healthy
 
+  nginx:
+    image: nginx:latest
+    container_name: nginx
+    depends_on:
+      - server
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./data/profile_pictures:/usr/share/nginx/html/profile_pictures
+    networks:
+      - watt-flow-network
+    restart: always
+
 volumes:
   postgres-db-volume:
   influxdb2-data:
