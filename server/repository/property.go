@@ -1,8 +1,10 @@
 package repository
 
 import (
+	"fmt"
 	"gorm.io/gorm/clause"
 	"watt-flow/db"
+	"watt-flow/dto"
 	"watt-flow/model"
 	"watt-flow/util"
 )
@@ -67,4 +69,38 @@ func (repository *PropertyRepository) Delete(id uint64) error {
 		return result.Error
 	}
 	return nil
+}
+
+func (repository *PropertyRepository) TableQuery(params *dto.PropertyQueryParams) ([]model.Property, int64, error) {
+	var properties []model.Property
+	var total int64
+
+	baseQuery := repository.Database.Model(&model.Property{}).
+		Preload("Owner").
+		Preload("Household")
+
+	if params.Search != "" {
+		baseQuery = baseQuery.Where("city ILIKE ? OR street ILIKE ?", "%"+params.Search+"%", "%"+params.Search+"%")
+	}
+
+	if err := baseQuery.Count(&total).Error; err != nil {
+		repository.Logger.Error("Error querying property count", err)
+		return nil, 0, err
+	}
+
+	sortOrder := params.SortOrder
+	if sortOrder != "asc" && sortOrder != "desc" {
+		sortOrder = "asc"
+	}
+	query := baseQuery.Order(fmt.Sprintf("%s %s", params.SortBy, sortOrder))
+
+	offset := (params.Page - 1) * params.PageSize
+	query = query.Offset(offset).Limit(params.PageSize)
+
+	if err := query.Find(&properties).Error; err != nil {
+		repository.Logger.Error("Error querying property", err)
+		return nil, 0, err
+	}
+
+	return properties, total, nil
 }

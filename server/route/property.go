@@ -20,6 +20,7 @@ func (r PropertyRoute) Register(server *server.Server) {
 		api.PUT("/property/:id", server.PropertyHandler.Update)
 		api.GET("/properties", server.PropertyHandler.FindByStatus)
 		api.DELETE("/property/:id", server.PropertyHandler.Delete)
+		api.GET("/property/query", server.PropertyHandler.TableQuery)
 	}
 }
 

@@ -6,6 +6,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"watt-flow/dto"
 	"watt-flow/model"
 	"watt-flow/repository"
 	"watt-flow/util"
@@ -17,6 +18,7 @@ type IPropertyService interface {
 	Update(property *model.Property) (*model.Property, error)
 	Delete(id uint64) error
 	FindByStatus(status model.PropertyStatus) ([]model.Property, error)
+	TableQuery(params *dto.PropertyQueryParams) ([]model.Property, int64, error)
 }
 
 type PropertyService struct {
@@ -114,4 +116,12 @@ func (service *PropertyService) Delete(id uint64) error {
 		return err
 	}
 	return nil
+}
+
+func (service *PropertyService) TableQuery(params *dto.PropertyQueryParams) ([]model.Property, int64, error) {
+	properties, total, err := service.propertyRepository.TableQuery(params)
+	if err != nil {
+		return nil, 0, err
+	}
+	return properties, total, nil
 }
