@@ -8,21 +8,41 @@ import (
 )
 
 type Server struct {
-	Logger         util.Logger
-	UserHandler    *handler.UserHandler
-	RestartService *service.RestartService
-	UserService    service.IUserService
-	AuthService    *service.AuthService
-	Db             db.Database
+	Logger              util.Logger
+	UserHandler         *handler.UserHandler
+	userService         service.IUserService
+	PropertyHandler     *handler.PropertyHandler
+	propertyService     service.IPropertyService
+	HouseholdHandler    *handler.HouseholdHandler
+	householdService    service.IHouseholdService
+	DeviceStatusHandler *handler.DeviceStatusHandler
+	deviceStatusService service.IDeviceStatusService
+	AddressHandler      *handler.AddressHandler
+	addressService      service.IAddressService
+	RestartService 		*service.RestartService
+	AuthService    		*service.AuthService
+	Db            		 db.Database
 }
 
-func NewServer(logger util.Logger, userService service.IUserService, authService *service.AuthService, restartService *service.RestartService, userHandler *handler.UserHandler, db db.Database) *Server {
+func NewServer(logger util.Logger, userService service.IUserService, authService *service.AuthService, restartService *service.RestartService, userHandler *handler.UserHandler,
+	propertyService service.IPropertyService, propertyHandler *handler.PropertyHandler,
+	householdService service.IHouseholdService, householdHandler *handler.HouseholdHandler,
+	deviceStatusService service.IDeviceStatusService, deviceStatusHandler *handler.DeviceStatusHandler,
+	addressService service.IAddressService, addressHandler *handler.AddressHandler, db db.Database) *Server {
 	return &Server{
-		Logger:         logger,
-		UserHandler:    userHandler,
-		RestartService: restartService,
-		UserService:    userService,
-		AuthService:    authService,
-		Db:             db,
+		Logger:         		logger,
+		UserHandler:    		userHandler,
+		RestartService: 		restartService,
+		userService:         	userService,
+		AuthService:         	authService,
+		PropertyHandler:     	propertyHandler,
+		propertyService:     	propertyService,
+		HouseholdHandler:    	householdHandler,
+		householdService:    	householdService,
+		DeviceStatusHandler: 	deviceStatusHandler,
+		deviceStatusService: 	deviceStatusService,
+		addressService:      	addressService,
+		AddressHandler:      	addressHandler,
+		Db:                  	db,
 	}
 }

@@ -26,10 +26,30 @@ func InitDeps(env *config.Environment) *Server {
 	userService := service.NewUserService(userRepository, authService)
 	restartService := service.NewRestartService(database, userService)
 	userHandler := handler.NewUserHandler(userService, logger)
-	server := NewServer(logger, userService, authService, restartService, userHandler, database)
+	propertyRepository := repository.NewPropertyRepository(database, logger)
+	householdRepository := repository.NewHouseholdRepository(database, logger)
+	householdService := service.NewHouseholdService(householdRepository)
+	propertyService := service.NewPropertyService(propertyRepository, householdService)
+	propertyHandler := handler.NewPropertyHandler(propertyService, logger)
+	householdHandler := handler.NewHouseholdHandler(householdService, logger)
+	deviceStatusRepository := repository.NewDeviceStatusRepository(database, logger)
+	deviceStatusService := service.NewDeviceStatusService(deviceStatusRepository)
+	deviceStatusHandler := handler.NewDeviceStatusHandler(deviceStatusService, logger)
+	addressRepository := repository.NewAddressRepository(database, logger)
+	addressService := service.NewAddressService(addressRepository)
+	addressHandler := handler.NewAddressHandler(addressService, logger)
+	server := NewServer(logger, userService, authService, restartService, userHandler, propertyService, propertyHandler, householdService, householdHandler, deviceStatusService, deviceStatusHandler, addressService, addressHandler, database)
 	return server
 }
 
 // wire.go:
 
 var userServiceSet = wire.NewSet(service.NewUserService, wire.Bind(new(service.IUserService), new(*service.UserService)))
+
+var propertyServiceSet = wire.NewSet(service.NewPropertyService, wire.Bind(new(service.IPropertyService), new(*service.PropertyService)))
+
+var householdServiceSet = wire.NewSet(service.NewHouseholdService, wire.Bind(new(service.IHouseholdService), new(*service.HouseholdService)))
+
+var deviceStatusServiceSet = wire.NewSet(service.NewDeviceStatusService, wire.Bind(new(service.IDeviceStatusService), new(*service.DeviceStatusService)))
+
+var addressServiceSet = wire.NewSet(service.NewAddressService, wire.Bind(new(service.IAddressService), new(*service.AddressService)))

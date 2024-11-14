@@ -8,8 +8,8 @@ import {
   NavigationMenuList,
   NavigationMenuTrigger,
   navigationMenuTriggerStyle,
-} from "../shad/components/ui/navigation-menu"
-import { Button } from "../shad/components/ui/button"
+} from "@/shad/components/ui/navigation-menu"
+import { Button } from "@/shad/components/ui/button"
 import { BoltIcon } from '@heroicons/vue/16/solid';
 import { useRouter } from 'vue-router'
 
@@ -60,11 +60,11 @@ const menuItems = ref<MenuItem[]>([
   },
   {
     title: 'Households',
-    href: '/households',
+    href: '/household',
     children: [
       {
         title: 'Search',
-        href: '/households/search',
+        href: '/household/search',
         description: 'Search for households',
       },
       {
@@ -111,7 +111,7 @@ const handleNavigation = (item: MenuItem) => {
   if (item.title === 'Logout') {
     localStorage.removeItem('authToken')
     console.log("Logging out...");
-    router.push({name: 'login'});
+    router.push({ name: 'login' });
   } else {
     router.push(item.href);
   }
@@ -150,12 +150,8 @@ const handleNavigation = (item: MenuItem) => {
                     </ul>
                   </NavigationMenuContent>
                 </template>
-                <NavigationMenuLink
-                  v-else
-                  href="#"
-                  :class="navigationMenuTriggerStyle()"
-                  @click.prevent="handleNavigation(item)"
-                >
+                <NavigationMenuLink v-else href="#" :class="navigationMenuTriggerStyle()"
+                  @click.prevent="handleNavigation(item)">
                   {{ item.title }}
                 </NavigationMenuLink>
               </NavigationMenuItem>
@@ -167,7 +163,8 @@ const handleNavigation = (item: MenuItem) => {
         <Button variant="ghost" class="md:hidden" @click="toggleMenu">
           <span class="sr-only">Toggle menu</span>
           <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path v-if="!isMenuOpen" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+            <path v-if="!isMenuOpen" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M4 6h16M4 12h16M4 18h16" />
             <path v-else stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </Button>
@@ -177,7 +174,8 @@ const handleNavigation = (item: MenuItem) => {
           <nav class="px-4 py-2">
             <ul class="space-y-2">
               <li v-for="item in menuItems" :key="item.title">
-                <a href="#" @click.prevent="handleNavigation(item)" class="block px-4 py-2 hover:bg-gray-100 rounded-md">
+                <a href="#" @click.prevent="handleNavigation(item)"
+                  class="block px-4 py-2 hover:bg-gray-100 rounded-md">
                   {{ item.title }}
                 </a>
                 <ul v-if="item.children" class="pl-6 space-y-2 mt-2">
