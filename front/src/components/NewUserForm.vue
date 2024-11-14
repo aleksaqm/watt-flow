@@ -13,8 +13,9 @@ import axios from 'axios'
 import { Field, useForm } from 'vee-validate'
 import * as z from 'zod'
 import { useToast } from '../shad/components/ui/toast/use-toast'
-import { defineEmits } from 'vue'
+import { defineEmits, ref } from 'vue'
 import Toaster from '../shad/components/ui/toast/Toaster.vue';
+import Spinner from './Spinner.vue'
 
 const props = defineProps<{ url: string; role: string }>()
 
@@ -31,6 +32,8 @@ const { handleSubmit, errors } = useForm({
 
 const { toast } = useToast()
 const emit = defineEmits(['userCreated'])
+const loading = ref(false)
+
 
 
 const submitForm = async (formData: { username: string; password: string; email: string }) => {
@@ -41,8 +44,9 @@ const submitForm = async (formData: { username: string; password: string; email:
       email: formData.email,
       role: props.role
     }
-
+    loading.value=true
     const response = await axios.post(props.url, data)
+    loading.value=false
     console.log('Response:', response.data)
     emit('userCreated')
     toast({
@@ -50,6 +54,7 @@ const submitForm = async (formData: { username: string; password: string; email:
       variant: 'default'
     })
   } catch (error) {
+    loading.value=false
     console.error('Error:', error)
     toast({
       title: 'Creation Failed',
@@ -76,7 +81,8 @@ const onSubmit = handleSubmit((values) => {
 
 <template>
     <main>
-        <form class="w-full space-y-6" @submit="onSubmit">
+      <Spinner v-if="loading"/>
+      <form v-if="!loading" class="w-full space-y-6" @submit="onSubmit">
         <FormField name="username" v-slot="{ field }">
           <FormItem class="relative pb-2">
             <FormLabel>Username</FormLabel>

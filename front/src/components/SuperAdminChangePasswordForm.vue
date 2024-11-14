@@ -15,9 +15,12 @@ import { useForm } from 'vee-validate'
 import axios from 'axios'
 import * as z from 'zod'
 import { useRouter } from 'vue-router';
+import { ref } from 'vue';
+import Spinner from './Spinner.vue'
 
 const { toast } = useToast()
 const router = useRouter()
+const loading = ref(false)
 
 
 const formSchema = toTypedSchema(z.object({
@@ -41,7 +44,9 @@ const submitForm = async (formData: { defaultPassword: string; newPassword: stri
     }
     console.log(formData)
     try {
+        loading.value=true
         const response = await axios.post('/api/admin/password', {"old_password": formData.defaultPassword, "new_password": formData.newPassword})
+        loading.value=false
         console.log('Response:', response.data)
         toast({
             title: 'Password changed successfully',
@@ -49,6 +54,8 @@ const submitForm = async (formData: { defaultPassword: string; newPassword: stri
         })
         router.push({ name: 'login' })
     } catch (error: any) {
+        loading.value=false
+
         console.error('Error:', error)
         const errorMessage = error.response?.data?.error || 'An unexpected error occurred'
         toast({
@@ -66,7 +73,8 @@ const onSubmit = handleSubmit((values) => {
 
 <template>
   <div class="w-1/2 p-10 flex flex-col justify-center items-center bg-white">
-    <div class="p-10 flex flex-col justify-center items-center gap-5 w-full">
+    <Spinner v-if="loading"/>
+    <div v-if="!loading" class="p-10 flex flex-col justify-center items-center gap-5 w-full">
       <!-- <span class="text-gray-800 text-lg">Sign In</span> -->
       <form class="w-full space-y-6" @submit="onSubmit">
         <FormField name="defaultPassword" v-slot="{ field }">

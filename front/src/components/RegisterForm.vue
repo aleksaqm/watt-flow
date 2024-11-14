@@ -10,6 +10,7 @@ import {
 import { Input } from '@/shad/components/ui/input'
 import { toTypedSchema } from '@vee-validate/zod'
 import { Field, useForm } from 'vee-validate'
+import Spinner from './Spinner.vue'
 import { useRouter } from 'vue-router'
 import { useToast } from '../shad/components/ui/toast/use-toast'
 import Toaster from '../shad/components/ui/toast/Toaster.vue';
@@ -30,6 +31,7 @@ const { handleSubmit, errors } = useForm({
 
 const { toast } = useToast()
 const router = useRouter()
+const loading = ref(false)
 
 const profilePicture = ref<File | null>(null)
 const profilePicturePreview = ref<string | null>(null)
@@ -57,6 +59,7 @@ const convertToBase64 = (file: File): Promise<string> => {
 
 const submitForm = async (formData: { username: string; password: string; email: string }) => {
   try {
+    loading.value = true
     let profileImageBase64 = ''
     if (profilePicture.value) {
       profileImageBase64 = await convertToBase64(profilePicture.value)
@@ -72,6 +75,7 @@ const submitForm = async (formData: { username: string; password: string; email:
 
     const response = await axios.post('/api/register', data)
     console.log('Response:', response.data)
+    loading.value = false
     toast({
       title: 'Registration Successful',
       description: 'You will have to activate account before logging in!',
@@ -79,6 +83,7 @@ const submitForm = async (formData: { username: string; password: string; email:
     })
     router.push({ name: 'login' })
   } catch (error: any) {
+    loading.value = false
     const errorMessage = error.response?.data?.error || 'Please check your information again and try again.'
     console.error('Error:', error)
     toast({
@@ -103,8 +108,10 @@ const onSubmit = handleSubmit((values) => {
 </script>
 
 <template>
+  
   <div class="w-1/3 p-7 flex flex-col justify-center items-center bg-white shadow-lg">
-    <div class="flex flex-col justify-center items-center gap-5 w-full">
+    <Spinner  v-if="loading"/>
+    <div class="flex flex-col justify-center items-center gap-5 w-full" v-if="!loading">
       <span class="text-gray-800 text-2xl">Sign Up</span>
       <form class="w-full space-y-6" @submit="onSubmit">
         <FormField name="username" v-slot="{ field }">
