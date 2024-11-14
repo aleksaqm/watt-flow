@@ -53,12 +53,13 @@ const submitForm = async (formData: { username: string; password: string; email:
       title: 'Creation Successful',
       variant: 'default'
     })
-  } catch (error) {
+  } catch (error: any) {
     loading.value=false
+    const errorMessage = error.response?.data?.error || 'Please check your information again and try again.'
     console.error('Error:', error)
     toast({
       title: 'Creation Failed',
-      description: 'Please check information again and try again.',
+      description: errorMessage,
       variant: 'destructive'
     })
   }

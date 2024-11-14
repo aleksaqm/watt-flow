@@ -72,9 +72,14 @@ func (u *UserHandler) Create(c *gin.Context) {
 	if err := c.BindJSON(&user); err != nil {
 		u.logger.Error(err)
 		c.JSON(400, gin.H{"error": err.Error()})
+		return
 	}
-	data, _ := u.service.Create(&user)
-	c.JSON(200, gin.H{"data": data})
+	data, err := u.service.Create(&user)
+	if err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
+	} else {
+		c.JSON(200, gin.H{"data": data})
+	}
 }
 
 func (u *UserHandler) ChangeAdminPassword(c *gin.Context) {

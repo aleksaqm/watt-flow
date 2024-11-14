@@ -36,10 +36,25 @@ const loading = ref(false)
 const profilePicture = ref<File | null>(null)
 const profilePicturePreview = ref<string | null>(null)
 
+const MAX_FILE_SIZE = 1 * 1024 * 1024
+
 const onFileChange = (event: Event) => {
   const target = event.target as HTMLInputElement
-  profilePicture.value = target.files ? target.files[0] : null
-  profilePicturePreview.value = profilePicture.value ? URL.createObjectURL(profilePicture.value) : null
+  const file = target.files ? target.files[0] : null
+
+  if (file && file.size > MAX_FILE_SIZE) {
+    toast({
+      title: 'File too large',
+      description: `Please upload an image smaller than ${MAX_FILE_SIZE / (1024 * 1024)} MB.`,
+      variant: 'destructive'
+    })
+    profilePicture.value = null
+    profilePicturePreview.value = null
+    return
+  }
+
+  profilePicture.value = file
+  profilePicturePreview.value = file ? URL.createObjectURL(file) : null
 }
 
 const convertToBase64 = (file: File): Promise<string> => {
