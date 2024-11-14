@@ -5,6 +5,11 @@ import HouseholdView from '@/views/HouseholdView.vue'
 import NotFoundView from '../views/NotFoundView.vue'
 import HomeView from '@/views/HomeView.vue'
 import HouseholdSearch from '@/views/HouseholdSearch.vue'
+import PropertyRequestView from '@/views/PropertyRequestView.vue'
+import UsersPropertyesTable from '@/components/property/UsersPropertyesTable.vue'
+import SuperAdminChangePasswordView from '@/views/SuperAdminChangePasswordView.vue'
+import ManageAdminsView from '@/views/ManageAdminsView.vue'
+import UserProfileView from '@/views/UserProfileView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -33,6 +38,31 @@ const router = createRouter({
       path: '/household/search',
       name: 'household-search',
       component: HouseholdSearch
+    },
+    {
+      path: '/property-request',
+      name: 'property-request',
+      component: PropertyRequestView
+    },
+    {
+      path: '/my-property-request',
+      name: 'my-property-request',
+      component: UsersPropertyesTable
+    },
+    {
+      path: '/superadmin',
+      name: 'superadmin',
+      component: SuperAdminChangePasswordView
+    },
+    {
+      path: '/manage/admins',
+      name: 'manageAdmins',
+      component: ManageAdminsView
+    },
+    {
+      path: '/profile',
+      name: 'profile',
+      component: UserProfileView
     },
     {
       path: '/:catchAll(.*)',

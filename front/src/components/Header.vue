@@ -1,4 +1,3 @@
-// Header.vue
 <script setup lang="ts">
 import { ref } from 'vue'
 import {
@@ -12,6 +11,7 @@ import {
 } from "../shad/components/ui/navigation-menu"
 import { Button } from "../shad/components/ui/button"
 import { BoltIcon } from '@heroicons/vue/16/solid';
+import { useRouter } from 'vue-router'
 
 interface MenuItem {
   title: string;
@@ -22,6 +22,8 @@ interface MenuItem {
     description?: string;
   }[];
 }
+
+const router = useRouter();
 
 const menuItems = ref<MenuItem[]>([
   {
@@ -36,6 +38,11 @@ const menuItems = ref<MenuItem[]>([
         title: 'Manage users',
         href: '/products/feature-2',
         description: 'Add new or manage existing users',
+      },
+      {
+        title: 'Manage admins',
+        href: '/manage/admins',
+        description: 'Add new admins to the system',
       },
     ],
   },
@@ -83,15 +90,30 @@ const menuItems = ref<MenuItem[]>([
     ],
   },
   {
+    title: 'Profile',
+    href: '/profile',
+  },
+  {
     title: 'Logout',
     href: '/logout',
   },
 ])
 
+
 const isMenuOpen = ref(false)
 
 const toggleMenu = () => {
   isMenuOpen.value = !isMenuOpen.value
+}
+
+const handleNavigation = (item: MenuItem) => {
+  if (item.title === 'Logout') {
+    localStorage.removeItem('authToken')
+    console.log("Logging out...");
+    router.push({name: 'login'});
+  } else {
+    router.push(item.href);
+  }
 }
 </script>
 
@@ -127,7 +149,12 @@ const toggleMenu = () => {
                     </ul>
                   </NavigationMenuContent>
                 </template>
-                <NavigationMenuLink v-else :href="item.href" :class="navigationMenuTriggerStyle()">
+                <NavigationMenuLink
+                  v-else
+                  href="#"
+                  :class="navigationMenuTriggerStyle()"
+                  @click.prevent="handleNavigation(item)"
+                >
                   {{ item.title }}
                 </NavigationMenuLink>
               </NavigationMenuItem>
@@ -139,8 +166,7 @@ const toggleMenu = () => {
         <Button variant="ghost" class="md:hidden" @click="toggleMenu">
           <span class="sr-only">Toggle menu</span>
           <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path v-if="!isMenuOpen" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M4 6h16M4 12h16M4 18h16" />
+            <path v-if="!isMenuOpen" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
             <path v-else stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </Button>
@@ -150,13 +176,12 @@ const toggleMenu = () => {
           <nav class="px-4 py-2">
             <ul class="space-y-2">
               <li v-for="item in menuItems" :key="item.title">
-                <a href="item.href" class="block px-4 py-2 hover:bg-gray-100 rounded-md">
+                <a href="#" @click.prevent="handleNavigation(item)" class="block px-4 py-2 hover:bg-gray-100 rounded-md">
                   {{ item.title }}
                 </a>
                 <ul v-if="item.children" class="pl-6 space-y-2 mt-2">
                   <li v-for="child in item.children" :key="child.title">
-
-                    <a href="child.href" class="block px-4 py-2 hover:bg-gray-100 rounded-md">
+                    <a :href="child.href" class="block px-4 py-2 hover:bg-gray-100 rounded-md">
                       {{ child.title }}
                     </a>
                   </li>
@@ -169,6 +194,7 @@ const toggleMenu = () => {
     </div>
   </header>
 </template>
+
 <style scoped>
 .nav-item {
   font-style: "Inter", sans-serif;

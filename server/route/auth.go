@@ -11,7 +11,7 @@ type AuthRoute struct {
 
 func (r *AuthRoute) Register(server *server.Server) {
 	server.Logger.Info("Setting up auth routes")
-	api := r.engine.Group("/")
+	api := r.engine.Group("/api/")
 	{
 		api.POST("login", server.UserHandler.Login)
 		api.POST("register", server.UserHandler.Register)

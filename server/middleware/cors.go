@@ -22,7 +22,8 @@ func (m CorsMiddleware) Register() {
 	m.logger.Info("Setting up CORS middleware")
 	m.engine.Use(
 		cors.New(cors.Config{
-			AllowOrigins:     []string{"http://localhost:5173"},
+			//AllowOrigins:     []string{"http://localhost:5173", "http://localhost:8080"},
+			AllowAllOrigins:  true,
 			AllowCredentials: true,
 			//AllowOriginFunc:  func(origin string) bool { return true }, // here origins need to be configured
 			AllowHeaders: []string{"*"},

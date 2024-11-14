@@ -1,34 +1,40 @@
 package service
 
 import (
-	"time"
+	"fmt"
+	"github.com/google/uuid"
+	"os"
+	"strconv"
+	"strings"
 	"watt-flow/dto"
 	"watt-flow/model"
 	"watt-flow/repository"
+	"watt-flow/util"
 )
 
 type IPropertyService interface {
 	FindById(id uint64) (*model.Property, error)
-	Create(property *dto.CreatePropertyDto) (*model.Property, error)
+	Create(property *model.Property) (*model.Property, error)
 	Update(property *model.Property) (*model.Property, error)
 	Delete(id uint64) error
 	FindByStatus(status model.PropertyStatus) ([]model.Property, error)
+	TableQuery(params *dto.PropertyQueryParams) ([]model.Property, int64, error)
 }
 
 type PropertyService struct {
-	repository       *repository.PropertyRepository
-	householdService IHouseholdService
+	propertyRepository *repository.PropertyRepository
+	householdService   IHouseholdService
 }
 
-func NewPropertyService(repository *repository.PropertyRepository, householdService IHouseholdService) *PropertyService {
+func NewPropertyService(propertyRepository *repository.PropertyRepository, householdService IHouseholdService) *PropertyService {
 	return &PropertyService{
-		repository:       repository,
-		householdService: householdService,
+		propertyRepository: propertyRepository,
+		householdService:   householdService,
 	}
 }
 
 func (service *PropertyService) FindById(id uint64) (*model.Property, error) {
-	property, err := service.repository.FindById(id)
+	property, err := service.propertyRepository.FindById(id)
 	if err != nil {
 		return nil, err
 	}
@@ -36,35 +42,63 @@ func (service *PropertyService) FindById(id uint64) (*model.Property, error) {
 }
 
 func (service *PropertyService) FindByStatus(status model.PropertyStatus) ([]model.Property, error) {
-	properties, err := service.repository.FindByStatus(status)
+	properties, err := service.propertyRepository.FindByStatus(status)
 	if err != nil {
 		return nil, err
 	}
 	return properties, nil
 }
 
-func (service *PropertyService) Create(propertyDto *dto.CreatePropertyDto) (*model.Property, error) {
-	property := model.Property{}
-	property.CreatedAt = time.Now()
-	property.Images = propertyDto.Images
-	property.Documents = propertyDto.Documents
-	property.AddressID = propertyDto.AddressID
-	property.Floors = propertyDto.Floors
+func (service *PropertyService) Create(property *model.Property) (*model.Property, error) {
 
-	// TESTING
-	property.OwnerID = 1
+	UUID := uuid.New()
+	var savedFilePaths []string
 
-	createdProperty, err := service.repository.Create(&property)
-	if err != nil {
-		return nil, err
+	if len(property.Images) > 0 {
+		for i, base64String := range property.Images {
+			if strings.HasPrefix(base64String, "data:image/") {
+				base64String = strings.SplitN(base64String, ",", 2)[1]
+			}
+			filePath, err := util.SaveFile(UUID.String()+"-"+strconv.Itoa(i), base64String, "jpg", "property_images")
+			if err != nil {
+				service.cleanupFiles(savedFilePaths)
+				return nil, fmt.Errorf("failed to save image %d: %v", i, err)
+			}
+			fullPath := filePath + "/" + UUID.String() + "-" + strconv.Itoa(i) + ".jpg"
+			property.Images[i] = fullPath
+			savedFilePaths = append(savedFilePaths, fullPath)
+		}
 	}
+
+	if len(property.Documents) > 0 {
+		for i, base64String := range property.Documents {
+			if strings.HasPrefix(base64String, "data:application/") {
+				base64String = strings.SplitN(base64String, ",", 2)[1]
+			}
+			filePath, err := util.SaveFile(UUID.String()+"-"+strconv.Itoa(i), base64String, "pdf", "property_documents")
+			if err != nil {
+				service.cleanupFiles(savedFilePaths)
+				return nil, fmt.Errorf("failed to save document %d: %v", i, err)
+			}
+			fullPath := filePath + "/" + UUID.String() + "-" + strconv.Itoa(i) + ".pdf"
+			property.Documents[i] = fullPath
+			savedFilePaths = append(savedFilePaths, fullPath)
+		}
+	}
+
+	createdProperty, err := service.propertyRepository.Create(property)
+	if err != nil {
+		service.cleanupFiles(savedFilePaths)
+		return nil, fmt.Errorf("failed to create property: %v", err)
+	}
+
 	return &createdProperty, nil
 }
 
-func (s *PropertyService) SearchHouseholds(searchDto dto.SearchHouseholdDto) ([]model.Household, error) {
+func (service *PropertyService) SearchHouseholds(searchDto dto.SearchHouseholdDto) ([]model.Household, error) {
 	var households []model.Household
 	if searchDto.Id != "" {
-		household, err := s.householdService.FindByCadastralNumber(searchDto.Id)
+		household, err := service.householdService.FindByCadastralNumber(searchDto.Id)
 		if err != nil {
 			return nil, err
 		}
@@ -72,15 +106,24 @@ func (s *PropertyService) SearchHouseholds(searchDto dto.SearchHouseholdDto) ([]
 		households = append(households, *household)
 		return households, nil
 	}
-	households, err := s.householdService.Search(searchDto)
+	households, err := service.householdService.Search(searchDto)
 	if err != nil {
 		return nil, err
 	}
 	return households, nil
 }
 
+func (service *PropertyService) cleanupFiles(paths []string) {
+	for _, path := range paths {
+		err := os.Remove(path)
+		if err != nil {
+			service.propertyRepository.Logger.Error(err)
+		}
+	}
+}
+
 func (service *PropertyService) Update(property *model.Property) (*model.Property, error) {
-	updatedProperty, err := service.repository.Update(property)
+	updatedProperty, err := service.propertyRepository.Update(property)
 	if err != nil {
 		return nil, err
 	}
@@ -88,9 +131,17 @@ func (service *PropertyService) Update(property *model.Property) (*model.Propert
 }
 
 func (service *PropertyService) Delete(id uint64) error {
-	err := service.repository.Delete(id)
+	err := service.propertyRepository.Delete(id)
 	if err != nil {
 		return err
 	}
 	return nil
+}
+
+func (service *PropertyService) TableQuery(params *dto.PropertyQueryParams) ([]model.Property, int64, error) {
+	properties, total, err := service.propertyRepository.TableQuery(params)
+	if err != nil {
+		return nil, 0, err
+	}
+	return properties, total, nil
 }

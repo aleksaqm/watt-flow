@@ -2,7 +2,7 @@
 import Button from '../shad/components/ui/button/Button.vue';
 import Input from '../shad/components/ui/input/Input.vue';
 import { useToast } from '../shad/components/ui/toast/use-toast'
-import Toaster  from '../shad/components/ui/toast/Toaster.vue';
+import Toaster from '../shad/components/ui/toast/Toaster.vue';
 import {
   FormControl,
   FormField,
@@ -16,7 +16,7 @@ import axios from 'axios'
 import * as z from 'zod'
 import { useRouter } from 'vue-router';
 
-const {toast} = useToast()
+const { toast } = useToast()
 const router = useRouter()
 
 
@@ -31,16 +31,11 @@ const { handleSubmit, errors } = useForm({
 
 const submitForm = async (formData: { username: string; password: string }) => {
   try {
-    const response = await axios.post('/login', formData)
+    const response = await axios.post('/api/login', formData)
     console.log('Response:', response.data)
     localStorage.setItem("authToken", response.data['token'])
-    toast({
-      title: 'Login Successful',
-      description: 'You have successfully logged in!',
-      variant: 'default'
-    })
-    router.push({name: 'home'})
-  } catch (error : any) {
+    router.push({ name: 'home' })
+  } catch (error: any) {
     console.error('Error:', error)
     const errorMessage = error.response?.data?.error || 'An unexpected error occurred'
     toast({
@@ -62,22 +57,24 @@ const onSubmit = handleSubmit((values) => {
       <span class="text-gray-800 text-lg">Sign In</span>
       <form class="w-full space-y-6" @submit="onSubmit">
         <FormField name="username" v-slot="{ field }">
-          <FormItem>
+          <FormItem class="relative pb-2">
             <FormLabel>Username</FormLabel>
             <FormControl>
               <Input type="text" v-bind="field" placeholder="Enter your username" />
             </FormControl>
-            <FormMessage v-if="errors.username">{{ errors.username }}</FormMessage>
+            <FormMessage class="absolute -bottom-2 left-0 text-xs" v-if="errors.username">{{ errors.username }}
+            </FormMessage>
           </FormItem>
         </FormField>
 
         <FormField name="password" v-slot="{ field }">
-          <FormItem>
+          <FormItem class="relative pb-2">
             <FormLabel>Password</FormLabel>
             <FormControl>
               <Input type="password" v-bind="field" placeholder="Enter your password" />
             </FormControl>
-            <FormMessage v-if="errors.password">{{ errors.password }}</FormMessage>
+            <FormMessage class="absolute -bottom-2 left-0 text-xs" v-if="errors.password">{{ errors.password }}
+            </FormMessage>
           </FormItem>
         </FormField>
 

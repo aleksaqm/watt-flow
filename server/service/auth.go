@@ -63,8 +63,9 @@ func (s *AuthService) CreateActivationToken(user *model.User) string {
 	env := config.Init()
 	expirationTime := time.Now().Add(time.Hour).Unix()
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"email": user.Email,
-		"exp":   expirationTime,
+		"email":    user.Email,
+		"username": user.Username,
+		"exp":      expirationTime,
 	})
 	tokenString, err := token.SignedString([]byte(env.JWTSecret))
 	if err != nil {

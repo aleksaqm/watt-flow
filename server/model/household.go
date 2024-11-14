@@ -29,7 +29,7 @@ type Household struct {
 	Suite           string          `json:"suite"`
 	Status          HouseholdStatus `json:"status"`
 	SqFootage       float32         `json:"sq_footage"`
-	OwnerID         uint64          `gorm:"column:owner_id" json:"owner_id"`
+	OwnerID         *uint64         `gorm:"column:owner_id;null" json:"owner_id"`
 	Owner           *User           `gorm:"foreignKey:OwnerID" json:"owner"`
 	DeviceStatus    *DeviceStatus   `gorm:"foreignKey:HouseholdID;references:Id" json:"device_status"`
 	PropertyID      uint64          `gorm:"column:property_id" json:"property_id"`
