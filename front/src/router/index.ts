@@ -4,6 +4,9 @@ import RegisterView from '../views/RegisterView.vue'
 import HouseholdView from '@/views/HouseholdView.vue'
 import NotFoundView from '../views/NotFoundView.vue'
 import HomeView from '@/views/HomeView.vue'
+import HouseholdSearch from '@/views/HouseholdSearch.vue'
+import PropertyRequestView from '@/views/PropertyRequestView.vue'
+import UsersPropertyesTable from '@/components/property/UsersPropertyesTable.vue'
 import SuperAdminChangePasswordView from '@/views/SuperAdminChangePasswordView.vue'
 import ManageAdminsView from '@/views/ManageAdminsView.vue'
 import UserProfileView from '@/views/UserProfileView.vue'
@@ -30,6 +33,21 @@ const router = createRouter({
       path: '/household',
       name: 'household',
       component: HouseholdView
+    },
+    {
+      path: '/household/search',
+      name: 'household-search',
+      component: HouseholdSearch
+    },
+    {
+      path: '/property-request',
+      name: 'property-request',
+      component: PropertyRequestView
+    },
+    {
+      path: '/my-property-request',
+      name: 'my-property-request',
+      component: UsersPropertyesTable
     },
     {
       path: '/superadmin',
