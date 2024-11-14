@@ -10,7 +10,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '../shad/components/ui/table'
+} from '../../shad/components/ui/table'
 import {
   Dialog,
   DialogContent,
@@ -19,9 +19,9 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '../shad/components/ui/dialog'
-import { Button } from '../shad/components/ui/button'
-import NewUserForm from './NewUserForm.vue'
+} from '../../shad/components/ui/dialog'
+import { Button } from '../../shad/components/ui/button'
+import NewUserForm from '../auth/NewUserForm.vue'
 
 interface User {
   id: number

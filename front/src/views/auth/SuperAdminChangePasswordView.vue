@@ -1,8 +1,8 @@
 <script setup lang="ts">
 
-import RegisterLink from '@/components/RegisterLink.vue';
-import SuperAdminChangePasswordForm from '@/components/SuperAdminChangePasswordForm.vue';
-import SuperAdminWelcome from '@/components/SuperAdminWelcome.vue';
+import RegisterLink from '@/components/auth/RegisterLink.vue';
+import SuperAdminChangePasswordForm from '@/components/auth/SuperAdminChangePasswordForm.vue';
+import SuperAdminWelcome from '@/components/user/SuperAdminWelcome.vue';
 import axios from 'axios';
 import { onBeforeMount, ref } from 'vue';
 import { useRouter } from 'vue-router'

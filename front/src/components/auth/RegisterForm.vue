@@ -11,8 +11,8 @@ import { Input } from '@/shad/components/ui/input'
 import { toTypedSchema } from '@vee-validate/zod'
 import { Field, useForm } from 'vee-validate'
 import { useRouter } from 'vue-router'
-import { useToast } from '../shad/components/ui/toast/use-toast'
-import Toaster from '../shad/components/ui/toast/Toaster.vue';
+import { useToast } from '../../shad/components/ui/toast/use-toast'
+import Toaster from '../../shad/components/ui/toast/Toaster.vue';
 import axios from 'axios'
 import * as z from 'zod'
 import { ref } from 'vue'

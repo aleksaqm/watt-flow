@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import HouseholdInfo from '@/components/household/HouseholdInfo.vue';
-import SimulatorAvailabilty from '../components/household/SimulatorAvailabilty.vue';
+import SimulatorAvailabilty from '../../components/household/SimulatorAvailabilty.vue';
 
 </script>
 

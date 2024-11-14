@@ -12,9 +12,9 @@ import { toTypedSchema } from '@vee-validate/zod'
 import axios from 'axios'
 import { Field, useForm } from 'vee-validate'
 import * as z from 'zod'
-import { useToast } from '../shad/components/ui/toast/use-toast'
+import { useToast } from '../../shad/components/ui/toast/use-toast'
 import { defineEmits } from 'vue'
-import Toaster from '../shad/components/ui/toast/Toaster.vue';
+import Toaster from '../../shad/components/ui/toast/Toaster.vue';
 
 const props = defineProps<{ url: string; role: string }>()
 

@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import UserProfileCard from '@/components/UserProfileCard.vue';
-import Label from '../shad/components/ui/label/Label.vue'
+import UserProfileCard from '@/components/user/UserProfileCard.vue';
+import Label from '../../shad/components/ui/label/Label.vue'
 import { getUsernameFromToken } from '@/utils/jwtDecoder';
 import { getEmailFromToken } from '@/utils/jwtDecoder';
 import { getRoleFromToken } from '@/utils/jwtDecoder';

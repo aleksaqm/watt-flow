@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import Button from '../shad/components/ui/button/Button.vue';
-import Input from '../shad/components/ui/input/Input.vue';
-import { useToast } from '../shad/components/ui/toast/use-toast'
-import Toaster from '../shad/components/ui/toast/Toaster.vue';
+import Button from '../../shad/components/ui/button/Button.vue';
+import Input from '../../shad/components/ui/input/Input.vue';
+import { useToast } from '../../shad/components/ui/toast/use-toast'
+import Toaster from '../../shad/components/ui/toast/Toaster.vue';
 import {
   FormControl,
   FormField,

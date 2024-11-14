@@ -1,15 +1,15 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import LoginView from '../views/LoginView.vue'
-import RegisterView from '../views/RegisterView.vue'
-import HouseholdView from '@/views/HouseholdView.vue'
+import LoginView from '../views/auth/LoginView.vue'
+import RegisterView from '../views/auth/RegisterView.vue'
+import HouseholdView from '@/views/household/HouseholdView.vue'
 import NotFoundView from '../views/NotFoundView.vue'
 import HomeView from '@/views/HomeView.vue'
-import HouseholdSearch from '@/views/HouseholdSearch.vue'
-import PropertyRequestView from '@/views/PropertyRequestView.vue'
+import HouseholdSearch from '@/views/household/HouseholdSearch.vue'
+import PropertyRequestView from '@/views/property/PropertyRequestView.vue'
 import UsersPropertyesTable from '@/components/property/UsersPropertyesTable.vue'
-import SuperAdminChangePasswordView from '@/views/SuperAdminChangePasswordView.vue'
-import ManageAdminsView from '@/views/ManageAdminsView.vue'
-import UserProfileView from '@/views/UserProfileView.vue'
+import SuperAdminChangePasswordView from '@/views/auth/SuperAdminChangePasswordView.vue'
+import ManageAdminsView from '@/views/user/ManageAdminsView.vue'
+import UserProfileView from '@/views/user/UserProfileView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),

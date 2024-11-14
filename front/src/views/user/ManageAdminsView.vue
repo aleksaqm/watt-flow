@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import AdminsTable from '@/components/AdminsTable.vue';
+import AdminsTable from '@/components/user/AdminsTable.vue';
 
 
 </script>

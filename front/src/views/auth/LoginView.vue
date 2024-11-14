@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import LoginForm from '@/components/LoginForm.vue'
-import RegisterLink from '@/components/RegisterLink.vue'
+import LoginForm from '@/components/auth/LoginForm.vue'
+import RegisterLink from '@/components/auth/RegisterLink.vue'
 </script>
 
 <template>

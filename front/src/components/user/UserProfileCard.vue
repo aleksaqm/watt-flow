@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import Label from '../shad/components/ui/label/Label.vue'
+import Label from '../../shad/components/ui/label/Label.vue'
 
 const props = defineProps<{ username: string;email: string; role: string }>()
 
