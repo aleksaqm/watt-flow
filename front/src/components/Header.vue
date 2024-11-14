@@ -13,6 +13,7 @@ import { Button } from "../shad/components/ui/button"
 import { BoltIcon } from '@heroicons/vue/16/solid';
 import { useRouter } from 'vue-router'
 
+
 interface MenuItem {
   title: string;
   href: string;
