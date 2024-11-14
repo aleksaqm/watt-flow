@@ -31,9 +31,9 @@ func (repository *UserRepository) Create(user *model.User) (model.User, error) {
 	return *user, nil
 }
 
-func (repository *UserRepository) FindByEmail(email string) (*model.User, error) {
+func (repository *UserRepository) FindActiveByEmail(email string) (*model.User, error) {
 	var user model.User
-	result := repository.database.Where("email = ?", email).First(&user)
+	result := repository.database.Where("email = ? AND status = ?", email, 0).First(&user)
 	if result.Error != nil {
 		repository.logger.Error("Error finding user by email", result.Error)
 		return nil, result.Error
@@ -49,6 +49,34 @@ func (repository *UserRepository) FindById(id uint64) (*model.User, error) {
 	return &user, nil
 }
 
+func (repository *UserRepository) FindByUsername(username string) (*model.User, error) {
+	var user model.User
+	result := repository.database.Where("username = ?", username).First(&user)
+	if result.Error != nil {
+		repository.logger.Error("Error finding user by username", result.Error)
+		return nil, result.Error
+	}
+	return &user, nil
+}
+
+func (repository *UserRepository) FindByEmailOrUsername(emailOrUsername string) (*model.User, error) {
+	var user model.User
+	result := repository.database.Where("email = ? OR username = ?", emailOrUsername, emailOrUsername).First(&user)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return &user, nil
+}
+
+func (repository *UserRepository) FindByEmailAndUsername(email string, username string) (*model.User, error) {
+	var user model.User
+	result := repository.database.Where("email = ? AND username = ?", email, username).First(&user)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return &user, nil
+}
+
 func (repository *UserRepository) Update(user *model.User) (model.User, error) {
 	result := repository.database.Save(user)
 	if result.Error != nil {
@@ -56,4 +84,15 @@ func (repository *UserRepository) Update(user *model.User) (model.User, error) {
 		return *user, result.Error
 	}
 	return *user, nil
+}
+
+func (repository *UserRepository) FindAllByRole(role model.Role) (*[]model.User, error) {
+	var users []model.User
+	repository.logger.Info("FindAllByRole", role)
+	result := repository.database.Where("role = ?", role).Find(&users)
+	if result.Error != nil {
+		repository.logger.Error("Error finding users by role", result.Error)
+		return nil, result.Error
+	}
+	return &users, nil
 }

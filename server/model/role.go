@@ -29,13 +29,13 @@ func (r Role) RoleToString() string {
 func ParseRole(roleStr string) (Role, error) {
 	switch roleStr {
 	case "Regular":
-		return Regular, nil
+		return 0, nil
 	case "Clerk":
-		return Clerk, nil
+		return 1, nil
 	case "Admin":
-		return Admin, nil
+		return 2, nil
 	case "SuperAdmin":
-		return SuperAdmin, nil
+		return 3, nil
 	default:
 		return -1, fmt.Errorf("invalid role: %s", roleStr)
 	}

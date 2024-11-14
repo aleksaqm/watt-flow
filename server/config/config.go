@@ -18,6 +18,7 @@ type Environment struct {
 	DBName      string `mapstructure:"DB_NAME"`
 	JWTSecret   string `mapstructure:"JWT_SECRET"`
 	EmailSecret string `mapstructure:"EMAIL_SECRET"`
+	Restart     bool   `mapstructure:"RESTART"`
 }
 
 func Init() *Environment {
@@ -45,6 +46,8 @@ func Init() *Environment {
 	viper.SetDefault("DB_NAME", "DEFAULT")
 	viper.SetDefault("JWT_SECRET", "DEFAULT")
 	viper.SetDefault("EMAIL_SECRET", "DEFAULT")
+	viper.SetDefault("RESTART", false)
+
 	err = viper.Unmarshal(env)
 	if err != nil {
 		log.Fatal("Error when parsing configuration", err)
