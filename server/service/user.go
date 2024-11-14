@@ -47,6 +47,10 @@ func (service *UserService) FindByEmail(email string) (*model.User, error) {
 }
 
 func (service *UserService) Create(userDto *dto.UserCreateDto) (*dto.UserDto, error) {
+	existingUser, _ := service.repository.FindByUsernameOrActiveEmail(userDto.Username, userDto.Email)
+	if existingUser != nil {
+		return nil, errors.New("username or email already taken")
+	}
 	userDto.Password = util.HashPassword(userDto.Password)
 	role, err := model.ParseRole(userDto.Role)
 	if err != nil {

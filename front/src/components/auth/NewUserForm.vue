@@ -13,8 +13,9 @@ import axios from 'axios'
 import { Field, useForm } from 'vee-validate'
 import * as z from 'zod'
 import { useToast } from '@/shad/components/ui/toast/use-toast'
-import { defineEmits } from 'vue'
+import { defineEmits, ref } from 'vue'
 import Toaster from '@/shad/components/ui/toast/Toaster.vue';
+import Spinner from '../Spinner.vue'
 
 const props = defineProps<{ url: string; role: string }>()
 
@@ -31,6 +32,8 @@ const { handleSubmit, errors } = useForm({
 
 const { toast } = useToast()
 const emit = defineEmits(['userCreated'])
+const loading = ref(false)
+
 
 
 const submitForm = async (formData: { username: string; password: string; email: string }) => {
@@ -41,26 +44,29 @@ const submitForm = async (formData: { username: string; password: string; email:
       email: formData.email,
       role: props.role
     }
-
+    loading.value=true
     const response = await axios.post(props.url, data)
+    loading.value=false
     console.log('Response:', response.data)
     emit('userCreated')
     toast({
       title: 'Creation Successful',
       variant: 'default'
     })
-  } catch (error) {
+  } catch (error: any) {
+    loading.value=false
+    const errorMessage = error.response?.data?.error || 'Please check your information again and try again.'
     console.error('Error:', error)
     toast({
       title: 'Creation Failed',
-      description: 'Please check information again and try again.',
+      description: errorMessage,
       variant: 'destructive'
     })
   }
 }
 
 const onSubmit = handleSubmit((values) => {
-  if (values.password != values.confirmPassword) {
+  if (values.password != values.confirmPassword){
     toast({
       title: 'Creation Failed',
       description: "Passwords aren't the same.",
@@ -75,55 +81,56 @@ const onSubmit = handleSubmit((values) => {
 </script>
 
 <template>
-  <main>
-    <form class="w-full space-y-6" @submit="onSubmit">
-      <FormField name="username" v-slot="{ field }">
-        <FormItem class="relative pb-2">
-          <FormLabel>Username</FormLabel>
-          <FormControl>
-            <Input type="text" v-bind="field" placeholder="Enter username" />
-          </FormControl>
-          <FormMessage class="absolute -bottom-2 left-0 text-xs" v-if="errors.username">{{ errors.username }}
-          </FormMessage>
-        </FormItem>
-      </FormField>
+    <main>
+      <Spinner v-if="loading"/>
+      <form v-if="!loading" class="w-full space-y-6" @submit="onSubmit">
+        <FormField name="username" v-slot="{ field }">
+          <FormItem class="relative pb-2">
+            <FormLabel>Username</FormLabel>
+            <FormControl>
+              <Input type="text" v-bind="field" placeholder="Enter username" />
+            </FormControl>
+            <FormMessage class="absolute -bottom-2 left-0 text-xs" v-if="errors.username">{{ errors.username }}
+            </FormMessage>
+          </FormItem>
+        </FormField>
 
-      <FormField name="password" v-slot="{ field }">
-        <FormItem class="relative pb-2">
-          <FormLabel>Password</FormLabel>
-          <FormControl>
-            <Input type="password" v-bind="field" placeholder="Enter password" />
-          </FormControl>
-          <FormMessage class="absolute -bottom-2 left-0 text-xs" v-if="errors.password">{{ errors.password }}
-          </FormMessage>
-        </FormItem>
-      </FormField>
+        <FormField name="password" v-slot="{ field }">
+          <FormItem class="relative pb-2">
+            <FormLabel>Password</FormLabel>
+            <FormControl>
+              <Input type="password" v-bind="field" placeholder="Enter password" />
+            </FormControl>
+            <FormMessage class="absolute -bottom-2 left-0 text-xs" v-if="errors.password">{{ errors.password }}
+            </FormMessage>
+          </FormItem>
+        </FormField>
 
-      <FormField name="confirmPassword" v-slot="{ field }">
-        <FormItem class="relative pb-2">
-          <FormLabel>Confirm password</FormLabel>
-          <FormControl>
-            <Input type="password" v-bind="field" placeholder="Enter same password" />
-          </FormControl>
-          <FormMessage class="absolute -bottom-2 left-0 text-xs" v-if="errors.confirmPassword">{{
-            errors.confirmPassword }}</FormMessage>
-        </FormItem>
-      </FormField>
+        <FormField name="confirmPassword" v-slot="{ field }">
+          <FormItem class="relative pb-2">
+            <FormLabel>Confirm password</FormLabel>
+            <FormControl>
+              <Input type="password" v-bind="field" placeholder="Enter same password" />
+            </FormControl>
+            <FormMessage class="absolute -bottom-2 left-0 text-xs" v-if="errors.confirmPassword">{{
+              errors.confirmPassword }}</FormMessage>
+          </FormItem>
+        </FormField>
 
-      <FormField name="email" v-slot="{ field }">
-        <FormItem class="relative pb-2">
-          <FormLabel>Email</FormLabel>
-          <FormControl>
-            <Input type="text" v-bind="field" placeholder="Enter email" />
-          </FormControl>
-          <FormMessage class="absolute -bottom-2 left-0 text-xs" v-if="errors.email">{{ errors.email }}
-          </FormMessage>
-        </FormItem>
-      </FormField>
-      <Button type="submit" class="w-full bg-gray-800 text-white hover:bg-gray-600 rounded-full py-2">
-        Create
-      </Button>
-    </form>
-    <Toaster />
-  </main>
+        <FormField name="email" v-slot="{ field }">
+          <FormItem class="relative pb-2">
+            <FormLabel>Email</FormLabel>
+            <FormControl>
+              <Input type="text" v-bind="field" placeholder="Enter email" />
+            </FormControl>
+            <FormMessage class="absolute -bottom-2 left-0 text-xs" v-if="errors.email">{{ errors.email }}
+            </FormMessage>
+          </FormItem>
+        </FormField>
+        <Button type="submit" class="w-full bg-gray-800 text-white hover:bg-gray-600 rounded-full py-2">
+          Create
+        </Button>
+      </form>
+      <Toaster />
+    </main>
 </template>

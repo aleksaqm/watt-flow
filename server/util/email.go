@@ -52,3 +52,18 @@ func GenerateSuccessfulActivationEmailBody(loginLink string) string {
 		</html>
 	`, loginLink)
 }
+
+func GenerateFailedActivationEmailBody(loginLink string) string {
+	return fmt.Sprintf(`
+		<html>
+			<body style="font-family: Arial, sans-serif; background: linear-gradient(90deg, #1d1e26 0%%, #4d596a 100%%); color: #333; padding: 40px; text-align: center;">
+				<div style="background: white; max-width: 600px; margin: 0 auto; padding: 40px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+					<h2 style="color: #333; margin-bottom: 20px;">This email has active account already</h2>
+					<p style="font-size: 16px; color: #555;">Failed to activate account again!</p>
+					<p style="font-size: 16px; color: #555;">Click the button below to go to the login page:</p>
+					<a href="%s" style="display: inline-block; padding: 12px 24px; background-color: #1d1e26; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">Go to Login</a>
+				</div>
+			</body>
+		</html>
+	`, loginLink)
+}

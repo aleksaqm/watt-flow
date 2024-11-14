@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import axios from 'axios'
+import Spinner from '../Spinner.vue'
 import {
   Table,
   TableBody,
@@ -32,12 +33,17 @@ interface User {
 const users = ref<User[]>([])
 // const dialogOpen = ref(false)
 const dialogKey = ref(0)
+const loading = ref(true)
+
 
 async function fetchAdmins() {
   try {
+    loading.value=true
     const response = await axios.get('/api/user/admins')
+    loading.value=false
     users.value = response.data
   } catch (error) {
+    loading.value=false
     console.error('Failed to fetch users:', error)
   }
 }
@@ -54,7 +60,8 @@ onMounted(async () => {
 
 <template>
   <div class="w-1/2 p-7 flex flex-col justify-center items-center bg-white shadow-lg">
-    <div class="flex flex-col justify-center items-center gap-5 w-full">
+    <Spinner v-if="loading"/>
+    <div v-if="!loading" class="flex flex-col justify-center items-center gap-5 w-full">
       <span class="text-gray-800 text-2xl">Admins</span>
       <Dialog :key="dialogKey">
         <DialogTrigger>

@@ -59,9 +59,9 @@ func (repository *UserRepository) FindByUsername(username string) (*model.User, 
 	return &user, nil
 }
 
-func (repository *UserRepository) FindByEmailOrUsername(emailOrUsername string) (*model.User, error) {
+func (repository *UserRepository) FindByUsernameOrActiveEmail(username string, email string) (*model.User, error) {
 	var user model.User
-	result := repository.database.Where("email = ? OR username = ?", emailOrUsername, emailOrUsername).First(&user)
+	result := repository.database.Where("username = ? OR (email = ? AND status = ?)", username, email, 0).First(&user)
 	if result.Error != nil {
 		return nil, result.Error
 	}

@@ -47,11 +47,11 @@ func (u *UserHandler) Register(c *gin.Context) {
 func (u *UserHandler) ActivateAccount(c *gin.Context) {
 	token := c.Param("token")
 	err := u.service.ActivateAccount(token)
+	loginLink := "http://localhost:5173/"
 	if err != nil {
-		c.JSON(400, gin.H{"error": err.Error()})
+		c.Data(200, "text/html; charset=utf-8", []byte(util.GenerateFailedActivationEmailBody(loginLink)))
 		return
 	}
-	loginLink := "http://localhost:5173/"
 	c.Data(200, "text/html; charset=utf-8", []byte(util.GenerateSuccessfulActivationEmailBody(loginLink)))
 }
 
@@ -72,9 +72,14 @@ func (u *UserHandler) Create(c *gin.Context) {
 	if err := c.BindJSON(&user); err != nil {
 		u.logger.Error(err)
 		c.JSON(400, gin.H{"error": err.Error()})
+		return
 	}
-	data, _ := u.service.Create(&user)
-	c.JSON(200, gin.H{"data": data})
+	data, err := u.service.Create(&user)
+	if err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
+	} else {
+		c.JSON(200, gin.H{"data": data})
+	}
 }
 
 func (u *UserHandler) ChangeAdminPassword(c *gin.Context) {

@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { getUsernameFromToken } from '@/utils/jwtDecoder';
 import { ref, onMounted } from 'vue';
+import Spinner from '@/components/Spinner.vue';
 
 // Create a reactive username variable
 const username = ref<string | null>(null);
+
+const loading = ref(true)
 
 onMounted(() => {
   const decodedUsername = getUsernameFromToken();
@@ -22,6 +25,7 @@ onMounted(() => {
     <h1>HOME PAGE</h1>
     <p v-if="username">Welcome, {{ username }}!</p>
     <p v-else>No username found in token.</p>
+    <Spinner v-if="loading"/>
   </main>    
 </template>
 
