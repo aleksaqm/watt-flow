@@ -1,4 +1,3 @@
-
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import axios from 'axios'
@@ -10,7 +9,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '../../shad/components/ui/table'
+} from '@/shad/components/ui/table'
 import {
   Dialog,
   DialogContent,
@@ -19,9 +18,9 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '../../shad/components/ui/dialog'
-import { Button } from '../../shad/components/ui/button'
-import NewUserForm from '../auth/NewUserForm.vue'
+} from '@/shad/components/ui/dialog'
+import { Button } from '@/shad/components/ui/button'
+import NewUserForm from '@/components/auth/NewUserForm.vue'
 
 interface User {
   id: number
@@ -58,19 +57,19 @@ onMounted(async () => {
     <div class="flex flex-col justify-center items-center gap-5 w-full">
       <span class="text-gray-800 text-2xl">Admins</span>
       <Dialog :key="dialogKey">
-            <DialogTrigger>
-                <Button variant="outline" class="border-2">
-                    Add New Admin
-                </Button>
-            </DialogTrigger>
-            
-            <DialogContent ref="dialogRef">
-                <DialogHeader>
-                    <DialogTitle>Add New Admin</DialogTitle>
-                </DialogHeader>
-                <NewUserForm url="/api/user/admin" role="Admin" @userCreated="handleUserCreated"></NewUserForm>
-            </DialogContent>
-        </Dialog>
+        <DialogTrigger>
+          <Button variant="outline" class="border-2">
+            Add New Admin
+          </Button>
+        </DialogTrigger>
+
+        <DialogContent ref="dialogRef">
+          <DialogHeader>
+            <DialogTitle>Add New Admin</DialogTitle>
+          </DialogHeader>
+          <NewUserForm url="/api/user/admin" role="Admin" @userCreated="handleUserCreated"></NewUserForm>
+        </DialogContent>
+      </Dialog>
       <!-- <Button @click="showDialog = true" class="bg-gray-500 text-white rounded-xl px-4 py-2 mb-4">Add New Admin</Button> -->
       <Table>
         <TableHeader>

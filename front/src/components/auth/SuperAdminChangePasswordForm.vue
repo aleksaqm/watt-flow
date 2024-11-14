@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import Button from '../../shad/components/ui/button/Button.vue';
-import Input from '../../shad/components/ui/input/Input.vue';
-import { useToast } from '../../shad/components/ui/toast/use-toast'
-import Toaster from '../../shad/components/ui/toast/Toaster.vue';
+import Button from '@/shad/components/ui/button/Button.vue';
+import Input from '@/shad/components/ui/input/Input.vue';
+import { useToast } from '@/shad/components/ui/toast/use-toast'
+import Toaster from '@/shad/components/ui/toast/Toaster.vue';
 import {
   FormControl,
   FormField,
@@ -31,32 +31,32 @@ const { handleSubmit, errors } = useForm({
 })
 
 const submitForm = async (formData: { defaultPassword: string; newPassword: string, confirmPassword: string }) => {
-    if (formData.newPassword != formData.confirmPassword){
-        toast({
-            title: 'Password change failed',
-            description: "Passwords don't match",
-            variant: 'destructive'
-        })
-        return
-    }
-    console.log(formData)
-    try {
-        const response = await axios.post('/api/admin/password', {"old_password": formData.defaultPassword, "new_password": formData.newPassword})
-        console.log('Response:', response.data)
-        toast({
-            title: 'Password changed successfully',
-            variant: 'default'
-        })
-        router.push({ name: 'login' })
-    } catch (error: any) {
-        console.error('Error:', error)
-        const errorMessage = error.response?.data?.error || 'An unexpected error occurred'
-        toast({
-            title: 'Login Failed',
-            description: errorMessage,
-            variant: 'destructive'
-        })
-    }
+  if (formData.newPassword != formData.confirmPassword) {
+    toast({
+      title: 'Password change failed',
+      description: "Passwords don't match",
+      variant: 'destructive'
+    })
+    return
+  }
+  console.log(formData)
+  try {
+    const response = await axios.post('/api/admin/password', { "old_password": formData.defaultPassword, "new_password": formData.newPassword })
+    console.log('Response:', response.data)
+    toast({
+      title: 'Password changed successfully',
+      variant: 'default'
+    })
+    router.push({ name: 'login' })
+  } catch (error: any) {
+    console.error('Error:', error)
+    const errorMessage = error.response?.data?.error || 'An unexpected error occurred'
+    toast({
+      title: 'Login Failed',
+      description: errorMessage,
+      variant: 'destructive'
+    })
+  }
 }
 
 const onSubmit = handleSubmit((values) => {
@@ -75,7 +75,8 @@ const onSubmit = handleSubmit((values) => {
             <FormControl>
               <Input type="text" v-bind="field" placeholder="Enter default password" />
             </FormControl>
-            <FormMessage class="absolute -bottom-2 left-0 text-xs" v-if="errors.defaultPassword">{{ errors.defaultPassword }}
+            <FormMessage class="absolute -bottom-2 left-0 text-xs" v-if="errors.defaultPassword">{{
+              errors.defaultPassword }}
             </FormMessage>
           </FormItem>
         </FormField>
@@ -97,7 +98,8 @@ const onSubmit = handleSubmit((values) => {
             <FormControl>
               <Input type="password" v-bind="field" placeholder="Confirm your new password" />
             </FormControl>
-            <FormMessage class="absolute -bottom-2 left-0 text-xs" v-if="errors.confirmPassword">{{ errors.confirmPassword }}
+            <FormMessage class="absolute -bottom-2 left-0 text-xs" v-if="errors.confirmPassword">{{
+              errors.confirmPassword }}
             </FormMessage>
           </FormItem>
         </FormField>

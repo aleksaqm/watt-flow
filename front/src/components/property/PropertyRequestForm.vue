@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import * as z from 'zod'
 import { toTypedSchema } from '@vee-validate/zod'
-import { Field, useForm, useField  } from 'vee-validate'
+import { Field, useForm, useField } from 'vee-validate'
 import { ref, computed, nextTick } from 'vue'
 import { useToast } from '../../shad/components/ui/toast/use-toast'
 
-import Toaster  from '../../shad/components/ui/toast/Toaster.vue';
+import Toaster from '@/shad/components/ui/toast/Toaster.vue';
 import { Button } from '@/shad/components/ui/button'
 import { Input } from '@/shad/components/ui/input'
 import { ZodIssueCode } from "zod";
@@ -34,7 +34,7 @@ import "leaflet/dist/leaflet.css";
 import { LMap, LTileLayer, LMarker, LPopup } from "@vue-leaflet/vue-leaflet";
 import 'leaflet/dist/leaflet.css';
 
-const cities = ["Novi Sad", "Niš", "Beograd", "Los Angeles"] 
+const cities = ["Novi Sad", "Niš", "Beograd", "Los Angeles"]
 
 const formSchema = toTypedSchema(
   z.object({
@@ -162,7 +162,7 @@ const geocodeCity = async (city: string) => {
     const data = await response.json();
 
     if (data && data.length > 0) {
-      const { lat, lon } = data[0]; 
+      const { lat, lon } = data[0];
       return { lat, lon };
     } else {
       alert("City not found!");
@@ -200,7 +200,7 @@ const onMapClick = async (event: { latlng: { lat: number, lng: number } }) => {
 
     const data = await response.json();
     const fetchedStreet = data.address.road;
-    const fetchedStreetNumber = data.address.house_number; 
+    const fetchedStreetNumber = data.address.house_number;
     setFieldValue('street', street.value);
     setFieldValue('streetNumber', streetNumber.value);
     setFieldValue('lon', event.latlng.lng)
@@ -243,9 +243,9 @@ const submitForm = async () => {
     const documentsBase64 = await Promise.all(
       documents.value.map((file) => convertToBase64(file))
     );
-    
+
     const data = {
-      floors: numberOfFloors.value, 
+      floors: numberOfFloors.value,
       status: 0,
       owner_id: 1,
       images: imagesBase64,
@@ -253,9 +253,9 @@ const submitForm = async () => {
       household: householdEntries.value.map(entry => ({
         floor: parseInt(entry.floor, 10),
         suite: entry.suite,
-        status: 0, 
+        status: 0,
         sq_footage: entry.area,
-        cadastral_number: entry.identifier, 
+        cadastral_number: entry.identifier,
       })),
 
       address: {
@@ -270,7 +270,7 @@ const submitForm = async () => {
     console.log(data);
     const response = await axios.post('/api/property', data);
     console.log(response);
-    
+
     toast({
       title: 'Property Registration Successful',
       description: 'Your request is now under review.',
@@ -285,7 +285,7 @@ const submitForm = async () => {
       if (serverMessage.includes('duplicate key value') || serverMessage.includes('unique constraint')) {
         errorMessage = 'Cadastral number already exists in database. Please check it again.';
       } else if (serverMessage) {
-        errorMessage = serverMessage; 
+        errorMessage = serverMessage;
       } else {
         errorMessage = `Server error: ${error.response?.status}`;
       }
@@ -314,15 +314,11 @@ const onSubmit = handleSubmit(submitForm);
       <form class="w-full space-y-6" @submit="onSubmit">
 
         <div class="w-full h-64 sm:h-96">
-          <l-map ref="map" v-model:zoom="zoom" :center="center"  @click="onMapClick" :use-global-leaflet="false" class="w-full h-full">
-            <l-tile-layer
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              layer-type="base"
-              name="OpenStreetMap"
-            ></l-tile-layer>
-            <l-marker
-              :lat-lng="markerPosition"
-            >
+          <l-map ref="map" v-model:zoom="zoom" :center="center" @click="onMapClick" :use-global-leaflet="false"
+            class="w-full h-full">
+            <l-tile-layer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" layer-type="base"
+              name="OpenStreetMap"></l-tile-layer>
+            <l-marker :lat-lng="markerPosition">
               <l-popup>Marker here</l-popup>
 
             </l-marker>
@@ -365,7 +361,8 @@ const onSubmit = handleSubmit(submitForm);
                   <CommandList>
                     <CommandEmpty>No city found.</CommandEmpty>
                     <CommandGroup>
-                      <CommandItem v-for="cityItem in cities" :key="cityItem" :value="cityItem" @select="selectCity(cityItem)">
+                      <CommandItem v-for="cityItem in cities" :key="cityItem" :value="cityItem"
+                        @select="selectCity(cityItem)">
                         {{ cityItem }}
                       </CommandItem>
                     </CommandGroup>
@@ -373,7 +370,7 @@ const onSubmit = handleSubmit(submitForm);
                 </Command>
               </PopoverContent>
             </Popover>
-            <FormMessage v-if="errors.city">{{ errors.city }}</FormMessage> 
+            <FormMessage v-if="errors.city">{{ errors.city }}</FormMessage>
           </FormItem>
         </FormField>
 
@@ -442,7 +439,8 @@ const onSubmit = handleSubmit(submitForm);
               <FormItem>
                 <FormLabel>Cadastral num</FormLabel>
                 <FormControl>
-                  <Input type="text" v-bind="field" v-model="household.identifier" placeholder="Enter cadastral number" />
+                  <Input type="text" v-bind="field" v-model="household.identifier"
+                    placeholder="Enter cadastral number" />
                 </FormControl>
                 <FormMessage>{{ errors[0] }}</FormMessage>
               </FormItem>
@@ -453,7 +451,8 @@ const onSubmit = handleSubmit(submitForm);
             </Button>
           </div>
         </div>
-        <Button type="button" @click="addHouseholdEntry" class="bg-indigo-500 text-white hover:bg-gray-600">Add Household</Button>
+        <Button type="button" @click="addHouseholdEntry" class="bg-indigo-500 text-white hover:bg-gray-600">Add
+          Household</Button>
 
         <Button type="submit" class="w-full bg-gray-800 text-white hover:bg-gray-600 rounded-full py-2">
           Submit Request
