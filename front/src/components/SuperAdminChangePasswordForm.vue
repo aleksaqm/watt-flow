@@ -21,7 +21,7 @@ const router = useRouter()
 
 
 const formSchema = toTypedSchema(z.object({
-  defaultPassword: z.string().min(2, { message: "Password must be at least 6 characters" }).max(50, { message: "Username cannot exceed 50 characters" }),
+  defaultPassword: z.string().min(2, { message: "Password must be at least 6 characters" }).max(50, { message: "Password cannot exceed 50 characters" }),
   newPassword: z.string().min(6, { message: "Password must be at least 6 characters" }),
   confirmPassword: z.string().min(6, { message: "Password must be at least 6 characters" }),
 }))
