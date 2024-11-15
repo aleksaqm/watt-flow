@@ -60,6 +60,11 @@ services:
         target: /etc/influxdb2
     networks:
       - watt-flow-network
+    healthcheck:
+        test: "curl -f http://localhost:8086/ping"
+        interval: 5s
+        timeout: 10s
+        retries: 5
 
   rabbitmq:
     image: rabbitmq:3-management
@@ -94,6 +99,7 @@ services:
   consumer:
     build: ./consumer/
     restart: always
+    stop_grace_period: 50s
     networks:
       - watt-flow-network
     environment:
@@ -109,6 +115,12 @@ services:
     depends_on:
       rabbitmq:
         condition: service_healthy
+      influxdb2:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
 
   simulator-1:
     build: ./simulator/
@@ -126,6 +138,8 @@ services:
     depends_on:
       rabbitmq:
         condition: service_healthy
+      consumer:
+        condition: service_started
     
 
   simulator-2:
@@ -144,6 +158,8 @@ services:
     depends_on:
       rabbitmq:
         condition: service_healthy
+      consumer:
+        condition: service_started
 
   simulator-3:
     build: ./simulator/
@@ -161,6 +177,8 @@ services:
     depends_on:
       rabbitmq:
         condition: service_healthy
+      consumer:
+        condition: service_started
 
   nginx:
     image: nginx:latest
