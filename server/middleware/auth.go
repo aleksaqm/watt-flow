@@ -34,7 +34,7 @@ func (m *AuthMiddleware) Handler() gin.HandlerFunc {
 				c.Next()
 				return
 			}
-			c.JSON(http.StatusInternalServerError, gin.H{
+			c.JSON(http.StatusUnauthorized, gin.H{
 				"error": err.Error(),
 			})
 			m.logger.Error(err)

@@ -110,6 +110,10 @@ func (u *UserHandler) FindAdmins(c *gin.Context) {
 	c.JSON(200, data)
 }
 
+func (u *UserHandler) ReturnOk(c *gin.Context) {
+	c.JSON(200, gin.H{"data": "ok"})
+}
+
 func NewUserHandler(userService service.IUserService, logger util.Logger) *UserHandler {
 	return &UserHandler{
 		service: userService,
