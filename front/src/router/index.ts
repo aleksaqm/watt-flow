@@ -10,6 +10,8 @@ import UsersPropertyesTable from '@/components/property/UsersPropertyesTable.vue
 import SuperAdminChangePasswordView from '@/views/auth/SuperAdminChangePasswordView.vue'
 import ManageAdminsView from '@/views/user/ManageAdminsView.vue'
 import UserProfileView from '@/views/user/UserProfileView.vue'
+import AdminPropertyRequestsView from '@/views/property/AdminPropertyRequestsView.vue'
+import OwnersPropertyRequestsView from '@/views/property/OwnersPropertyRequestsView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -47,7 +49,12 @@ const router = createRouter({
     {
       path: '/my-property-request',
       name: 'my-property-request',
-      component: UsersPropertyesTable
+      component: OwnersPropertyRequestsView
+    },
+    {
+      path: '/admin/property-requests',
+      name: 'property-request',
+      component: AdminPropertyRequestsView
     },
     {
       path: '/superadmin',

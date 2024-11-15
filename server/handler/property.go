@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"encoding/json"
+	"net/http"
 	"strconv"
 	"watt-flow/dto"
 	"watt-flow/model"
@@ -118,12 +120,20 @@ func (p PropertyHandler) TableQuery(c *gin.Context) {
 		return
 	}
 
+	var searchParams dto.PropertySearchParams
+	if search != "" {
+		if err := json.Unmarshal([]byte(search), &searchParams); err != nil {
+			c.JSON(400, gin.H{"error": "Invalid search parameter"})
+			return
+		}
+	}
+
 	params := dto.PropertyQueryParams{
 		Page:      pageInt,
 		PageSize:  pageSizeInt,
 		SortBy:    sortBy,
 		SortOrder: sortOrder,
-		Search:    search,
+		Search:    searchParams,
 	}
 	p.logger.Info(params)
 	properties, total, err := p.service.TableQuery(&params)
@@ -132,7 +142,24 @@ func (p PropertyHandler) TableQuery(c *gin.Context) {
 		c.JSON(500, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(201, gin.H{"properties": properties, "total": total})
+	c.JSON(200, gin.H{"properties": properties, "total": total})
+}
+
+func (p PropertyHandler) AcceptProperty(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid property ID"})
+		return
+	}
+
+	err = p.service.AcceptProperty(id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update property status"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Property status updated successfully"})
 }
 
 func NewPropertyHandler(propertyService service.IPropertyService, logger util.Logger) *PropertyHandler {
