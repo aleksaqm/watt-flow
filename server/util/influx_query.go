@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strconv"
 	"watt-flow/config"
 	"watt-flow/dto"
 
@@ -39,21 +40,18 @@ func (inf *InfluxQueryHelper) SendStatusQuery(queryParams dto.FluxQueryStatusDto
 	fluxQuery := fmt.Sprintf(`
   import "array"
   import "experimental"
-  now = array.from(rows: [
-    { _time: experimental.subDuration(from: now(), d: 1m), _value: false, _field: "value", _measurement: "online_status", device_id: "%s", _stop: now(), _start: now()}
-  ])
+  bounds = array.from(rows: [
+    { _time: experimental.subDuration(from: now(), d: 1m), _value: false, _field: "value", _measurement: "online_status", device_id: "%s", _stop: now(), _start: now()},
+  
+  { _time: experimental.subDuration(from: now(), d: %s), _value: false, _field: "value", _measurement: "online_status", device_id: "%s", _stop: now(), _start: now()}
+
+    ])
 
   data = from(bucket: "device_status")
     |> range(start: -%s)
     |> filter(fn: (r) => r._measurement == "online_status" and r._field == "value" and r.device_id=="%s")
 
-  last_period = 
-        from(bucket: "device_status")
-          |> range(start: -30d, stop: -%s)
-          |> filter(fn: (r) => r._measurement == "online_status" and r._field == "value" and r.device_id=="%s")
-          |> last()
-
-  all_data = union(tables: [data, now, last_period])
+  all_data = union(tables: [data, bounds])
     all_data 
     |> group()
     |> sort(columns: ["_time"])
@@ -74,17 +72,40 @@ func (inf *InfluxQueryHelper) SendStatusQuery(queryParams dto.FluxQueryStatusDto
 	defer result.Close()
 
 	results := dto.StatusQueryResult{
-		Rows: make([]dto.StatusQueryResultRow, 52),
+		Rows: []dto.StatusQueryResultRow{},
 	}
 
 	for result.Next() {
+		value := result.Record().Value()
+		var floatVal float64
+
+		switch v := value.(type) {
+		case float64:
+			floatVal = v
+		case int64:
+			floatVal = float64(v)
+		case int:
+			floatVal = float64(v)
+		case string:
+			// Try to parse string as float if needed
+			parsed, err := strconv.ParseFloat(v, 64)
+			if err != nil {
+				log.Printf("Error converting string to float: %v", err)
+				continue
+			}
+			floatVal = parsed
+		case nil:
+			floatVal = 0
+		default:
+			log.Printf("Unexpected value type: %T", value)
+			continue
+		}
+
 		results.Rows = append(results.Rows, dto.StatusQueryResultRow{
 			TimeField: result.Record().Time(),
-			Value:     result.Record().Value().(float32),
+			Value:     floatVal,
 		})
 	}
-
-	// Check for any errors after the query execution
 	if result.Err() != nil {
 		log.Fatalf("Query execution error: %v", result.Err())
 		return nil, err

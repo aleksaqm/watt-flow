@@ -1,0 +1,30 @@
+import "array"
+import "experimental"
+import "influxdata/influxdb/schema"
+
+now = array.from(rows: [
+  { _time: experimental.subDuration(from: now(), d: 1m), _value: false, _field: "value", _measurement: "online_status", device_id: "ff781b42-c3b0-475b-bdc5-cb467d0f4222", _stop: now(), _start: now()},
+  { _time: experimental.subDuration(from: now(), d: 3h), _value: false, _field: "value", _measurement: "online_status", device_id: "ff781b42-c3b0-475b-bdc5-cb467d0f4222", _stop: now(), _start: now()}
+])
+
+
+
+data = from(bucket: "device_status")
+  |> range(start: -3h)
+  |> filter(fn: (r) => r._measurement == "online_status" and r._field == "value" and r.device_id=="ff781b42-c3b0-475b-bdc5-cb467d0f4222")
+
+
+all_data = union(tables: [data, now])
+
+  all_data 
+  |> group()
+  |> sort(columns: ["_time"])
+  |> range(start: -3h)
+
+  |> elapsed(unit: 1s)
+  |> filter(fn: (r) => r._value == false )
+  |> aggregateWindow(every: 1h, fn: sum, column: "elapsed")
+  |> map(fn: (r) => ({
+    _time: r._time,
+    duration_minutes: float(v: r.elapsed) / 60.0
+  }))

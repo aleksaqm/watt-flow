@@ -8,5 +8,5 @@ type StatusQueryResult struct {
 
 type StatusQueryResultRow struct {
 	TimeField time.Time
-	Value     float32
+	Value     float64
 }
