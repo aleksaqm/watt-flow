@@ -1,11 +1,12 @@
 package handler
 
 import (
-	"github.com/gin-gonic/gin"
 	"strconv"
 	"watt-flow/model"
 	"watt-flow/service"
 	"watt-flow/util"
+
+	"github.com/gin-gonic/gin"
 )
 
 type DeviceStatusHandler struct {
@@ -22,6 +23,16 @@ func (h DeviceStatusHandler) GetByAddress(c *gin.Context) {
 		return
 	}
 	c.JSON(200, gin.H{"data": data})
+}
+
+func (h DeviceStatusHandler) Query(c *gin.Context) {
+	err := h.service.Query()
+	if err != nil {
+		h.logger.Error(err)
+		c.JSON(404, gin.H{"error": "Device status not found"})
+		return
+	}
+	c.JSON(200, gin.H{})
 }
 
 func (h DeviceStatusHandler) GetByHouseholdID(c *gin.Context) {
