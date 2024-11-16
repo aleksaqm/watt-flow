@@ -20,6 +20,7 @@ type IPropertyService interface {
 	FindByStatus(status model.PropertyStatus) ([]model.Property, error)
 	TableQuery(params *dto.PropertyQueryParams) ([]model.Property, int64, error)
 	AcceptProperty(id uint64) error
+	DeclineProperty(id uint64, message string) error
 }
 
 type PropertyService struct {
@@ -172,5 +173,15 @@ func (service *PropertyService) AcceptProperty(id uint64) error {
 
 	service.propertyRepository.Logger.Info(fmt.Sprintf("Property and its households updated to status for property ID %d", id))
 
+	return nil
+}
+
+func (service *PropertyService) DeclineProperty(id uint64, message string) error {
+
+	err := service.propertyRepository.DeclineProperty(id)
+	if err != nil {
+		service.propertyRepository.Logger.Error("Error updating property status", err)
+		return err
+	}
 	return nil
 }

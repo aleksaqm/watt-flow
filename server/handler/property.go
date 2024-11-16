@@ -162,6 +162,31 @@ func (p PropertyHandler) AcceptProperty(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Property status updated successfully"})
 }
 
+func (p PropertyHandler) DeclineProperty(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid property ID"})
+		return
+	}
+
+	var requestBody struct {
+		Message string `json:"message"`
+	}
+	if err := c.ShouldBindJSON(&requestBody); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		return
+	}
+
+	err = p.service.DeclineProperty(id, requestBody.Message)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update property status"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Property status updated successfully"})
+}
+
 func NewPropertyHandler(propertyService service.IPropertyService, logger util.Logger) *PropertyHandler {
 	return &PropertyHandler{
 		service: propertyService,

@@ -77,8 +77,22 @@ func (repository *PropertyRepository) FindByAddress(city string, street string, 
 func (repository *PropertyRepository) AcceptProperty(tx *gorm.DB, id uint64) error {
 	const newPropertyStatus model.PropertyStatus = 2
 
-	// Update the property status within the transaction
 	err := tx.Model(&model.Property{}).
+		Where("id = ?", id).
+		Update("status", newPropertyStatus).
+		Error
+	if err != nil {
+		repository.Logger.Error("Error updating property status", err)
+		return err
+	}
+
+	return nil
+}
+
+func (repository *PropertyRepository) DeclineProperty(id uint64) error {
+	const newPropertyStatus model.PropertyStatus = 1
+
+	err := repository.Database.Model(&model.Property{}).
 		Where("id = ?", id).
 		Update("status", newPropertyStatus).
 		Error

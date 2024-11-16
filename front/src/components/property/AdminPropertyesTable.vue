@@ -63,7 +63,7 @@ const { toast } = useToast()
 
 const properties = ref<Property[]>([])
 
-
+const currentPropertyId = ref<number | null>(null); 
 const pagination = ref({ page: 1, total: 0, perPage: 2 })
 const searchQuery = ref<{ city?: string; street?: string; number?: string; floors?: number }>({})
 const sortBy = ref("city")
@@ -158,13 +158,34 @@ const formSchema = toTypedSchema(z.object({
   declineReason: z.string().min(2).max(50),
 }))
 
-function onSubmit(values: any) {
-    fetchProperties()
+async function handleDecline(values: any) {
+  try {
+    if (!currentPropertyId.value) {
+      throw new Error("No property ID found for declining.");
+    }
+    console.log(`Declining property with ID: ${currentPropertyId.value}`);
+    console.log(`Reason: ${values.declineReason}`);
+
+    await axios.put(`/api/property/${currentPropertyId.value}/decline`, {
+      message: values.declineReason,
+    });
+
+    fetchProperties();
     toast({
-        title: 'You submitted the following values:',
-        description: h('pre', { class: 'mt-2 w-[340px] rounded-md bg-slate-950 p-4' }, h('code', { class: 'text-white' }, JSON.stringify(values, null, 2))),
-        variant: "default"
-    })
+      title: 'Property Declined',
+      description: `Property was declined successfully.`,
+      variant: "default",
+    });
+  } catch (error) {
+    console.error(`Failed to decline property with ID ${currentPropertyId.value}:`, error);
+    toast({
+      title: 'Error:',
+      description: "Error declining property request.",
+      variant: "destructive",
+    });
+  } finally {
+    currentPropertyId.value = null; 
+  }
 }
 
 </script>
@@ -235,7 +256,7 @@ function onSubmit(values: any) {
             <Form v-slot="{ handleSubmit }" as="" :validation-schema="formSchema">
                 <Dialog>
                     <DialogTrigger as-child>
-                        <Button class="bg-red-500 text-white" v-if="property.status === 'Pending'">Decline</Button>
+                        <Button class="bg-red-500 text-white" v-if="property.status === 'Pending'" @click="currentPropertyId = property.id">Decline</Button>
                     </DialogTrigger>
                     <DialogContent class="sm:max-w-[425px]">
                         <DialogHeader>
@@ -244,7 +265,7 @@ function onSubmit(values: any) {
                                 Reason for declining property request
                             </DialogDescription>
                         </DialogHeader>
-                        <form id="dialogForm" @submit="handleSubmit($event, onSubmit)">
+                        <form id="dialogForm" @submit="handleSubmit($event, handleDecline)">
                             <FormField v-slot="{ componentField }" name="declineReason">
                                 <FormItem>
                                     <FormLabel>Decline reason</FormLabel>
