@@ -2,6 +2,7 @@ package handler
 
 import (
 	"strconv"
+	"watt-flow/dto"
 	"watt-flow/model"
 	"watt-flow/service"
 	"watt-flow/util"
@@ -25,14 +26,20 @@ func (h DeviceStatusHandler) GetByAddress(c *gin.Context) {
 	c.JSON(200, gin.H{"data": data})
 }
 
-func (h DeviceStatusHandler) Query(c *gin.Context) {
-	err := h.service.Query()
-	if err != nil {
+func (h DeviceStatusHandler) QueryStatus(c *gin.Context) {
+	var queryParams dto.FluxQueryStatusDto
+	if err := c.BindJSON(&queryParams); err != nil {
 		h.logger.Error(err)
-		c.JSON(404, gin.H{"error": "Device status not found"})
+		c.JSON(400, gin.H{"error": "Invalid device status query params"})
 		return
 	}
-	c.JSON(200, gin.H{})
+	data, err := h.service.QueryStatus(queryParams)
+	if err != nil {
+		h.logger.Error(err)
+		c.JSON(500, gin.H{"error": "Failed to query device status"})
+		return
+	}
+	c.JSON(200, gin.H{"data": data})
 }
 
 func (h DeviceStatusHandler) GetByHouseholdID(c *gin.Context) {

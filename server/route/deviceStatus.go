@@ -17,7 +17,7 @@ func (r DeviceStatusRoute) Register(server *server.Server) {
 	{
 		api.GET("/device-status/:address", server.DeviceStatusHandler.GetByAddress)
 		api.GET("/device-status/household/:household_id", server.DeviceStatusHandler.GetByHouseholdID)
-		api.GET("/device-status/query", server.DeviceStatusHandler.Query)
+		api.POST("/device-status/query-status", server.DeviceStatusHandler.QueryStatus)
 		api.POST("/device-status", server.DeviceStatusHandler.Create)
 		api.PUT("/device-status/:address", server.DeviceStatusHandler.Update)
 		api.DELETE("/device-status/:address", server.DeviceStatusHandler.Delete)
