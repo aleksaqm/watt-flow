@@ -31,15 +31,25 @@ import { type DateRange, RangeCalendarRoot, useDateFormatter } from 'radix-vue'
 import { createMonth, type Grid, toDate } from 'radix-vue/date'
 import { type Ref, ref, watch } from 'vue'
 
+const now = new Date()
+const end = new CalendarDate(now.getFullYear(), now.getMonth() + 1, now.getDate())
+
 const value = ref({
-  start: new CalendarDate(2022, 1, 20),
-  end: new CalendarDate(2022, 1, 20).add({ days: 20 }),
+  end: end,
+  start: end.subtract({ days: 10 }),
 }) as Ref<DateRange>
 
 defineProps({
   isCalendarEnabled: Boolean
 })
 
+const emit = defineEmits<{
+  'update:value': [value: DateRange]
+}>()
+
+watch(value, (newValue) => {
+  emit('update:value', newValue)
+})
 const locale = ref('en-US')
 const formatter = useDateFormatter(locale.value)
 
@@ -98,6 +108,7 @@ watch(secondMonthPlaceholder, (_secondMonthPlaceholder) => {
   if (isEqualMonth(_secondMonthPlaceholder, placeholder.value))
     placeholder.value = placeholder.value.subtract({ months: 1 })
 })
+
 </script>
 
 <template>
