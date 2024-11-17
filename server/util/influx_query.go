@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"strconv"
+	"time"
 	"watt-flow/config"
 	"watt-flow/dto"
 
@@ -35,35 +36,14 @@ func (inf *InfluxQueryHelper) SendStatusQuery(queryParams dto.FluxQueryStatusDto
 
 	// Create a query API client
 	queryAPI := client.QueryAPI(inf.organization)
-
-	// Define the Flux query
-	fluxQuery := fmt.Sprintf(`
-  import "array"
-  import "experimental"
-  bounds = array.from(rows: [
-    { _time: experimental.subDuration(from: now(), d: 1m), _value: false, _field: "value", _measurement: "online_status", device_id: "%s", _stop: now(), _start: now()},
-  
-  { _time: experimental.subDuration(from: now(), d: %s), _value: false, _field: "value", _measurement: "online_status", device_id: "%s", _stop: now(), _start: now()}
-
-    ])
-
-  data = from(bucket: "device_status")
-    |> range(start: -%s)
-    |> filter(fn: (r) => r._measurement == "online_status" and r._field == "value" and r.device_id=="%s")
-
-  all_data = union(tables: [data, bounds])
-    all_data 
-    |> group()
-    |> sort(columns: ["_time"])
-    |> range(start: -%s)
-    |> elapsed(unit: 1%s)
-    |> filter(fn: (r) => r._value == false )
-    |> aggregateWindow(every: %s, fn: sum, column: "elapsed")
-    |> map(fn: (r) => ({
-      _time: r._time,
-      _value: float(v: r.elapsed)
-    }))
-`, queryParams.DeviceId, queryParams.TimePeriod, queryParams.DeviceId, queryParams.TimePeriod, queryParams.DeviceId, queryParams.TimePeriod, queryParams.Precision, queryParams.GroupPeriod)
+	fluxQuery := ""
+	log.Println(queryParams)
+	if queryParams.TimePeriod == "custom" {
+		fluxQuery = generateRangeQueryString(queryParams)
+	} else {
+		fluxQuery = generateQueryString(queryParams)
+	}
+	log.Println(fluxQuery)
 
 	result, err := queryAPI.Query(context.Background(), fluxQuery)
 	if err != nil {
@@ -111,4 +91,76 @@ func (inf *InfluxQueryHelper) SendStatusQuery(queryParams dto.FluxQueryStatusDto
 		return nil, err
 	}
 	return &results, nil
+}
+
+func generateQueryString(params dto.FluxQueryStatusDto) string {
+	fluxQuery := fmt.Sprintf(`
+  import "array"
+  import "experimental"
+
+
+  data = from(bucket: "device_status")
+    |> range(start: -%s)
+    |> filter(fn: (r) => r._measurement == "online_status" and r._field == "value" and r.device_id=="%s")
+
+  last_from_data = data |> last()   |> findRecord(fn: (key) => true, idx: 0)
+
+  bounds = array.from(rows: [
+    { _time: experimental.subDuration(from: now(), d: 1m),  _value: if last_from_data._value == true then false else true, _field: "value", _measurement: "online_status", device_id: "%s", _stop: now(), _start: now()},
+  
+  { _time: experimental.subDuration(from: now(), d: %s), _value: false, _field: "value", _measurement: "online_status", device_id: "%s", _stop: now(), _start: now()}
+
+    ])
+
+
+  all_data = union(tables: [data, bounds])
+    all_data 
+    |> group()
+    |> sort(columns: ["_time"])
+    |> range(start: -%s)
+    |> elapsed(unit: 1%s)
+    |> filter(fn: (r) => r._value == false )
+    |> aggregateWindow(every: %s, fn: sum, column: "elapsed")
+    |> map(fn: (r) => ({
+      _time: r._time,
+      _value: float(v: r.elapsed)
+    }))
+`, params.TimePeriod, params.DeviceId, params.DeviceId, params.TimePeriod, params.DeviceId, params.TimePeriod, params.Precision, params.GroupPeriod)
+	return fluxQuery
+}
+
+func generateRangeQueryString(params dto.FluxQueryStatusDto) string {
+	startDate := params.StartDate.Format(time.RFC3339)
+	endDate := params.EndDate.Format(time.RFC3339)
+	fluxQuery := fmt.Sprintf(`
+  import "array"
+  import "experimental"
+
+
+
+  data = from(bucket: "device_status")
+    |> range(start: %s, stop: %s)
+    |> filter(fn: (r) => r._measurement == "online_status" and r._field == "value" and r.device_id=="%s")
+    
+
+  now = array.from(rows: [
+    { _time: %s, _value: false, _field: "value", _measurement: "online_status", device_id: "%s", _stop: now(), _start: now()}
+  ])
+
+
+  all_data = union(tables: [data, now])
+
+    all_data 
+    |> group()
+    |> sort(columns: ["_time"])
+    |> range(start: %s, stop: %s)
+    |> elapsed(unit: 1%s)
+    |> filter(fn: (r) => r._value == false )
+    |> aggregateWindow(every: %s, fn: sum, column: "elapsed")
+    |> map(fn: (r) => ({
+      _time: r._time,
+      _value: float(v: r.elapsed)
+    }))
+`, startDate, endDate, params.DeviceId, startDate, params.DeviceId, startDate, endDate, params.Precision, params.GroupPeriod)
+	return fluxQuery
 }

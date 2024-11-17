@@ -28,3 +28,94 @@ all_data = union(tables: [data, now])
     _time: r._time,
     duration_minutes: float(v: r.elapsed) / 60.0
   }))
+
+
+
+
+
+
+
+
+
+import "array"
+import "experimental"
+import "influxdata/influxdb/schema"
+import "internal/debug"
+
+
+
+
+
+
+
+data = from(bucket: "device_status")
+  |> range(start: -3h)
+  |> filter(fn: (r) => r._measurement == "online_status" and r._field == "value" and r.device_id=="be781b42-c3b0-475b-bdc5-cb467d0f4fa1")
+  
+last_from_data = data |> last()   |> findRecord(fn: (key) => true, idx: 0)
+
+
+now = array.from(rows: [
+  { _time: experimental.subDuration(from: now(), d: 1m), _value: if last_from_data._value == true then false else true, _field: "value", _measurement: "online_status", device_id: "be781b42-c3b0-475b-bdc5-cb467d0f4fa1", _stop: now(), _start: now()},
+  { _time: experimental.subDuration(from: now(), d: 3h), _value: false, _field: "value", _measurement: "online_status", device_id: "be781b42-c3b0-475b-bdc5-cb467d0f4fa1", _stop: now(), _start: now()}
+])
+
+
+all_data = union(tables: [data, now])
+
+  all_data 
+  |> group()
+  |> sort(columns: ["_time"])
+  |> range(start: -3h)
+
+  |> elapsed(unit: 1s)
+  |> filter(fn: (r) => r._value == false )
+  |> aggregateWindow(every: 1h, fn: sum, column: "elapsed")
+  |> map(fn: (r) => ({
+    _time: r._time,
+    duration_minutes: float(v: r.elapsed) / 60.0
+  }))
+
+
+
+
+
+
+
+
+
+
+
+
+
+import "array"
+import "experimental"
+
+
+
+data = from(bucket: "device_status")
+   |> range(start: 2024-05-22T23:30:00Z, stop: 2024-11-23T00:00:00Z)
+  |> filter(fn: (r) => r._measurement == "online_status" and r._field == "value" and r.device_id=="be781b42-c3b0-475b-bdc5-cb467d0f4fa1")
+  
+
+now = array.from(rows: [
+  { _time: 2024-05-22T23:30:00Z, _value: false, _field: "value", _measurement: "online_status", device_id: "be781b42-c3b0-475b-bdc5-cb467d0f4fa1", _stop: now(), _start: now()}
+])
+
+
+all_data = union(tables: [data, now])
+
+  all_data 
+  |> group()
+  |> sort(columns: ["_time"])
+   |> range(start: 2024-05-22T23:30:00Z, stop: 2024-11-18T00:00:00Z)
+
+
+  |> elapsed(unit: 1s)
+  |> filter(fn: (r) => r._value == false )
+  |> aggregateWindow(every: 1h, fn: sum, column: "elapsed")
+  |> map(fn: (r) => ({
+    _time: r._time,
+    duration_minutes: float(v: r.elapsed) / 60.0
+  }))
+
