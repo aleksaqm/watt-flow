@@ -1,47 +1,17 @@
 <script setup lang="ts">
-import { Line } from 'vue-chartjs'
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend
-} from 'chart.js'
+import { AreaChart } from '@/shad/components/ui/chart-area'
 
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend
-)
-const chartData = {
-  labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July'],
-  datasets: [
-    {
-      label: 'Availability percentage',
-      backgroundColor: '#ffffff',
-      borderColor: '#6366F1',
-      data: [40, 39, 10, 40, 39, 80, 40],
-      tension: 0.1,
-      fill: false,
-    }
-  ]
-}
-
-const chartOptions = {
-  responsive: true,
-  maintainAspectRatio: false,
-}
+const data = [
+  { name: 'Jan', total: Math.floor(Math.random() * 2000) + 500, predicted: Math.floor(Math.random() * 2000) + 500 },
+  { name: 'Feb', total: Math.floor(Math.random() * 2000) + 500, predicted: Math.floor(Math.random() * 2000) + 500 },
+  { name: 'Mar', total: Math.floor(Math.random() * 2000) + 500, predicted: Math.floor(Math.random() * 2000) + 500 },
+  { name: 'Apr', total: Math.floor(Math.random() * 2000) + 500, predicted: Math.floor(Math.random() * 2000) + 500 },
+  { name: 'May', total: Math.floor(Math.random() * 2000) + 500, predicted: Math.floor(Math.random() * 2000) + 500 },
+  { name: 'Jun', total: Math.floor(Math.random() * 2000) + 500, predicted: Math.floor(Math.random() * 2000) + 500 },
+  { name: 'Jul', total: Math.floor(Math.random() * 2000) + 500, predicted: Math.floor(Math.random() * 2000) + 500 },
+]
 </script>
 
 <template>
-  <div class="m-10">
-    <Line :data="chartData" :options="chartOptions" />
-  </div>
+  <AreaChart :data="data" index="name" :categories="['total', 'predicted']" />
 </template>
