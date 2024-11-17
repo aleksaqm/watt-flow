@@ -149,6 +149,11 @@ async function handleAccept(id: number) {
     const response = await axios.put(`/api/property/` + id +`/accept`)
     console.log(`Property accepteded successfully`, response.data)
     fetchProperties()
+    toast({
+      title: 'Property Accepted',
+      description: `Property was accepted successfully.`,
+      variant: "default",
+    });
   } catch (error) {
     console.error(`Failed to accept property with ID ${id}:`, error)
   }

@@ -155,7 +155,14 @@ func (service *PropertyService) AcceptProperty(id uint64) error {
 		return tx.Error
 	}
 
-	err := service.propertyRepository.AcceptProperty(tx, id)
+	property, err := service.FindById(id)
+	if err != nil {
+		tx.Rollback()
+		service.propertyRepository.Logger.Error("Error finding property ", err)
+		return err
+	}
+
+	err = service.propertyRepository.AcceptProperty(tx, id)
 	if err != nil {
 		tx.Rollback()
 		service.propertyRepository.Logger.Error("Error updating property status", err)
@@ -173,7 +180,11 @@ func (service *PropertyService) AcceptProperty(id uint64) error {
 
 	service.propertyRepository.Logger.Info(fmt.Sprintf("Property and its households updated to status for property ID %d", id))
 
-	return nil
+	emailBody := util.GeneratePropertyApprovalEmailBody(property.Address.City+", "+property.Address.Street+" "+property.Address.Number,
+		"http://localhost:5173/")
+
+	err = util.SendEmail(property.Owner.Email, "Property approved", emailBody)
+	return err
 }
 
 func (service *PropertyService) DeclineProperty(id uint64, message string) error {
@@ -183,5 +194,16 @@ func (service *PropertyService) DeclineProperty(id uint64, message string) error
 		service.propertyRepository.Logger.Error("Error updating property status", err)
 		return err
 	}
-	return nil
+
+	property, err := service.FindById(id)
+	if err != nil {
+		service.propertyRepository.Logger.Error("Error finding property ", err)
+		return err
+	}
+
+	emailBody := util.GeneratePropertyDeclineEmailBody(property.Address.City+", "+property.Address.Street+" "+property.Address.Number,
+		message, "http://localhost:5173/")
+
+	err = util.SendEmail(property.Owner.Email, "Property declined", emailBody)
+	return err
 }

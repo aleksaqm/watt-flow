@@ -53,7 +53,7 @@ const router = createRouter({
     },
     {
       path: '/admin/property-requests',
-      name: 'property-request',
+      name: 'admin-property-request',
       component: AdminPropertyRequestsView
     },
     {
