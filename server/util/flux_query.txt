@@ -83,6 +83,17 @@ all_data = union(tables: [data, now])
 
 
 
+from(bucket: "device_status")
+  |> range(start: -3h)
+  |> filter(fn: (r) => r._measurement == "online_status" and r._field == "value" and r.device_id=="ff781b42-c3b0-475b-bdc5-cb467d0f4222")
+  |> sort(columns: ["_time"])
+
+
+
+
+
+
+
 
 
 

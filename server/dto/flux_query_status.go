@@ -9,4 +9,5 @@ type FluxQueryStatusDto struct {
 	Precision   string
 	StartDate   time.Time
 	EndDate     time.Time
+	Realtime    bool
 }

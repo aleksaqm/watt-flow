@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import Toaster from '@/shad/components/ui/toast/Toaster.vue';
+import { useToast } from '@/shad/components/ui/toast/use-toast'
 import Card from '@/shad/components/ui/card/Card.vue';
 import CardContent from '@/shad/components/ui/card/CardContent.vue';
 import CardHeader from '@/shad/components/ui/card/CardHeader.vue';
@@ -20,8 +22,11 @@ import DateRangePicker from './DateRangePicker.vue';
 import { reactive, ref, watch } from 'vue';
 import Button from '@/shad/components/ui/button/Button.vue';
 import axios from 'axios';
-import { toDate } from 'radix-vue/date';
+import Checkbox from '@/shad/components/ui/checkbox/Checkbox.vue';
+import CustomTooltip from './CustomTooltip.vue';
 
+
+const { toast } = useToast()
 
 const now = new Date()
 const end = new CalendarDate(now.getFullYear(), now.getMonth(), now.getDay())
@@ -36,9 +41,17 @@ const selectedDates = ref({
 const isCalendarEnabled = ref(false)
 const selectedTimePeriod = ref("")
 let selectedGroupPeriod = ""
+const isRealtimeEnabled = ref(false)
+const isRealtimeSelected = ref(false)
+
+const handleChange = (value: boolean) => {
+  isRealtimeSelected.value = value
+}
 
 watch(selectedTimePeriod, (new_value) => {
   isCalendarEnabled.value = new_value === "custom"
+  isRealtimeEnabled.value = new_value === "3h"
+  if (!isRealtimeEnabled.value) isRealtimeSelected.value = false
 })
 const GroupPeriodMap: { [key: string]: string } = {
   "3h": "1h",
@@ -70,7 +83,8 @@ const PrecisionMap: { [key: string]: string } = {
 }
 interface ChartValue {
   time: string,
-  value: number
+  value: number,
+  minutes: number
 }
 
 const chartData = reactive<{
@@ -89,14 +103,29 @@ interface FluxQuery {
   Precision: string,
   StartDate?: Date,
   EndDate?: Date
+  Realtime: boolean
 }
 
 const handleFetch = () => {
   if (selectedTimePeriod.value == "") {
+    toast({
+      title: 'Fetch Failed',
+      description: "Please select time period!",
+      variant: 'default',
+      duration: 3
+    })
     return
   }
   let query: FluxQuery | null = null
-  if (selectedTimePeriod.value == "custom") {
+  if (isRealtimeSelected.value) {
+    query = {
+      TimePeriod: "3h",
+      GroupPeriod: "1m",
+      Precision: "m",
+      DeviceId: "be781b42-c3b0-475b-bdc5-cb467d0f4fa1",
+      Realtime: true
+    }
+  } else if (selectedTimePeriod.value == "custom") {
     const startDate = selectedDates.value.start.toDate("Europe/Sarajevo")
     const endDate = selectedDates.value.end.toDate("Europe/Sarajevo")
     const difference = (endDate.getTime() - startDate.getTime()) / 3600000
@@ -116,6 +145,7 @@ const handleFetch = () => {
       DeviceId: "be781b42-c3b0-475b-bdc5-cb467d0f4fa1",
       StartDate: startDate,
       EndDate: endDate,
+      Realtime: false
     }
 
   } else {
@@ -126,28 +156,44 @@ const handleFetch = () => {
       GroupPeriod: GroupPeriodMap[selectedTimePeriod.value],
       Precision: PrecisionMap[selectedTimePeriod.value],
       DeviceId: "be781b42-c3b0-475b-bdc5-cb467d0f4fa1",
+      Realtime: false
     }
   }
 
   axios.post('/api/device-status/query-status', query).then(
     (result) => {
-      formatData(result.data.data.Rows)
+      if (isRealtimeSelected) {
+        formatRealtimeData(result.data.data.Rows)
+      } else {
+        formatData(result.data.data.Rows)
+      }
     }
   ).catch((error) => console.log(error))
 
 }
 
+const formatRealtimeData = (data: any[]) => {
+  const length = data.length
+  for (let i = 0; i < length; i++) {
+    chartData.data.push(
+
+      {
+        "time": xFormatter(new Date(data[i].TimeField)),
+        "value": data[i].Value,
+        "minutes": 0
+      }
+    )
+
+
+  }
+}
+
 const formatData = (data: any[]) => {
   const length = data.length
   const standardUnit = MinutesInGroupPeriod[selectedGroupPeriod]
-
   const lastTick = new Date(data[length - 1].TimeField).getTime()
   const secondTick = new Date(data[length - 2].TimeField).getTime()
-
   const firstUnit = (lastTick - secondTick) / 60000
-
-
-
 
   let lastData = data[length - 1].Value
   let currentValue = 0
@@ -174,6 +220,7 @@ const formatData = (data: any[]) => {
     chartData.data[i] =
     {
       "time": xFormatter(new Date(data[i].TimeField)),
+      "minutes": currentValue,
       "value": (currentValue / unit) * 100,
     }
   }
@@ -252,12 +299,17 @@ const xFormatter = (date: Date) => {
               </SelectGroup>
             </SelectContent>
           </Select>
+          <Checkbox id="realtime" :checked="isRealtimeSelected" @update:checked="handleChange"
+            :disabled="!isRealtimeEnabled" />
+          <label for="realtime"
+            class="text-sm text-gray-600 font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Realtime</label>
           <DateRangePicker :is-calendar-enabled="isCalendarEnabled" v-model:value="selectedDates"> </DateRangePicker>
           <Button @click="handleFetch">Fetch</Button>
 
         </div>
         <div class="p-10">
-          <AreaChart :show-legend="false" :data="chartData.data" index="time" :categories="['value']">
+          <AreaChart :show-legend="false" :data="chartData.data" index="time" :categories="['value']"
+            :custom-tooltip="CustomTooltip">
           </AreaChart>
 
         </div>
@@ -266,6 +318,7 @@ const xFormatter = (date: Date) => {
     </Card>
 
   </div>
+  <Toaster />
 
 </template>
 

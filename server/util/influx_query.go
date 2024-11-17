@@ -37,13 +37,16 @@ func (inf *InfluxQueryHelper) SendStatusQuery(queryParams dto.FluxQueryStatusDto
 	// Create a query API client
 	queryAPI := client.QueryAPI(inf.organization)
 	fluxQuery := ""
-	log.Println(queryParams)
-	if queryParams.TimePeriod == "custom" {
-		fluxQuery = generateRangeQueryString(queryParams)
+
+	if queryParams.Realtime {
+		fluxQuery = generateRealtimeQuery(queryParams)
 	} else {
-		fluxQuery = generateQueryString(queryParams)
+		if queryParams.TimePeriod == "custom" {
+			fluxQuery = generateRangeQueryString(queryParams)
+		} else {
+			fluxQuery = generateQueryString(queryParams)
+		}
 	}
-	log.Println(fluxQuery)
 
 	result, err := queryAPI.Query(context.Background(), fluxQuery)
 	if err != nil {
@@ -74,6 +77,12 @@ func (inf *InfluxQueryHelper) SendStatusQuery(queryParams dto.FluxQueryStatusDto
 				continue
 			}
 			floatVal = parsed
+		case bool:
+			if v {
+				floatVal = 1
+			} else {
+				floatVal = 0
+			}
 		case nil:
 			floatVal = 0
 		default:
@@ -162,5 +171,17 @@ func generateRangeQueryString(params dto.FluxQueryStatusDto) string {
       _value: float(v: r.elapsed)
     }))
 `, startDate, endDate, params.DeviceId, startDate, params.DeviceId, startDate, endDate, params.Precision, params.GroupPeriod)
+	return fluxQuery
+}
+
+func generateRealtimeQuery(params dto.FluxQueryStatusDto) string {
+	fluxQuery := fmt.Sprintf(`
+
+  from(bucket: "device_status")
+    |> range(start: -3h)
+    |> filter(fn: (r) => r._measurement == "online_status" and r._field == "value" and r.device_id=="%s")
+    |> sort(columns: ["_time"])
+
+    `, params.DeviceId)
 	return fluxQuery
 }
