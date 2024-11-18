@@ -6,7 +6,7 @@
     export const authGuard: NavigationGuard = async (to, from, next) => {
         const userStore = useUserStore();
         const authMap = { 
-            "Admin": ['/household', '/household/search, /home'], 
+            "Admin": ['/household', '/household/search', '/home', '/properties/requests-manage'], 
             "SuperAdmin": ['/superadmin', '/manage/admins', '/home'], 
             "Regular": ['/profile', '/home']
         };
@@ -20,6 +20,8 @@
         if (allowedPaths.includes(to.path)) {
             next();
         } else {
+            userStore.clearRole()
+            localStorage.removeItem('authToken')
             next('/');
         }
     };
