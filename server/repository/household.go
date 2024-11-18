@@ -2,6 +2,7 @@ package repository
 
 import (
 	"fmt"
+	"gorm.io/gorm"
 	"watt-flow/db"
 	"watt-flow/dto"
 	"watt-flow/model"
@@ -107,5 +108,20 @@ func (repository *HouseholdRepository) Delete(id uint64) error {
 		repository.Logger.Error("Error deleting household", result.Error)
 		return result.Error
 	}
+	return nil
+}
+
+func (repository *HouseholdRepository) AcceptHouseholds(tx *gorm.DB, propertyID uint64) error {
+	const newHouseholdStatus model.HouseholdStatus = 2
+
+	err := tx.Model(&model.Household{}).
+		Where("property_id = ?", propertyID).
+		Update("status", newHouseholdStatus).
+		Error
+	if err != nil {
+		repository.Logger.Error("Error updating household status", err)
+		return err
+	}
+
 	return nil
 }
