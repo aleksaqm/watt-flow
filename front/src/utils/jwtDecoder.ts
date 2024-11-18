@@ -38,7 +38,7 @@ export const getRoleFromToken = () => {
   const authToken = localStorage.getItem("authToken");
   if (authToken) {
     const decoded = jwtDecode<JwtPayloadType>(authToken);
-    return decoded?.role;
+    return decoded?.role || null;
   }
   return null;
 };

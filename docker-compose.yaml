@@ -172,6 +172,7 @@ services:
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf
       - ./data/profile_pictures:/usr/share/nginx/html/profile_pictures
+      - ./data/protected_files:/usr/share/nginx/html/protected_files
     networks:
       - watt-flow-network
     restart: always

@@ -23,4 +23,5 @@ func RegisterRoutes(
 	NewDeviceStatusRoute(engine).Register(server)
 	NewAddressRoute(engine).Register(server)
 	NewAdminRoute(engine).Register(server)
+	NewPermissionRoute(engine).Register(server)
 }

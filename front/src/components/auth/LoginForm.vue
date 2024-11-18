@@ -17,6 +17,8 @@ import * as z from 'zod'
 import { useRouter } from 'vue-router';
 import { ref } from 'vue';
 import Spinner from '../Spinner.vue'
+import { useUserStore } from '@/stores/user';
+import { getRoleFromToken } from '@/utils/jwtDecoder';
 
 
 const { toast } = useToast()
@@ -40,6 +42,8 @@ const submitForm = async (formData: { username: string; password: string }) => {
     loading.value=false
     console.log('Response:', response.data)
     localStorage.setItem("authToken", response.data['token'])
+    const userStore = useUserStore();
+    userStore.setRole(getRoleFromToken())
     router.push({ name: 'home' })
   } catch (error: any) {
     loading.value=false

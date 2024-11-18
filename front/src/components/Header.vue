@@ -12,6 +12,7 @@ import {
 import { Button } from "@/shad/components/ui/button"
 import { BoltIcon } from '@heroicons/vue/16/solid';
 import { useRouter } from 'vue-router'
+import { useUserStore } from '@/stores/user';
 
 
 interface MenuItem {
@@ -110,6 +111,8 @@ const toggleMenu = () => {
 const handleNavigation = (item: MenuItem) => {
   if (item.title === 'Logout') {
     localStorage.removeItem('authToken')
+    const userStore = useUserStore();
+    userStore.clearRole();
     console.log("Logging out...");
     router.push({ name: 'login' });
   } else {
