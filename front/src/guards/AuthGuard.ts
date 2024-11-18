@@ -7,7 +7,8 @@
         const userStore = useUserStore();
         const authMap = { 
             "Admin": ['/household', '/household/search', '/home', '/properties/requests-manage'], 
-            "SuperAdmin": ['/superadmin', '/manage/admins', '/home'], 
+            "SuperAdmin": ['/superadmin', '/manage/admins', '/household/search', '/home', '/properties/requests-manage'], 
+            "Clerk": ["/home"],
             "Regular": ['/profile', '/home']
         };
         const role = userStore.role;
