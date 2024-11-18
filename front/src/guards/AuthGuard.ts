@@ -20,6 +20,8 @@
         if (allowedPaths.includes(to.path)) {
             next();
         } else {
+            userStore.clearRole()
+            localStorage.removeItem('authToken')
             next('/');
         }
     };
