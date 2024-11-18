@@ -2,6 +2,7 @@ package repository
 
 import (
 	"fmt"
+	"gorm.io/gorm"
 	"watt-flow/db"
 	"watt-flow/dto"
 	"watt-flow/model"
@@ -73,6 +74,36 @@ func (repository *PropertyRepository) FindByAddress(city string, street string, 
 	return properties, nil
 }
 
+func (repository *PropertyRepository) AcceptProperty(tx *gorm.DB, id uint64) error {
+	const newPropertyStatus model.PropertyStatus = 2
+
+	err := tx.Model(&model.Property{}).
+		Where("id = ?", id).
+		Update("status", newPropertyStatus).
+		Error
+	if err != nil {
+		repository.Logger.Error("Error updating property status", err)
+		return err
+	}
+
+	return nil
+}
+
+func (repository *PropertyRepository) DeclineProperty(id uint64) error {
+	const newPropertyStatus model.PropertyStatus = 1
+
+	err := repository.Database.Model(&model.Property{}).
+		Where("id = ?", id).
+		Update("status", newPropertyStatus).
+		Error
+	if err != nil {
+		repository.Logger.Error("Error updating property status", err)
+		return err
+	}
+
+	return nil
+}
+
 func (repository *PropertyRepository) Update(property *model.Property) (model.Property, error) {
 	result := repository.Database.Save(property)
 	if result.Error != nil {
@@ -99,8 +130,17 @@ func (repository *PropertyRepository) TableQuery(params *dto.PropertyQueryParams
 		Preload("Owner").
 		Preload("Household")
 
-	if params.Search != "" {
-		baseQuery = baseQuery.Where("city ILIKE ? OR street ILIKE ?", "%"+params.Search+"%", "%"+params.Search+"%")
+	if params.Search.City != "" {
+		baseQuery = baseQuery.Where("city ILIKE ?", "%"+params.Search.City+"%")
+	}
+	if params.Search.Street != "" {
+		baseQuery = baseQuery.Where("street ILIKE ?", "%"+params.Search.Street+"%")
+	}
+	if params.Search.Number != "" {
+		baseQuery = baseQuery.Where("number ILIKE ?", "%"+params.Search.Number+"%")
+	}
+	if params.Search.Floors != 0 {
+		baseQuery = baseQuery.Where("floors = ?", params.Search.Floors)
 	}
 
 	if err := baseQuery.Count(&total).Error; err != nil {
@@ -113,7 +153,6 @@ func (repository *PropertyRepository) TableQuery(params *dto.PropertyQueryParams
 		sortOrder = "asc"
 	}
 	query := baseQuery.Order(fmt.Sprintf("%s %s", params.SortBy, sortOrder))
-
 	offset := (params.Page - 1) * params.PageSize
 	query = query.Offset(offset).Limit(params.PageSize)
 

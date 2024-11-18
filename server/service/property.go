@@ -19,6 +19,8 @@ type IPropertyService interface {
 	Delete(id uint64) error
 	FindByStatus(status model.PropertyStatus) ([]model.Property, error)
 	TableQuery(params *dto.PropertyQueryParams) ([]model.Property, int64, error)
+	AcceptProperty(id uint64) error
+	DeclineProperty(id uint64, message string) error
 }
 
 type PropertyService struct {
@@ -144,4 +146,64 @@ func (service *PropertyService) TableQuery(params *dto.PropertyQueryParams) ([]m
 		return nil, 0, err
 	}
 	return properties, total, nil
+}
+
+func (service *PropertyService) AcceptProperty(id uint64) error {
+	tx := service.propertyRepository.Database.Begin()
+	if tx.Error != nil {
+		service.propertyRepository.Logger.Error("Error starting transaction", tx.Error)
+		return tx.Error
+	}
+
+	property, err := service.FindById(id)
+	if err != nil {
+		tx.Rollback()
+		service.propertyRepository.Logger.Error("Error finding property ", err)
+		return err
+	}
+
+	err = service.propertyRepository.AcceptProperty(tx, id)
+	if err != nil {
+		tx.Rollback()
+		service.propertyRepository.Logger.Error("Error updating property status", err)
+		return err
+	}
+
+	err = service.householdService.AcceptHouseholds(tx, id)
+	if err != nil {
+		tx.Rollback()
+		service.propertyRepository.Logger.Error("Error updating households", err)
+		return err
+	}
+
+	tx.Commit()
+
+	service.propertyRepository.Logger.Info(fmt.Sprintf("Property and its households updated to status for property ID %d", id))
+
+	emailBody := util.GeneratePropertyApprovalEmailBody(property.Address.City+", "+property.Address.Street+" "+property.Address.Number,
+		"http://localhost:5173/")
+
+	err = util.SendEmail(property.Owner.Email, "Property approved", emailBody)
+	return err
+}
+
+func (service *PropertyService) DeclineProperty(id uint64, message string) error {
+
+	err := service.propertyRepository.DeclineProperty(id)
+	if err != nil {
+		service.propertyRepository.Logger.Error("Error updating property status", err)
+		return err
+	}
+
+	property, err := service.FindById(id)
+	if err != nil {
+		service.propertyRepository.Logger.Error("Error finding property ", err)
+		return err
+	}
+
+	emailBody := util.GeneratePropertyDeclineEmailBody(property.Address.City+", "+property.Address.Street+" "+property.Address.Number,
+		message, "http://localhost:5173/")
+
+	err = util.SendEmail(property.Owner.Email, "Property declined", emailBody)
+	return err
 }

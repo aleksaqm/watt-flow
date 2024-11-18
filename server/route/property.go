@@ -21,6 +21,8 @@ func (r PropertyRoute) Register(server *server.Server) {
 		api.GET("/properties", server.PropertyHandler.FindByStatus)
 		api.DELETE("/property/:id", server.PropertyHandler.Delete)
 		api.GET("/property/query", server.PropertyHandler.TableQuery)
+		api.PUT("/property/:id/accept", server.PropertyHandler.AcceptProperty)
+		api.PUT("/property/:id/decline", server.PropertyHandler.DeclineProperty)
 	}
 }
 
