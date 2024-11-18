@@ -33,6 +33,7 @@ import {
 import "leaflet/dist/leaflet.css";
 import { LMap, LTileLayer, LMarker, LPopup } from "@vue-leaflet/vue-leaflet";
 import 'leaflet/dist/leaflet.css';
+import { getUserIdFromToken } from '@/utils/jwtDecoder'
 
 const cities = ["Novi Sad", "Niš", "Beograd", "Los Angeles"]
 
@@ -247,7 +248,7 @@ const submitForm = async () => {
     const data = {
       floors: numberOfFloors.value,
       status: 0,
-      owner_id: 1,
+      owner_id: getUserIdFromToken(),
       images: imagesBase64,
       documents: documentsBase64,
       household: householdEntries.value.map(entry => ({

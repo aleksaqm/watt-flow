@@ -52,8 +52,8 @@ const router = createRouter({
       component: OwnersPropertyRequestsView
     },
     {
-      path: '/admin/property-requests',
-      name: 'admin-property-request',
+      path: '/properties/requests-manage',
+      name: 'property-request-manage',
       component: AdminPropertyRequestsView
     },
     {

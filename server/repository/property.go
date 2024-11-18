@@ -130,7 +130,6 @@ func (repository *PropertyRepository) TableQuery(params *dto.PropertyQueryParams
 		Preload("Owner").
 		Preload("Household")
 
-	// Apply search filters
 	if params.Search.City != "" {
 		baseQuery = baseQuery.Where("city ILIKE ?", "%"+params.Search.City+"%")
 	}
