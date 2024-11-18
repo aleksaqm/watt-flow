@@ -383,6 +383,8 @@ func (c *Consumer) updateStatusInDB(key string, status bool, ctx *context.Contex
 		time.Now(),
 	)
 
+	// websocket
+
 	if err := writeAPI.WritePoint(*ctx, p); err != nil {
 		log.Printf("Failed to write status change to InfluxDB: %v", err)
 	} else {

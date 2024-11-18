@@ -177,11 +177,26 @@ func generateRangeQueryString(params dto.FluxQueryStatusDto) string {
 func generateRealtimeQuery(params dto.FluxQueryStatusDto) string {
 	fluxQuery := fmt.Sprintf(`
 
-  from(bucket: "device_status")
+  import "array"
+  import "experimental"
+
+  data = from(bucket: "device_status")
     |> range(start: -3h)
     |> filter(fn: (r) => r._measurement == "online_status" and r._field == "value" and r.device_id=="%s")
     |> sort(columns: ["_time"])
 
-    `, params.DeviceId)
+  first_from_data = data |> first()   |> findRecord(fn: (key) => true, idx: 0)
+
+  first = array.from(rows: [
+    { _time: experimental.subDuration(from: now(), d: 3h), _value: if first_from_data._value == true then false else true, _field: "value", _measurement: "online_status", device_id: "%s", _stop: now(), _start: now()},
+  ])
+
+  all_data = union(tables: [data, first])
+
+
+  all_data
+    |> aggregateWindow(createEmpty: true, every: 1m, fn: last)
+    |>fill(usePrevious: true)
+    `, params.DeviceId, params.DeviceId)
 	return fluxQuery
 }

@@ -84,7 +84,6 @@ const PrecisionMap: { [key: string]: string } = {
 interface ChartValue {
   time: string,
   value: number,
-  minutes: number
 }
 
 const chartData = reactive<{
@@ -162,7 +161,7 @@ const handleFetch = () => {
 
   axios.post('/api/device-status/query-status', query).then(
     (result) => {
-      if (isRealtimeSelected) {
+      if (isRealtimeSelected.value) {
         formatRealtimeData(result.data.data.Rows)
       } else {
         formatData(result.data.data.Rows)
@@ -173,6 +172,7 @@ const handleFetch = () => {
 }
 
 const formatRealtimeData = (data: any[]) => {
+  chartData.data = []
   const length = data.length
   for (let i = 0; i < length; i++) {
     chartData.data.push(
@@ -180,7 +180,6 @@ const formatRealtimeData = (data: any[]) => {
       {
         "time": xFormatter(new Date(data[i].TimeField)),
         "value": data[i].Value,
-        "minutes": 0
       }
     )
 
@@ -220,8 +219,7 @@ const formatData = (data: any[]) => {
     chartData.data[i] =
     {
       "time": xFormatter(new Date(data[i].TimeField)),
-      "minutes": currentValue,
-      "value": (currentValue / unit) * 100,
+      "value": Math.round(((currentValue / unit) * 100) * 100) / 100,
     }
   }
 }
