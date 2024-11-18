@@ -30,14 +30,16 @@ const (
 )
 
 type Consumer struct {
-	influxClient influxdb2.Client
-	conn         *amqp.Connection
-	channel      *amqp.Channel
-	pgDB         *sql.DB
-	redisClient  *redis.Client
-	reconnecting chan bool
-	amqpURI      string
-	wg           sync.WaitGroup
+	influxClient  influxdb2.Client
+	conn          *amqp.Connection
+	channel       *amqp.Channel
+	pgDB          *sql.DB
+	redisClient   *redis.Client
+	reconnecting  chan bool
+	shutdown      chan struct{}
+	cancelContext context.CancelFunc
+	amqpURI       string
+	wg            sync.WaitGroup
 }
 
 type DeviceStatus struct {
@@ -46,7 +48,7 @@ type DeviceStatus struct {
 	IsActive bool
 }
 
-func NewConsumer(amqpURI, influxURI, influxToken, pgConnStr, redisAddr string) (*Consumer, error) {
+func NewConsumer(amqpURI, influxURI, influxToken, pgConnStr, redisAddr string, cancelFunc context.CancelFunc) (*Consumer, error) {
 	// Connect to InfluxDB
 	influxClient := influxdb2.NewClient(influxURI, influxToken)
 
@@ -82,11 +84,13 @@ func NewConsumer(amqpURI, influxURI, influxToken, pgConnStr, redisAddr string) (
 	}
 
 	return &Consumer{
-		reconnecting: make(chan bool),
-		amqpURI:      amqpURI,
-		influxClient: influxClient,
-		pgDB:         pgDB,
-		redisClient:  redisClient,
+		shutdown:      make(chan struct{}),
+		reconnecting:  make(chan bool),
+		amqpURI:       amqpURI,
+		influxClient:  influxClient,
+		pgDB:          pgDB,
+		redisClient:   redisClient,
+		cancelContext: cancelFunc,
 	}, nil
 }
 
@@ -280,17 +284,21 @@ func (c *Consumer) updateDeviceStatus(ctx context.Context) {
 	defer c.wg.Done()
 	writeAPI := c.influxClient.WriteAPIBlocking(influxOrg, deviceStatusBucket)
 
+	done := false
+	doneTimeout := 0
 	ticker := time.NewTicker(5 * time.Second)
 	defer ticker.Stop()
 
 	for {
 		select {
-		case <-ctx.Done():
-			return
 		case <-c.reconnecting:
 			log.Println("Cannot process device status! Waiting for connection!")
 			time.Sleep(20 * time.Second)
 			continue
+
+		case <-ctx.Done():
+			log.Printf("Context cancelled. Shutting down!")
+			return
 
 		case <-ticker.C:
 			keys, err := c.redisClient.Keys(ctx, "*").Result()
@@ -336,6 +344,17 @@ func (c *Consumer) updateDeviceStatus(ctx context.Context) {
 				}
 
 			}
+			if done {
+				if doneTimeout >= 8 {
+					c.cancelContext()
+					return
+				}
+				log.Printf("Shutdown running! Waiting for possible device status changes.", doneTimeout)
+				doneTimeout++
+			}
+
+		case <-c.shutdown:
+			done = true
 		}
 	}
 }
@@ -363,6 +382,8 @@ func (c *Consumer) updateStatusInDB(key string, status bool, ctx *context.Contex
 		},
 		time.Now(),
 	)
+
+	// websocket
 
 	if err := writeAPI.WritePoint(*ctx, p); err != nil {
 		log.Printf("Failed to write status change to InfluxDB: %v", err)
@@ -451,12 +472,13 @@ func main() {
 		DB_PASS,
 		DB_TABLE,
 	)
-	consumer, err := NewConsumer(amqpURI, influxURI, influxToken, pgConnStr, redisAddr)
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	consumer, err := NewConsumer(amqpURI, influxURI, influxToken, pgConnStr, redisAddr, cancel)
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	ctx, cancel := context.WithCancel(context.Background())
 
 	err = consumer.ConnectToBroker()
 	if err != nil {
@@ -475,8 +497,8 @@ func main() {
 		select {
 		case <-sigChan:
 			log.Println("Received shutdown signal")
-			cancel()
-			shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
+			consumer.shutdown <- struct{}{}
+			shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 60*time.Second)
 			defer shutdownCancel()
 			if err := consumer.Shutdown(shutdownCtx); err != nil {
 				log.Printf("Error during shutdown: %v", err)

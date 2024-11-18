@@ -1,8 +1,10 @@
 package service
 
 import (
+	"watt-flow/dto"
 	"watt-flow/model"
 	"watt-flow/repository"
+	"watt-flow/util"
 )
 
 type IDeviceStatusService interface {
@@ -11,16 +13,27 @@ type IDeviceStatusService interface {
 	Create(deviceStatus *model.DeviceStatus) (*model.DeviceStatus, error)
 	Update(deviceStatus *model.DeviceStatus) (*model.DeviceStatus, error)
 	Delete(address string) error
+	QueryStatus(queryParams dto.FluxQueryStatusDto) (*dto.StatusQueryResult, error)
 }
 
 type DeviceStatusService struct {
-	repository *repository.DeviceStatusRepository
+	repository        *repository.DeviceStatusRepository
+	influxQueryHelper *util.InfluxQueryHelper
 }
 
-func NewDeviceStatusService(repository *repository.DeviceStatusRepository) *DeviceStatusService {
+func NewDeviceStatusService(repository *repository.DeviceStatusRepository, influx *util.InfluxQueryHelper) *DeviceStatusService {
 	return &DeviceStatusService{
-		repository: repository,
+		repository:        repository,
+		influxQueryHelper: influx,
 	}
+}
+
+func (service *DeviceStatusService) QueryStatus(queryParams dto.FluxQueryStatusDto) (*dto.StatusQueryResult, error) {
+	result, err := service.influxQueryHelper.SendStatusQuery(queryParams)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
 }
 
 func (service *DeviceStatusService) FindByAddress(address string) (*model.DeviceStatus, error) {

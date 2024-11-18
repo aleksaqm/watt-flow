@@ -7,18 +7,23 @@ import (
 )
 
 type Environment struct {
-	ServerPort  string `mapstructure:"SERVER_PORT"`
-	Environment string `mapstructure:"ENV"`
-	LogOutput   string `mapstructure:"LOG_OUTPUT"`
-	LogLevel    string `mapstructure:"LOG_LEVEL"`
-	DBUsername  string `mapstructure:"DB_USER"`
-	DBPassword  string `mapstructure:"DB_PASS"`
-	DBHost      string `mapstructure:"DB_HOST"`
-	DBPort      string `mapstructure:"DB_PORT"`
-	DBName      string `mapstructure:"DB_NAME"`
-	JWTSecret   string `mapstructure:"JWT_SECRET"`
-	EmailSecret string `mapstructure:"EMAIL_SECRET"`
-	Restart     bool   `mapstructure:"RESTART"`
+	ServerPort              string `mapstructure:"SERVER_PORT"`
+	Environment             string `mapstructure:"ENV"`
+	LogOutput               string `mapstructure:"LOG_OUTPUT"`
+	LogLevel                string `mapstructure:"LOG_LEVEL"`
+	DBUsername              string `mapstructure:"DB_USER"`
+	DBPassword              string `mapstructure:"DB_PASS"`
+	DBHost                  string `mapstructure:"DB_HOST"`
+	DBPort                  string `mapstructure:"DB_PORT"`
+	DBName                  string `mapstructure:"DB_NAME"`
+	JWTSecret               string `mapstructure:"JWT_SECRET"`
+	EmailSecret             string `mapstructure:"EMAIL_SECRET"`
+	Restart                 bool   `mapstructure:"RESTART"`
+	InfluxURL               string `mapstructure:"INFLUX_URL"`
+	InfluxToken             string `mapstructure:"INFLUX_TOKEN"`
+	InlfuxOrg               string `mapstructure:"INFLUX_ORG"`
+	InfluxStatusBucket      string `mapstructure:"INFLUX_STATUS_BUCKET"`
+	InfluxMeasurementBucket string `mapstructure:"INFLUX_MEASUREMENT_BUCKET"`
 }
 
 func Init() *Environment {
@@ -47,6 +52,11 @@ func Init() *Environment {
 	viper.SetDefault("JWT_SECRET", "DEFAULT")
 	viper.SetDefault("EMAIL_SECRET", "DEFAULT")
 	viper.SetDefault("RESTART", false)
+	viper.SetDefault("INFLUX_URL", "DEFAULT")
+	viper.SetDefault("INFLUX_TOKEN", "DEFAULT")
+	viper.SetDefault("INFLUX_ORG", "DEFAULT")
+	viper.SetDefault("INFLUX_STATUS_BUCKET", "DEFAULT")
+	viper.SetDefault("INFLUX_MEASUREMENT", "DEFAULT")
 
 	err = viper.Unmarshal(env)
 	if err != nil {

@@ -5,13 +5,14 @@
 package server
 
 import (
-	"github.com/google/wire"
 	"watt-flow/config"
 	"watt-flow/db"
 	"watt-flow/handler"
 	"watt-flow/repository"
 	"watt-flow/service"
 	"watt-flow/util"
+
+	"github.com/google/wire"
 )
 
 var userServiceSet = wire.NewSet(service.NewUserService, wire.Bind(new(service.IUserService), new(*service.UserService)))
@@ -34,7 +35,7 @@ var addressServiceSet = wire.NewSet(
 	wire.Bind(new(service.IAddressService), new(*service.AddressService)))
 
 func InitDeps(env *config.Environment) *Server {
-	wire.Build(db.NewDatabase, util.NewLogger, repository.NewUserRepository, service.NewAuthService, userServiceSet, service.NewRestartService, handler.NewUserHandler,
+	wire.Build(db.NewDatabase, util.NewLogger, util.NewInfluxQueryHelper, repository.NewUserRepository, service.NewAuthService, userServiceSet, service.NewRestartService, handler.NewUserHandler,
 		repository.NewPropertyRepository, propertyServiceSet, handler.NewPropertyHandler,
 		repository.NewHouseholdRepository, householdServiceSet, handler.NewHouseholdHandler,
 		repository.NewDeviceStatusRepository, deviceStatusServiceSet, handler.NewDeviceStatusHandler,

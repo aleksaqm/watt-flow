@@ -1,11 +1,13 @@
 package handler
 
 import (
-	"github.com/gin-gonic/gin"
 	"strconv"
+	"watt-flow/dto"
 	"watt-flow/model"
 	"watt-flow/service"
 	"watt-flow/util"
+
+	"github.com/gin-gonic/gin"
 )
 
 type DeviceStatusHandler struct {
@@ -19,6 +21,22 @@ func (h DeviceStatusHandler) GetByAddress(c *gin.Context) {
 	if err != nil {
 		h.logger.Error(err)
 		c.JSON(404, gin.H{"error": "Device status not found"})
+		return
+	}
+	c.JSON(200, gin.H{"data": data})
+}
+
+func (h DeviceStatusHandler) QueryStatus(c *gin.Context) {
+	var queryParams dto.FluxQueryStatusDto
+	if err := c.BindJSON(&queryParams); err != nil {
+		h.logger.Error(err)
+		c.JSON(400, gin.H{"error": "Invalid device status query params"})
+		return
+	}
+	data, err := h.service.QueryStatus(queryParams)
+	if err != nil {
+		h.logger.Error(err)
+		c.JSON(500, gin.H{"error": "Failed to query device status"})
 		return
 	}
 	c.JSON(200, gin.H{"data": data})
