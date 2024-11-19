@@ -161,30 +161,15 @@ const handleStatusUpdate = (event: any) => {
 }
 
 const handleFetch = () => {
-  if (selectedTimePeriod.value == "") {
-    toast({
-      title: 'Fetch Failed',
-      description: "Please select time period!",
-      variant: 'default',
-      duration: 3
-    })
-    return
-  }
   let query: FluxQuery | null = null
   if (isRealtimeSelected.value) {
     if (ws?.readyState !== WebSocket.OPEN) {
       connectToWebSocket()
       refreshJob = setInterval(updateRealtimeChart, 60000)
+      console.log(refreshJob)
     } else {
-      if (ws != null)
-        ws.close()
-      lastStatusValue = -1
-      if (refreshJob != -1)
-        clearInterval(refreshJob)
-
       return
     }
-
     query = {
       TimePeriod: "3h",
       GroupPeriod: "1m",
@@ -192,41 +177,61 @@ const handleFetch = () => {
       DeviceId: "be781b42-c3b0-475b-bdc5-cb467d0f4fa1",
       Realtime: true
     }
-  } else if (selectedTimePeriod.value == "custom") {
-    const startDate = selectedDates.value.start.toDate("Europe/Sarajevo")
-    const endDate = selectedDates.value.end.toDate("Europe/Sarajevo")
-    const difference = (endDate.getTime() - startDate.getTime()) / 3600000
-    if (difference <= 24) {
-      selectedGroupPeriod = "1h"
-    } else if (difference <= 720) {
-      selectedGroupPeriod = "1d"
-    } else {
-      selectedGroupPeriod = "7d"
-    }
-
-    query = {
-      TimePeriod: selectedTimePeriod.value,
-      GroupPeriod: selectedGroupPeriod,
-      Precision: "m",
-      DeviceId: "be781b42-c3b0-475b-bdc5-cb467d0f4fa1",
-      StartDate: startDate,
-      EndDate: endDate,
-      Realtime: false
-    }
-
   } else {
-
-    selectedGroupPeriod = GroupPeriodMap[selectedTimePeriod.value]
-
-    query = {
-      TimePeriod: selectedTimePeriod.value,
-      GroupPeriod: GroupPeriodMap[selectedTimePeriod.value],
-      Precision: PrecisionMap[selectedTimePeriod.value],
-      DeviceId: "be781b42-c3b0-475b-bdc5-cb467d0f4fa1",
-      Realtime: false
+    if (ws != null)
+      ws.close()
+    lastStatusValue = -1
+    if (refreshJob != -1) {
+      clearInterval(refreshJob)
+      console.log("Cleared job")
     }
   }
 
+  if (query == null) {
+    switch (selectedTimePeriod.value) {
+      case "":
+        toast({
+          title: 'Fetch Failed',
+          description: "Please select time period!",
+          variant: 'default',
+          duration: 3
+        })
+        return
+      case "custom":
+        const startDate = selectedDates.value.start.toDate("Europe/Sarajevo")
+        const endDate = selectedDates.value.end.toDate("Europe/Sarajevo")
+        const difference = (endDate.getTime() - startDate.getTime()) / 3600000
+        if (difference <= 24) {
+          selectedGroupPeriod = "1h"
+        } else if (difference <= 720) {
+          selectedGroupPeriod = "1d"
+        } else {
+          selectedGroupPeriod = "7d"
+        }
+
+        query = {
+          TimePeriod: selectedTimePeriod.value,
+          GroupPeriod: selectedGroupPeriod,
+          Precision: "m",
+          DeviceId: "be781b42-c3b0-475b-bdc5-cb467d0f4fa1",
+          StartDate: startDate,
+          EndDate: endDate,
+          Realtime: false
+        }
+        break
+
+      default:
+        selectedGroupPeriod = GroupPeriodMap[selectedTimePeriod.value]
+
+        query = {
+          TimePeriod: selectedTimePeriod.value,
+          GroupPeriod: GroupPeriodMap[selectedTimePeriod.value],
+          Precision: PrecisionMap[selectedTimePeriod.value],
+          DeviceId: "be781b42-c3b0-475b-bdc5-cb467d0f4fa1",
+          Realtime: false
+        }
+    }
+  }
   axios.post('/api/device-status/query-status', query).then(
     (result) => {
       if (isRealtimeSelected.value) {
@@ -282,7 +287,6 @@ const formatData = (data: any[]) => {
       unit = standardUnit
     }
     remainder += lastData
-    totalUptime += remainder
     lastData = data[i].Value
     if (remainder > unit) {
       remainder -= unit
@@ -291,6 +295,7 @@ const formatData = (data: any[]) => {
       currentValue = remainder
       remainder = 0
     }
+    totalUptime += currentValue
     chartData.data[i] =
     {
       "time": xFormatter(new Date(data[i].TimeField)),
