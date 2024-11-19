@@ -68,7 +68,6 @@ const router = createRouter({
       path: '/superadmin',
       name: 'superadmin',
       component: SuperAdminChangePasswordView,
-      meta: { requiresAuth: true }
     },
     {
       path: '/manage/admins',
