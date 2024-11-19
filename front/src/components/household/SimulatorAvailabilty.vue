@@ -24,6 +24,7 @@ import Button from '@/shad/components/ui/button/Button.vue';
 import axios from 'axios';
 import Checkbox from '@/shad/components/ui/checkbox/Checkbox.vue';
 import CustomTooltip from './CustomTooltip.vue';
+import { updateLeafletWrapper } from '@vue-leaflet/vue-leaflet/dist/src/utils';
 
 
 const { toast } = useToast()
@@ -104,6 +105,54 @@ interface FluxQuery {
   EndDate?: Date
   Realtime: boolean
 }
+let lastStatusValue = -1
+let refreshJob = -1
+
+let ws: WebSocket | null = null
+const serverUrl = "ws://localhost:9000/ws?deviceId=be781b42-c3b0-475b-bdc5-cb467d0f4fa1&connType=avb"
+const isConnectedToWs = ref(false)
+
+const connectToWebSocket = async () => {
+  const authToken = localStorage.getItem("authToken")
+  if (authToken != null) {
+    ws = new WebSocket(serverUrl, authToken)
+    ws.addEventListener("open", (event) => { console.log("Connected to ws!"); isConnectedToWs.value = true })
+    ws.addEventListener("message", (event) => handleStatusUpdate(event))
+    ws.addEventListener("error", (event) => console.log(event))
+  } else {
+    console.log("Token not found!")
+    return
+  }
+}
+
+const updateRealtimeChart = () => {
+  if (lastStatusValue != -1) {
+    chartData.data.push(
+
+      {
+        "time": xFormatter(new Date()),
+        "value": lastStatusValue,
+      }
+    )
+    chartData.data.shift()
+    console.log("Updated chart from last value!")
+  }
+
+}
+
+const handleStatusUpdate = (event: any) => {
+  const data = JSON.parse(event.data)
+  chartData.data.push(
+
+    {
+      "time": xFormatter(new Date()),
+      "value": data.IsActive ? 1 : 0,
+    }
+  )
+  chartData.data.shift()
+  lastStatusValue = data.IsActive ? 1 : 0
+  console.log("Received status change from server!")
+}
 
 const handleFetch = () => {
   if (selectedTimePeriod.value == "") {
@@ -117,6 +166,13 @@ const handleFetch = () => {
   }
   let query: FluxQuery | null = null
   if (isRealtimeSelected.value) {
+    if (ws?.readyState !== WebSocket.OPEN) {
+      connectToWebSocket()
+      setInterval(updateRealtimeChart, 60000)
+    } else {
+      return
+    }
+
     query = {
       TimePeriod: "3h",
       GroupPeriod: "1m",
@@ -125,6 +181,11 @@ const handleFetch = () => {
       Realtime: true
     }
   } else if (selectedTimePeriod.value == "custom") {
+    if (ws != null)
+      ws.close()
+    lastStatusValue = -1
+    if (refreshJob != -1)
+      clearInterval(refreshJob)
     const startDate = selectedDates.value.start.toDate("Europe/Sarajevo")
     const endDate = selectedDates.value.end.toDate("Europe/Sarajevo")
     const difference = (endDate.getTime() - startDate.getTime()) / 3600000
@@ -148,6 +209,11 @@ const handleFetch = () => {
     }
 
   } else {
+
+    if (ws != null)
+      ws.close()
+    if (refreshJob != -1)
+      clearInterval(refreshJob)
     selectedGroupPeriod = GroupPeriodMap[selectedTimePeriod.value]
 
     query = {
@@ -182,9 +248,8 @@ const formatRealtimeData = (data: any[]) => {
         "value": data[i].Value,
       }
     )
-
-
   }
+  lastStatusValue = data[data.length - 1].Value
 }
 
 const formatData = (data: any[]) => {
@@ -247,20 +312,17 @@ const xFormatter = (date: Date) => {
   }
 }
 
-
-
-
 </script>
 <template>
   <div class="flex flex-col gap-3 items-center justify-center w-full mb-10">
-    <Card class="w-3/4">
+    <Card class="w-5/6">
       <CardHeader>
         <CardTitle>
           <span class="text-gray-600 text-xl">Power meter availability</span>
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div class="flex justify-around items-center spaxe-x-10 gap-10">
+        <div class="flex justify-around items-center gap-10">
           <Select v-model="selectedTimePeriod">
             <SelectTrigger>
               <SelectValue placeholder="Select time period" />
