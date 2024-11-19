@@ -8,6 +8,7 @@ import { useToast } from '../../shad/components/ui/toast/use-toast'
 import Toaster from '@/shad/components/ui/toast/Toaster.vue';
 import { Button } from '@/shad/components/ui/button'
 import { Input } from '@/shad/components/ui/input'
+import { Label } from '@/shad/components/ui/label'
 import { ZodIssueCode } from "zod";
 import axios from 'axios'
 import {
@@ -33,7 +34,6 @@ import {
 import "leaflet/dist/leaflet.css";
 import { LMap, LTileLayer, LMarker, LPopup } from "@vue-leaflet/vue-leaflet";
 import 'leaflet/dist/leaflet.css';
-import { getUserIdFromToken } from '@/utils/jwtDecoder'
 import { useUserStore } from '@/stores/user';
 
 
@@ -41,7 +41,7 @@ const formSchema = toTypedSchema(
   z.object({
     street: z.string(),
     streetNumber: z.string(),
-    city: z.any(),
+    city: z.string().nonempty({ message: "City is required" }),
     numberOfFloors: z.number().min(1, { message: "At least one floor is required" }),
     lon: z.number(),
     lat: z.number(),
@@ -59,7 +59,25 @@ const formSchema = toTypedSchema(
         identifier: z.string().refine((val) => val.trim() !== "", { message: "Cadastral number is required" }),
       })
     ),
-  }).superRefine((data, ctx) => {
+    propertyImages: z
+      .array(
+        z.instanceof(File).refine(
+          (file) => file.type.startsWith("image/"),
+          { message: "Only image files are allowed" }
+        )
+      )
+      .min(1, { message: "At least one property image is required" })
+      .max(10, { message: "You can upload up to 10 property images" }),
+    documents: z
+      .array(
+        z.instanceof(File).refine(
+          (file) => file.type === "application/pdf",
+          { message: "Only PDF files are allowed" }
+        )
+      )
+      .min(1, { message: "At least one document is required" })
+      .max(5, { message: "You can upload up to 5 documents" }),
+    }).superRefine((data, ctx) => {
     data.households.forEach((household, index) => {
       if (household.floor > data.numberOfFloors) {
         ctx.addIssue({
@@ -108,16 +126,16 @@ const { toast } = useToast()
 const street = ref('');
 const city = ref('');
 const streetNumber = ref('');
-const numberOfFloors = ref(1);
+const numberOfFloors = ref<number>();
 const propertyImages = ref<File[]>([]);
 const documents = ref<File[]>([]);
 const lon = ref(0.0)
 const lat = ref(0.0)
 
-const center = ref([45.254242348610845, 19.843728661762427])
+const center = ref<[number, number]>([45.254242348610845, 19.843728661762427]);
 
 const zoom = ref(6);
-const markerPosition = ref([45.254242348610845, 19.843728661762427]);
+const markerPosition = ref<[number, number]>([45.254242348610845, 19.843728661762427]);
 
 const householdEntries = ref<{ floor: string; suite: string; area: number; identifier: string }[]>([]);
 
@@ -141,7 +159,7 @@ const removeHouseholdEntry = (index: number) => {
 const selectCity = async (selectedValue: string) => {
   city.value = city.value === selectedValue ? '' : selectedValue;
   console.log(city.value);
-
+  setFieldValue('city', city.value)
   if (city.value) {
     const geocodeResult = await geocodeCity(city.value);
     console.log(geocodeResult);
@@ -176,19 +194,23 @@ const geocodeCity = async (city: string) => {
   }
 };
 
-const onFileChange = (event: Event, type: 'propertyImages' | 'documents') => {
+const onFileChange = (event: any, type: 'propertyImages' | 'documents') => {
   const target = event.target as HTMLInputElement;
   const files = target.files ? Array.from(target.files) : [];
+
   if (type === 'propertyImages') {
     propertyImages.value = files;
+    setFieldValue('propertyImages', propertyImages.value)
   } else {
     documents.value = files;
+    setFieldValue('documents', documents.value)
   }
 };
 
 
 
 const onMapClick = async (event: { latlng: { lat: number, lng: number } }) => {
+  console.log(errors)
   markerPosition.value = [event.latlng.lat, event.latlng.lng];
   center.value = [event.latlng.lat, event.latlng.lng];
   console.log('Latitude:', event.latlng.lat);
@@ -236,6 +258,13 @@ const convertToBase64 = (file: File): Promise<string> => {
 
 const submitForm = async () => {
   try {
+    if (householdEntries.value.length == 0){
+        toast({
+        title: 'Property Registration Error',
+        description: "You can register property without households.",
+        variant: 'destructive',
+      });
+    }
 
     const imagesBase64 = await Promise.all(
       propertyImages.value.map((file) => convertToBase64(file))
@@ -323,7 +352,7 @@ const onSubmit = handleSubmit(submitForm);
 </script>
 
 <template>
-  <div class="w-1/3 p-7 flex flex-col justify-center items-center bg-white shadow-lg">
+  <div class="w-2/4 p-7 flex flex-col justify-center items-center bg-white shadow-lg">
     <div class="flex flex-col justify-center items-center gap-5 w-full">
       <span class="text-gray-800 text-lg">Property Registration</span>
       <form class="w-full space-y-6" @submit="onSubmit">
@@ -345,7 +374,7 @@ const onSubmit = handleSubmit(submitForm);
             <FormItem style="flex: 1; position: relative;">
               <FormLabel>Street</FormLabel>
               <FormControl>
-                <Input type="text" disabled="true" placeholder="Select address on map" v-model="street" />
+                <Input type="text" disabled="true" v-bind="field" placeholder="Select address on map" v-model="street" />
               </FormControl>
               <FormMessage class="absolute -bottom-5 left-0 text-xs" v-if="errors.street">{{ errors.street }}</FormMessage>
             </FormItem>
@@ -354,7 +383,7 @@ const onSubmit = handleSubmit(submitForm);
             <FormItem style="flex: 1;  position: relative;">
               <FormLabel>Street number</FormLabel>
               <FormControl>
-                <Input type="text" disabled="true" v-model="streetNumber" placeholder="Select address on map" />
+                <Input type="text" v-bind="field" disabled="true" v-model="streetNumber" placeholder="Select address on map" />
               </FormControl>
               <FormMessage class="absolute -bottom-5 left-0 text-xs"  v-if="errors.streetNumber">{{ errors.streetNumber }}</FormMessage>
             </FormItem>
@@ -362,7 +391,7 @@ const onSubmit = handleSubmit(submitForm);
         </div>
 
         <FormField name="city">
-          <FormItem>
+          <FormItem style="flex: 1; position: relative;">
             <FormLabel>City</FormLabel>
             <Popover>
               <PopoverTrigger asChild>
@@ -376,7 +405,10 @@ const onSubmit = handleSubmit(submitForm);
                   <CommandList>
                     <CommandEmpty>No city found.</CommandEmpty>
                     <CommandGroup>
-                      <CommandItem v-for="cityItem in cities" :key="cityItem" :value="cityItem"
+                      <CommandItem 
+                        v-for="cityItem in cities" 
+                        :key="cityItem" 
+                        :value="cityItem" 
                         @select="selectCity(cityItem)">
                         {{ cityItem }}
                       </CommandItem>
@@ -385,13 +417,13 @@ const onSubmit = handleSubmit(submitForm);
                 </Command>
               </PopoverContent>
             </Popover>
-            <FormMessage v-if="errors.city">{{ errors.city }}</FormMessage>
+            <FormMessage class="absolute -bottom-5 left-0 text-xs" v-if="errors.city">{{ errors.city }}</FormMessage>
           </FormItem>
         </FormField>
 
 
         <FormField name="numberOfFloors" v-slot="{ field }">
-          <FormItem>
+          <FormItem style="flex: 1; position: relative;">
             <FormLabel>Number of Floors</FormLabel>
             <FormControl>
               <Input type="number" v-bind="field" v-model="numberOfFloors" placeholder="Enter number of floors" />
@@ -400,24 +432,29 @@ const onSubmit = handleSubmit(submitForm);
           </FormItem>
         </FormField>
 
-        <h3 class="pt-2 text-black text-bold">Property Images:</h3>
-        <FormField name="propertyImages">
-          <FormItem>
+        <FormField  class="pt-2" name="propertyImages">
+          <FormItem  style="position: relative;">
+            <FormLabel>Property Images: </FormLabel>
             <FormControl>
               <input type="file" @change="e => onFileChange(e, 'propertyImages')" accept="image/*" multiple />
             </FormControl>
+            <FormMessage class="absolute -bottom-5 left-0 text-xs" v-if="errors.propertyImages">{{ errors.propertyImages }}</FormMessage>
           </FormItem>
+          
         </FormField>
 
-        <h3 class="pt-2 text-black text-bold">Documents (PDFs):</h3>
         <FormField name="documents">
-          <FormItem>
+          <FormItem style="position: relative;">
+            <FormLabel>Documents (PDFs): </FormLabel>
             <FormControl>
               <input type="file" @change="e => onFileChange(e, 'documents')" accept="application/pdf" multiple />
             </FormControl>
+            
+            <FormMessage class="absolute -bottom-5 left-0 text-xs"  v-if="errors ">{{ errors  }}</FormMessage>
           </FormItem>
         </FormField>
 
+        
         <div v-for="(household, index) in householdEntries" :key="index" class="space-y-4">
           <div class="flex gap-4 items-center">
             <FormField :name="`households.${index}.floor`" v-slot="{ field, errors }">
@@ -466,9 +503,14 @@ const onSubmit = handleSubmit(submitForm);
             </Button>
           </div>
         </div>
-        <Button type="button" @click="addHouseholdEntry" class="bg-indigo-500 text-white hover:bg-gray-600">Add
+        
+        <div class="flex items-center gap-5 text-red-500">
+          <Button type="button" @click="addHouseholdEntry" class="bg-indigo-500 text-white hover:bg-gray-600">Add
           Household</Button>
-
+          <span v-if="errors.households">{{ errors.households }}</span>
+        </div>
+        
+        
         <Button type="submit" class="w-full bg-gray-800 text-white hover:bg-gray-600 rounded-full py-2">
           Submit Request
         </Button>

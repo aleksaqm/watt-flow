@@ -17,7 +17,7 @@ export const useUserStore = defineStore('user', {
     clearRole() {
       this.role = null;
     },
-    setId(id: number | null){
+    setId(id: number | null| undefined){
       this.id = id;
     },
     clearId(){
