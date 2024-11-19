@@ -1,12 +1,13 @@
 package handler
 
 import (
-	"github.com/gin-gonic/gin"
 	"strconv"
 	"watt-flow/dto"
 	"watt-flow/model"
 	"watt-flow/service"
 	"watt-flow/util"
+
+	"github.com/gin-gonic/gin"
 )
 
 type HouseholdHandler struct {
@@ -29,6 +30,46 @@ func (h HouseholdHandler) GetById(c *gin.Context) {
 		return
 	}
 	c.JSON(200, gin.H{"data": data})
+}
+
+func (h HouseholdHandler) Query(c *gin.Context) {
+	page := c.DefaultQuery("page", "1")
+	pageSize := c.DefaultQuery("pageSize", "10")
+	sortBy := c.DefaultQuery("sortBy", "city")
+	sortOrder := c.DefaultQuery("sortOrder", "asc")
+
+	pageInt, err := strconv.Atoi(page)
+	if err != nil {
+		c.JSON(400, gin.H{"error": "Invalid page parameter"})
+		return
+	}
+	pageSizeInt, err := strconv.Atoi(pageSize)
+	if err != nil {
+		c.JSON(400, gin.H{"error": "Invalid pageSize parameter"})
+		return
+	}
+
+	var searchParams dto.HouseholdSearchParams
+	if err := c.BindJSON(&searchParams); err != nil {
+		c.JSON(400, gin.H{"error": "Invalid search parameter"})
+		return
+	}
+
+	params := dto.HouseholdQueryParams{
+		Page:      pageInt,
+		PageSize:  pageSizeInt,
+		SortBy:    sortBy,
+		SortOrder: sortOrder,
+		Search:    searchParams,
+	}
+	h.logger.Info(params)
+	households, total, err := h.service.Query(&params)
+	if err != nil {
+		h.logger.Error(err)
+		c.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(200, gin.H{"properties": households, "total": total})
 }
 
 func (h HouseholdHandler) Create(c *gin.Context) {

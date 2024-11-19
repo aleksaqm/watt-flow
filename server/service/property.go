@@ -97,23 +97,6 @@ func (service *PropertyService) Create(property *model.Property) (*model.Propert
 	return &createdProperty, nil
 }
 
-func (service *PropertyService) SearchHouseholds(searchDto dto.SearchHouseholdDto) ([]model.Household, error) {
-	var households []model.Household
-	if searchDto.Id != "" {
-		household, err := service.householdService.FindByCadastralNumber(searchDto.Id)
-		if err != nil {
-			return nil, err
-		}
-		households = make([]model.Household, 0)
-		households = append(households, *household)
-		return households, nil
-	}
-	households, err := service.householdService.Search(searchDto)
-	if err != nil {
-		return nil, err
-	}
-	return households, nil
-}
 
 func (service *PropertyService) cleanupFiles(paths []string) {
 	for _, path := range paths {

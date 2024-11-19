@@ -1,8 +1,9 @@
 package route
 
 import (
-	"github.com/gin-gonic/gin"
 	"watt-flow/server"
+
+	"github.com/gin-gonic/gin"
 )
 
 type HouseholdRoute struct {
@@ -20,6 +21,7 @@ func (r HouseholdRoute) Register(server *server.Server) {
 		api.PUT("/household/:id", server.HouseholdHandler.Update)
 		api.GET("/households", server.HouseholdHandler.FindByStatus)
 		api.DELETE("/household/:id", server.HouseholdHandler.Delete)
+		api.POST("/household/query", server.PropertyHandler.TableQuery)
 	}
 }
 

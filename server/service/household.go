@@ -1,10 +1,11 @@
 package service
 
 import (
-	"gorm.io/gorm"
 	"watt-flow/dto"
 	"watt-flow/model"
 	"watt-flow/repository"
+
+	"gorm.io/gorm"
 )
 
 type IHouseholdService interface {
@@ -14,7 +15,7 @@ type IHouseholdService interface {
 	Delete(id uint64) error
 	FindByStatus(status model.HouseholdStatus) ([]model.Household, error)
 	FindByCadastralNumber(id string) (*model.Household, error)
-	Search(searchDto dto.SearchHouseholdDto) ([]model.Household, error)
+	Query(queryParams *dto.HouseholdQueryParams) ([]model.Household, int64, error)
 	AcceptHouseholds(tx *gorm.DB, propertyID uint64) error
 }
 
@@ -36,12 +37,23 @@ func (service *HouseholdService) FindById(id uint64) (*model.Household, error) {
 	return household, nil
 }
 
-func (service *HouseholdService) Search(searchDto dto.SearchHouseholdDto) ([]model.Household, error) {
-	households, err := service.repository.Search(searchDto)
-	if err != nil {
-		return nil, err
+func (service *HouseholdService) Query(queryParams *dto.HouseholdQueryParams) ([]model.Household, int64, error) {
+	var households []model.Household
+	if queryParams.Search.Id != "" {
+		household, err := service.FindByCadastralNumber(queryParams.Search.Id)
+		if err != nil {
+			return nil, 0, err
+		}
+		households = make([]model.Household, 0)
+		households = append(households, *household)
+		return households, 1, nil
 	}
-	return households, nil
+
+	households, count, err := service.Query(queryParams)
+	if err != nil {
+		return nil, 0, err
+	}
+	return households, count, nil
 }
 
 func (service *HouseholdService) FindByCadastralNumber(id string) (*model.Household, error) {
@@ -67,7 +79,7 @@ func (service *HouseholdService) Create(householdDto *dto.CreateHouseholdDto) (*
 		Suite:     householdDto.Suite,
 		SqFootage: householdDto.SqFootage,
 		Status:    model.InactiveHousehold,
-		//OwnerID:         1,
+		// OwnerID:         1,
 		PropertyID:      householdDto.PropertyId,
 		CadastralNumber: householdDto.CadastralNumber,
 	}

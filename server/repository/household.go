@@ -2,11 +2,12 @@ package repository
 
 import (
 	"fmt"
-	"gorm.io/gorm"
 	"watt-flow/db"
 	"watt-flow/dto"
 	"watt-flow/model"
 	"watt-flow/util"
+
+	"gorm.io/gorm"
 
 	"gorm.io/gorm/clause"
 )
@@ -55,32 +56,41 @@ func (repository *HouseholdRepository) FindByStatus(status model.HouseholdStatus
 	return households, nil
 }
 
-func (repository *HouseholdRepository) Search(searchDto dto.SearchHouseholdDto) ([]model.Household, error) {
+func (repository *HouseholdRepository) Query(params *dto.HouseholdQueryParams) ([]model.Household, int64, error) {
 	var households []model.Household
+	var total int64
 
-	query := repository.Database.Model(&model.Property{}).Joins("Property").Joins("Property.Address")
-	if searchDto.City != "" {
-		query = query.Where("Property.Address.city = ?", searchDto.City)
+	baseQuery := repository.Database.Model(&model.Household{}).
+		Preload("Property")
+
+	if params.Search.City != "" {
+		baseQuery = baseQuery.Where("Property.city ILIKE ?", "%"+params.Search.City+"%")
 	}
-	if searchDto.Street != "" {
-		query = query.Where("Property.Address.street LIKE ?", "%"+searchDto.Street+"%")
+	if params.Search.Street != "" {
+		baseQuery = baseQuery.Where("Property.street ILIKE ?", "%"+params.Search.Street+"%")
 	}
-	if searchDto.Number != "" {
-		query = query.Where("Property.Address.number = ?", searchDto.Number)
+	if params.Search.Number != "" {
+		baseQuery = baseQuery.Where("Property.number ILIKE ?", "%"+params.Search.Number+"%")
 	}
-	if searchDto.Floor != 0 {
-		query = query.Where("floor = ?", searchDto.Floor)
+	if err := baseQuery.Count(&total).Error; err != nil {
+		repository.Logger.Error("Error querying property count", err)
+		return nil, 0, err
 	}
 
-	if searchDto.Suite != "" {
-		query = query.Where("suite = ?", searchDto.Suite)
+	sortOrder := params.SortOrder
+	if sortOrder != "asc" && sortOrder != "desc" {
+		sortOrder = "asc"
 	}
+	query := baseQuery.Order(fmt.Sprintf("%s %s", params.SortBy, sortOrder))
+	offset := (params.Page - 1) * params.PageSize
+	query = query.Offset(offset).Limit(params.PageSize)
 
 	if err := query.Find(&households).Error; err != nil {
-		fmt.Println("Error finding households:", err)
-		return households, err
+		repository.Logger.Error("Error querying households", err)
+		return nil, 0, err
 	}
-	return households, nil
+
+	return households, total, nil
 }
 
 func (repository *HouseholdRepository) FindByCadastralNumber(cadastralNumber string) (*model.Household, error) {
