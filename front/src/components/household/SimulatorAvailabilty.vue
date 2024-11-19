@@ -90,10 +90,12 @@ interface ChartValue {
 const chartData = reactive<{
   data: ChartValue[]
   config: any[]
+  unit: number
 
 }>({
   data: [],
   config: [],
+  unit: 0,
 })
 
 interface FluxQuery {
@@ -168,8 +170,14 @@ const handleFetch = () => {
   if (isRealtimeSelected.value) {
     if (ws?.readyState !== WebSocket.OPEN) {
       connectToWebSocket()
-      setInterval(updateRealtimeChart, 60000)
+      refreshJob = setInterval(updateRealtimeChart, 60000)
     } else {
+      if (ws != null)
+        ws.close()
+      lastStatusValue = -1
+      if (refreshJob != -1)
+        clearInterval(refreshJob)
+
       return
     }
 
@@ -181,15 +189,9 @@ const handleFetch = () => {
       Realtime: true
     }
   } else if (selectedTimePeriod.value == "custom") {
-    if (ws != null)
-      ws.close()
-    lastStatusValue = -1
-    if (refreshJob != -1)
-      clearInterval(refreshJob)
     const startDate = selectedDates.value.start.toDate("Europe/Sarajevo")
     const endDate = selectedDates.value.end.toDate("Europe/Sarajevo")
     const difference = (endDate.getTime() - startDate.getTime()) / 3600000
-    console.log("diff", difference)
     if (difference <= 24) {
       selectedGroupPeriod = "1h"
     } else if (difference <= 720) {
@@ -210,10 +212,6 @@ const handleFetch = () => {
 
   } else {
 
-    if (ws != null)
-      ws.close()
-    if (refreshJob != -1)
-      clearInterval(refreshJob)
     selectedGroupPeriod = GroupPeriodMap[selectedTimePeriod.value]
 
     query = {
@@ -250,6 +248,7 @@ const formatRealtimeData = (data: any[]) => {
     )
   }
   lastStatusValue = data[data.length - 1].Value
+  chartData.unit = -1
 }
 
 const formatData = (data: any[]) => {
@@ -265,6 +264,7 @@ const formatData = (data: any[]) => {
   let remainder = 0
 
   chartData.data = Array.from({ length: length - 1 })
+  chartData.unit = standardUnit
 
   for (let i = length - 2; i >= 0; i--) {
     if (i == length - 2) {
@@ -284,14 +284,30 @@ const formatData = (data: any[]) => {
     chartData.data[i] =
     {
       "time": xFormatter(new Date(data[i].TimeField)),
-      "value": Math.round(((currentValue / unit) * 100) * 100) / 100,
+      // "value": Math.round(((currentValue / unit) * 100) * 100) / 100,
+      "value": currentValue, // in time unit
     }
   }
 }
 
 const xFormatter = (date: Date) => {
   switch (selectedTimePeriod.value) {
-    case "3h": case "6h": case "12h": case "24h":
+    case "3h":
+      if (isRealtimeSelected.value)
+        return date.toLocaleTimeString("en-US", {
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+          hourCycle: "h24"
+        })
+
+      return date.toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hourCycle: "h24"
+      })
+
+    case "6h": case "12h": case "24h":
       return date.toLocaleTimeString("en-US", {
         hour: "2-digit",
         minute: "2-digit",
@@ -369,7 +385,7 @@ const xFormatter = (date: Date) => {
         </div>
         <div class="p-10">
           <AreaChart :show-legend="false" :data="chartData.data" index="time" :categories="['value']"
-            :custom-tooltip="CustomTooltip">
+            :custom-tooltip="CustomTooltip" :is-realtime="isRealtimeSelected" :unit="chartData.unit">
           </AreaChart>
 
         </div>
