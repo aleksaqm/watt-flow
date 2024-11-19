@@ -4,10 +4,13 @@ import CardContent from '@/shad/components/ui/card/CardContent.vue';
 import CardHeader from '@/shad/components/ui/card/CardHeader.vue';
 import CardTitle from '@/shad/components/ui/card/CardTitle.vue';
 import { useRoute } from 'vue-router';
-import HouseholdConsumption from './HouseholdConsumption.vue';
 import type { HouseholdFull } from './household';
+import { ref } from 'vue';
+import { computed } from 'vue';
 
-const route = useRoute()
+import "leaflet/dist/leaflet.css";
+import { LMap, LTileLayer, LMarker, LPopup } from "@vue-leaflet/vue-leaflet";
+
 
 
 
@@ -15,6 +18,11 @@ const props = defineProps<{
   household: HouseholdFull
 }>()
 
+const center = computed<[number, number]>(() => {
+  return [props.household.latitude, props.household.longitude]
+})
+
+const zoom = ref(15);
 
 
 
@@ -81,12 +89,23 @@ const props = defineProps<{
 
       </Card>
 
-      <Card class="w-2/5 min-w-fit h-96">
+      <Card class="min-w-fit w-1/2">
         <CardHeader>
           <CardTitle>
             <span class="text-gray-600 text-xl">Location</span>
           </CardTitle>
           <CardContent class="mt-5 flex flex-col gap-2">
+
+            <div class="w-full h-64 sm:h-96">
+              <l-map ref="map" v-model:zoom="zoom" :center="center" :use-global-leaflet="false" class="w-full h-full">
+                <l-tile-layer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" layer-type="base"
+                  name="OpenStreetMap"></l-tile-layer>
+                <l-marker :lat-lng="center">
+                  <l-popup>{{ props.household.street + ", " + props.household.number }} </l-popup>
+
+                </l-marker>
+              </l-map>
+            </div>
           </CardContent>
         </CardHeader>
 
@@ -94,6 +113,7 @@ const props = defineProps<{
     </div>
 
   </div>
+
 
 </template>
 

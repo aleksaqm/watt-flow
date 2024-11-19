@@ -14,4 +14,6 @@ type HouseholdResultDto struct {
 	City            string  `json:"city"`
 	Street          string  `json:"street"`
 	Number          string  `json:"number"`
+	Latitude        float64 `json:"latitude"`
+	Longitude       float64 `json:"longitude"`
 }

@@ -21,4 +21,6 @@ export interface HouseholdFull {
   device_address: string
   owner_name: string
   sq_footage: number
+  latitude: number
+  longitude: number
 }

@@ -97,6 +97,8 @@ func MapToResultDto(household *model.Household) (dto.HouseholdResultDto, error) 
 		City:            household.Property.Address.City,
 		Street:          household.Property.Address.Street,
 		Number:          household.Property.Address.Number,
+		Latitude:        household.Property.Address.Latitude,
+		Longitude:       household.Property.Address.Longitude,
 	}
 	return response, nil
 }
