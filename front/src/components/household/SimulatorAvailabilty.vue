@@ -91,11 +91,15 @@ const chartData = reactive<{
   data: ChartValue[]
   config: any[]
   unit: number
+  totalUptime: number
+  totalTime: number
 
 }>({
   data: [],
   config: [],
   unit: 0,
+  totalUptime: 0,
+  totalTime: 0.0001,
 })
 
 interface FluxQuery {
@@ -255,13 +259,18 @@ const formatData = (data: any[]) => {
   const length = data.length
   const standardUnit = MinutesInGroupPeriod[selectedGroupPeriod]
   const lastTick = new Date(data[length - 1].TimeField).getTime()
+  const firstTick = new Date(data[0].TimeField).getTime()
+
   const secondTick = new Date(data[length - 2].TimeField).getTime()
   const firstUnit = (lastTick - secondTick) / 60000
+
+  const totalTime = (lastTick - firstTick) / 60000
 
   let lastData = data[length - 1].Value
   let currentValue = 0
   let unit = 0
   let remainder = 0
+  let totalUptime = 0
 
   chartData.data = Array.from({ length: length - 1 })
   chartData.unit = standardUnit
@@ -273,6 +282,7 @@ const formatData = (data: any[]) => {
       unit = standardUnit
     }
     remainder += lastData
+    totalUptime += remainder
     lastData = data[i].Value
     if (remainder > unit) {
       remainder -= unit
@@ -288,6 +298,9 @@ const formatData = (data: any[]) => {
       "value": currentValue, // in time unit
     }
   }
+
+  chartData.totalUptime = totalUptime
+  chartData.totalTime = totalTime
 }
 
 const xFormatter = (date: Date) => {
@@ -387,6 +400,20 @@ const xFormatter = (date: Date) => {
           <AreaChart :show-legend="false" :data="chartData.data" index="time" :categories="['value']"
             :custom-tooltip="CustomTooltip" :is-realtime="isRealtimeSelected" :unit="chartData.unit">
           </AreaChart>
+          <div class="flex flex-row gap-20 justify-center text-sm p-5 text-gray-600" v-if="!isRealtimeSelected">
+            <div class="flex flex-row items-center justify-center">
+              <span>Total uptime for selected period: </span>
+              <span class='text-indigo-500 ml-5'>{{ Math.round(chartData.totalUptime) }} minutes</span>
+            </div>
+
+            <div class="flex flex-row items-center justify-center">
+              <span>Uptime: </span>
+              <span class='text-indigo-500 ml-5'>{{ Math.round((chartData.totalUptime / chartData.totalTime) * 10000) /
+                100
+                }} %</span>
+            </div>
+          </div>
+
 
         </div>
 
