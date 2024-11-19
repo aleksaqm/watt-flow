@@ -27,17 +27,9 @@ import {
   PaginationPrev,
 } from '@/shad/components/ui/pagination'
 import Input from '@/shad/components/ui/input/Input.vue';
+import router from '@/router'
+import type { Household } from './household'
 
-interface Household {
-  id: number
-  cadastral_number: string
-  city?: string
-  street?: string
-  number?: string
-  floor: string
-  suite: string
-  status?: string
-}
 
 const props = defineProps({
   query: {
@@ -142,6 +134,10 @@ function formatDate(date: string): string {
   return dateObj.toLocaleString('en-US', options)
 }
 
+function viewHousehold(id: number) {
+  router.push({ name: "household", params: { id: id } })
+}
+
 </script>
 
 <template>
@@ -160,7 +156,7 @@ function formatDate(date: string): string {
         </TableRow>
       </TableHeader>
       <TableBody>
-        <TableRow v-for="household in households" :key="household.id">
+        <TableRow v-for="household in households" :key="household.id" @click="viewHousehold(household.id)">
           <TableCell>{{ household.city }}</TableCell>
           <TableCell>{{ household.street }}</TableCell>
           <TableCell>{{ household.number }}</TableCell>

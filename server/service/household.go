@@ -11,7 +11,7 @@ import (
 )
 
 type IHouseholdService interface {
-	FindById(id uint64) (*model.Household, error)
+	FindById(id uint64) (*dto.HouseholdResultDto, error)
 	Create(household *dto.CreateHouseholdDto) (*model.Household, error)
 	Update(household *model.Household) (*model.Household, error)
 	Delete(id uint64) error
@@ -31,12 +31,14 @@ func NewHouseholdService(repository *repository.HouseholdRepository) *HouseholdS
 	}
 }
 
-func (service *HouseholdService) FindById(id uint64) (*model.Household, error) {
+func (service *HouseholdService) FindById(id uint64) (*dto.HouseholdResultDto, error) {
 	household, err := service.repository.FindById(id)
 	if err != nil {
 		return nil, err
 	}
-	return household, nil
+	mappedHousehold, _ := MapToResultDto(household)
+
+	return &mappedHousehold, nil
 }
 
 func (service *HouseholdService) Query(queryParams *dto.HouseholdQueryParams) ([]dto.HouseholdResultDto, int64, error) {

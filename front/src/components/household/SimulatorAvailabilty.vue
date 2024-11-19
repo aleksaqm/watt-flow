@@ -24,10 +24,17 @@ import Button from '@/shad/components/ui/button/Button.vue';
 import axios from 'axios';
 import Checkbox from '@/shad/components/ui/checkbox/Checkbox.vue';
 import CustomTooltip from './CustomTooltip.vue';
-import { updateLeafletWrapper } from '@vue-leaflet/vue-leaflet/dist/src/utils';
 
 
 const { toast } = useToast()
+
+
+const props = defineProps({
+  deviceId: {
+    type: String,
+    default: ""
+  }
+})
 
 const now = new Date()
 const end = new CalendarDate(now.getFullYear(), now.getMonth(), now.getDay())
@@ -115,7 +122,7 @@ let lastStatusValue = -1
 let refreshJob = -1
 
 let ws: WebSocket | null = null
-const serverUrl = "ws://localhost:9000/ws?deviceId=be781b42-c3b0-475b-bdc5-cb467d0f4fa1&connType=avb"
+const serverUrl = `ws://localhost:9000/ws?deviceId=${props.deviceId}&connType=avb`
 const isConnectedToWs = ref(false)
 
 const connectToWebSocket = async () => {
@@ -161,6 +168,7 @@ const handleStatusUpdate = (event: any) => {
 }
 
 const handleFetch = () => {
+  console.log(props.deviceId)
   let query: FluxQuery | null = null
   if (isRealtimeSelected.value) {
     if (ws?.readyState !== WebSocket.OPEN) {
@@ -174,7 +182,7 @@ const handleFetch = () => {
       TimePeriod: "3h",
       GroupPeriod: "1m",
       Precision: "m",
-      DeviceId: "be781b42-c3b0-475b-bdc5-cb467d0f4fa1",
+      DeviceId: props.deviceId,
       Realtime: true
     }
   } else {
@@ -194,7 +202,6 @@ const handleFetch = () => {
           title: 'Fetch Failed',
           description: "Please select time period!",
           variant: 'default',
-          duration: 3
         })
         return
       case "custom":
@@ -213,7 +220,7 @@ const handleFetch = () => {
           TimePeriod: selectedTimePeriod.value,
           GroupPeriod: selectedGroupPeriod,
           Precision: "m",
-          DeviceId: "be781b42-c3b0-475b-bdc5-cb467d0f4fa1",
+          DeviceId: props.deviceId,
           StartDate: startDate,
           EndDate: endDate,
           Realtime: false
@@ -227,7 +234,7 @@ const handleFetch = () => {
           TimePeriod: selectedTimePeriod.value,
           GroupPeriod: GroupPeriodMap[selectedTimePeriod.value],
           Precision: PrecisionMap[selectedTimePeriod.value],
-          DeviceId: "be781b42-c3b0-475b-bdc5-cb467d0f4fa1",
+          DeviceId: props.deviceId,
           Realtime: false
         }
     }
