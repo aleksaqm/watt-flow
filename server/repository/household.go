@@ -1,7 +1,9 @@
 package repository
 
 import (
+	"errors"
 	"fmt"
+	"log"
 	"watt-flow/db"
 	"watt-flow/dto"
 	"watt-flow/model"
@@ -60,17 +62,19 @@ func (repository *HouseholdRepository) Query(params *dto.HouseholdQueryParams) (
 	var households []model.Household
 	var total int64
 
-	baseQuery := repository.Database.Model(&model.Household{}).
-		Preload("Property")
+	baseQuery := repository.Database.Model(&model.Household{})
+
+	baseQuery = baseQuery.Joins("JOIN properties ON properties.id = households.property_id")
+	log.Println(baseQuery)
 
 	if params.Search.City != "" {
-		baseQuery = baseQuery.Where("Property.city ILIKE ?", "%"+params.Search.City+"%")
+		baseQuery = baseQuery.Where("city ILIKE ?", "%"+params.Search.City+"%")
 	}
 	if params.Search.Street != "" {
-		baseQuery = baseQuery.Where("Property.street ILIKE ?", "%"+params.Search.Street+"%")
+		baseQuery = baseQuery.Where("street ILIKE ?", "%"+params.Search.Street+"%")
 	}
 	if params.Search.Number != "" {
-		baseQuery = baseQuery.Where("Property.number ILIKE ?", "%"+params.Search.Number+"%")
+		baseQuery = baseQuery.Where("number ILIKE ?", "%"+params.Search.Number+"%")
 	}
 	if err := baseQuery.Count(&total).Error; err != nil {
 		repository.Logger.Error("Error querying property count", err)
@@ -85,7 +89,11 @@ func (repository *HouseholdRepository) Query(params *dto.HouseholdQueryParams) (
 	offset := (params.Page - 1) * params.PageSize
 	query = query.Offset(offset).Limit(params.PageSize)
 
-	if err := query.Find(&households).Error; err != nil {
+	if err := query.
+		Preload("Property").
+		Preload("Owner").
+		Preload("DeviceStatus").
+		Find(&households).Error; err != nil {
 		repository.Logger.Error("Error querying households", err)
 		return nil, 0, err
 	}
@@ -95,9 +103,14 @@ func (repository *HouseholdRepository) Query(params *dto.HouseholdQueryParams) (
 
 func (repository *HouseholdRepository) FindByCadastralNumber(cadastralNumber string) (*model.Household, error) {
 	var household model.Household
-	result := repository.Database.Where("cadastral_number = ?", cadastralNumber).Find(&household)
+	result := repository.Database.Where("cadastral_number = ?", cadastralNumber).Preload("Owner").Preload("Property").Preload("DeviceStatus").First(&household)
+
 	if result.Error != nil {
-		repository.Logger.Error("Error finding households by cadastralNumber", result.Error)
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			repository.Logger.Warn("No household found for cadastralNumber", "cadastralNumber", cadastralNumber)
+			return nil, nil
+		}
+		repository.Logger.Error("Error finding household by cadastralNumber", result.Error)
 		return nil, result.Error
 	}
 	return &household, nil

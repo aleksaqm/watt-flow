@@ -1,6 +1,8 @@
 package service
 
 import (
+	"fmt"
+	"log"
 	"watt-flow/dto"
 	"watt-flow/model"
 	"watt-flow/repository"
@@ -15,7 +17,7 @@ type IHouseholdService interface {
 	Delete(id uint64) error
 	FindByStatus(status model.HouseholdStatus) ([]model.Household, error)
 	FindByCadastralNumber(id string) (*model.Household, error)
-	Query(queryParams *dto.HouseholdQueryParams) ([]model.Household, int64, error)
+	Query(queryParams *dto.HouseholdQueryParams) ([]dto.HouseholdResultDto, int64, error)
 	AcceptHouseholds(tx *gorm.DB, propertyID uint64) error
 }
 
@@ -37,23 +39,64 @@ func (service *HouseholdService) FindById(id uint64) (*model.Household, error) {
 	return household, nil
 }
 
-func (service *HouseholdService) Query(queryParams *dto.HouseholdQueryParams) ([]model.Household, int64, error) {
-	var households []model.Household
+func (service *HouseholdService) Query(queryParams *dto.HouseholdQueryParams) ([]dto.HouseholdResultDto, int64, error) {
+	var households []dto.HouseholdResultDto
 	if queryParams.Search.Id != "" {
 		household, err := service.FindByCadastralNumber(queryParams.Search.Id)
+		fmt.Printf("household: %v", household)
 		if err != nil {
 			return nil, 0, err
 		}
-		households = make([]model.Household, 0)
-		households = append(households, *household)
-		return households, 1, nil
+		households = make([]dto.HouseholdResultDto, 0)
+		if household != nil {
+			mapped_household, _ := MapToResultDto(household)
+
+			households = append(households, mapped_household)
+
+			fmt.Printf("household: %v", households)
+			return households, 1, nil
+		}
+
+		return households, 0, nil
 	}
 
-	households, count, err := service.Query(queryParams)
+	data, count, err := service.repository.Query(queryParams)
 	if err != nil {
+		log.Printf("Error on query: %v", err)
 		return nil, 0, err
 	}
+	households = make([]dto.HouseholdResultDto, 0)
+	for _, household := range data {
+		mapped_household, _ := MapToResultDto(&household)
+		households = append(households, mapped_household)
+	}
+
 	return households, count, nil
+}
+
+func MapToResultDto(household *model.Household) (dto.HouseholdResultDto, error) {
+	ownerUsername := ""
+	var ownerId uint64 = 0
+	if household.OwnerID != nil {
+		ownerUsername = household.Owner.Username
+		ownerId = *household.OwnerID
+	}
+	response := dto.HouseholdResultDto{
+		Id:              household.Id,
+		Floor:           household.Floor,
+		Suite:           household.Suite,
+		Status:          household.Status.HouseholdStatusToString(),
+		SqFootage:       household.SqFootage,
+		OwnerID:         ownerId,
+		OwnerName:       ownerUsername,
+		MeterAddress:    household.DeviceStatus.DeviceId,
+		PropertyID:      household.PropertyID,
+		CadastralNumber: household.CadastralNumber,
+		City:            household.Property.Address.City,
+		Street:          household.Property.Address.Street,
+		Number:          household.Property.Address.Number,
+	}
+	return response, nil
 }
 
 func (service *HouseholdService) FindByCadastralNumber(id string) (*model.Household, error) {

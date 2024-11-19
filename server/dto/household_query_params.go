@@ -4,7 +4,7 @@ type HouseholdSearchParams struct {
 	Street string `json:"street"`
 	Number string `json:"number"`
 	City   string `json:"city"`
-	Id     string `json:"household_id"`
+	Id     string `json:"id"`
 }
 
 type HouseholdQueryParams struct {

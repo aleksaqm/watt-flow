@@ -21,7 +21,7 @@ func (r HouseholdRoute) Register(server *server.Server) {
 		api.PUT("/household/:id", server.HouseholdHandler.Update)
 		api.GET("/households", server.HouseholdHandler.FindByStatus)
 		api.DELETE("/household/:id", server.HouseholdHandler.Delete)
-		api.POST("/household/query", server.PropertyHandler.TableQuery)
+		api.POST("/household/query", server.HouseholdHandler.Query)
 	}
 }
 

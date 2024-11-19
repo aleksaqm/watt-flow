@@ -69,7 +69,7 @@ func (h HouseholdHandler) Query(c *gin.Context) {
 		c.JSON(500, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(200, gin.H{"properties": households, "total": total})
+	c.JSON(200, gin.H{"households": households, "total": total})
 }
 
 func (h HouseholdHandler) Create(c *gin.Context) {
