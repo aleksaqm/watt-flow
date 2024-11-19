@@ -32,7 +32,7 @@ import {
 } from '@/shad/components/ui/pagination'
 import Input from '@/shad/components/ui/input/Input.vue'
 import { toTypedSchema } from '@vee-validate/zod'
-import { h } from 'vue'
+import { h, watch } from 'vue'
 import * as z from 'zod'
 import {
   Dialog,
@@ -64,15 +64,15 @@ const { toast } = useToast()
 const properties = ref<Property[]>([])
 
 const currentPropertyId = ref<number | null>(null); 
-const pagination = ref({ page: 1, total: 0, perPage: 2 })
+const pagination = ref({ page: 1, total: 0, perPage: 5 })
 const searchQuery = ref<{ city?: string; street?: string; number?: string; floors?: number }>({})
-const sortBy = ref("city")
+const sortBy = ref("created_at")
 const sortOrder = ref<{ [key: string]: "asc" | "desc" | "" }>({
   city: "",
   street: "",
   number: "",
   status: "",
-  created_at: "",
+  created_at: "desc",
   floors: "",
 })
 const totalPages = computed(() => Math.ceil(pagination.value.total / pagination.value.perPage))
@@ -193,47 +193,61 @@ async function handleDecline(values: any) {
   }
 }
 
+watch(searchQuery, (newVal) => {
+  Object.keys(newVal).forEach((key) => {
+    if (newVal[key as keyof typeof newVal] === '' || newVal[key as keyof typeof newVal] === null) {
+      delete newVal[key as keyof typeof newVal]
+    }
+  })
+}, { deep: true })
+
 </script>
 
 <template>
   <div class="p-7 flex flex-col bg-white shadow-lg">
-    <form class="flex flex-wrap gap-5 items-center border rounded-2xl p-10 mb-10" @submit.prevent="fetchProperties">
-      <FormField name="city">
-        <FormItem class="flex items-center gap-5">
-          <FormLabel class="w-1/4 text-right">City:</FormLabel>
-          <FormControl class="w-3/4">
-            <Input type="text" v-model="searchQuery.city" placeholder="Enter city" />
-          </FormControl>
-        </FormItem>
-      </FormField>
-      <FormField name="street">
-        <FormItem class="flex items-center gap-5">
-          <FormLabel class="w-1/4 text-right">Street:</FormLabel>
-          <FormControl class="w-3/4">
-            <Input type="text" v-model="searchQuery.street" placeholder="Enter street" />
-          </FormControl>
-        </FormItem>
-      </FormField>
-      <FormField name="number">
-        <FormItem class="flex items-center gap-5">
-          <FormLabel class="w-1/4 text-right">Number:</FormLabel>
-          <FormControl class="w-3/4">
-            <Input type="text" v-model="searchQuery.number" placeholder="Enter number" />
-          </FormControl>
-        </FormItem>
-      </FormField>
-      <FormField name="floors">
-        <FormItem class="flex items-center gap-5">
-          <FormLabel class="w-1/4 text-right">Floors:</FormLabel>
-          <FormControl class="w-3/4">
-            <Input type="number" v-model="searchQuery.floors" placeholder="Enter floors" />
-          </FormControl>
-        </FormItem>
-      </FormField>
-      <Button type="submit" class="bg-indigo-500 text-white w-32 ml-10 hover:bg-gray-600 rounded-full py-2">Search</Button>
-    </form>
+    <div>
+      <div class="w-full text-center my-10 text-xl">
+        Search Property
+      </div>
 
-    <Table>
+      <form class="flex flex-wrap gap-5 items-center border rounded-2xl p-10 mb-10" @submit.prevent="fetchProperties">
+        <FormField name="city">
+          <FormItem class="flex items-center gap-5">
+            <FormLabel class="w-1/4 text-right">City:</FormLabel>
+            <FormControl class="w-3/4">
+              <Input type="text" v-model="searchQuery.city" placeholder="Enter city" />
+            </FormControl>
+          </FormItem>
+        </FormField>
+        <FormField name="street">
+          <FormItem class="flex items-center gap-5">
+            <FormLabel class="w-1/4 text-right">Street:</FormLabel>
+            <FormControl class="w-3/4">
+              <Input type="text" v-model="searchQuery.street" placeholder="Enter street" />
+            </FormControl>
+          </FormItem>
+        </FormField>
+        <FormField name="number">
+          <FormItem class="flex items-center gap-5">
+            <FormLabel class="w-1/4 text-right">Number:</FormLabel>
+            <FormControl class="w-3/4">
+              <Input type="text" v-model="searchQuery.number" placeholder="Enter number" />
+            </FormControl>
+          </FormItem>
+        </FormField>
+        <FormField name="floors">
+          <FormItem class="flex items-center gap-5">
+            <FormLabel class="w-1/4 text-right">Floors:</FormLabel>
+            <FormControl class="w-3/4">
+              <Input type="number" v-model="searchQuery.floors" placeholder="Enter floors" />
+            </FormControl>
+          </FormItem>
+        </FormField>
+        <Button type="submit" class="bg-indigo-500 text-white w-32 ml-10 hover:bg-gray-600 rounded-full py-2">Search</Button>
+      </form>
+    </div>
+
+    <Table class="gap-5 items-center border rounded-2xl border-gray-300 shadow-gray-500 p-10 mb-10">
       <TableHeader>
         <TableRow>
             <TableHead @click="onSortChange('city')" :orientation="sortOrder.city">City</TableHead>

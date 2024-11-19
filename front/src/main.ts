@@ -6,7 +6,7 @@ import App from './App.vue'
 import router from './router'
 import axios from 'axios'
 import { useUserStore } from './stores/user'
-import { getRoleFromToken } from './utils/jwtDecoder'
+import { getRoleFromToken, getUserIdFromToken } from './utils/jwtDecoder'
 
 const app = createApp(App)
 
@@ -24,6 +24,7 @@ axios.interceptors.request.use((config) => {
 const initializeUserStore = () => {
   const userStore = useUserStore();
   userStore.setRole(getRoleFromToken())  
+  userStore.setId(getUserIdFromToken())
 };
 
 initializeUserStore();

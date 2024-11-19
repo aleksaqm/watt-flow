@@ -34,6 +34,7 @@ import "leaflet/dist/leaflet.css";
 import { LMap, LTileLayer, LMarker, LPopup } from "@vue-leaflet/vue-leaflet";
 import 'leaflet/dist/leaflet.css';
 import { getUserIdFromToken } from '@/utils/jwtDecoder'
+import { useUserStore } from '@/stores/user';
 
 const cities = ["Novi Sad", "Niš", "Beograd", "Los Angeles"]
 
@@ -244,11 +245,12 @@ const submitForm = async () => {
     const documentsBase64 = await Promise.all(
       documents.value.map((file) => convertToBase64(file))
     );
+    const userStore = useUserStore()
 
     const data = {
       floors: numberOfFloors.value,
       status: 0,
-      owner_id: getUserIdFromToken(),
+      owner_id: userStore.id,
       images: imagesBase64,
       documents: documentsBase64,
       household: householdEntries.value.map(entry => ({

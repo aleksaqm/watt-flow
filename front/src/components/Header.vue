@@ -113,6 +113,7 @@ const handleNavigation = (item: MenuItem) => {
     localStorage.removeItem('authToken')
     const userStore = useUserStore();
     userStore.clearRole();
+    userStore.clearId();
     console.log("Logging out...");
     router.push({ name: 'login' });
   } else {

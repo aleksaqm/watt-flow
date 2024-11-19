@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import axios from 'axios'
 import {
   Table,
@@ -29,6 +29,9 @@ import {
   PaginationPrev,
 } from '@/shad/components/ui/pagination'
 import Input from '@/shad/components/ui/input/Input.vue';
+import { useUserStore } from '@/stores/user';
+import { getUserIdFromToken } from '@/utils/jwtDecoder'
+
 
 interface Property {
   id: number
@@ -43,10 +46,10 @@ interface Property {
 
 const properties = ref<Property[]>([])
 
-const pagination = ref({ page: 1, total: 0, perPage: 2 })
-const searchQuery = ref<{ city?: string; street?: string; number?: string; floors?: number }>({})
+const pagination = ref({ page: 1, total: 0, perPage: 5 })
+const searchQuery = ref<{ city?: string; street?: string; number?: string; floors?: number; ownerId?: number }>({})
 
-const sortBy = ref("city")
+const sortBy = ref("created_at")
 const sortOrder = ref<{ [key: string]: "asc" | "desc" | "" }>({
   city: "",
   street: "",
@@ -67,6 +70,9 @@ function fetchPropertiesForm(event: Event){
 async function fetchProperties() {
   
   try {
+    const userStore = useUserStore()
+    searchQuery.value.ownerId = userStore.id
+    console.log(searchQuery.value.ownerId)
     const params = {
       page: pagination.value.page,
       pageSize: pagination.value.perPage,
@@ -74,6 +80,7 @@ async function fetchProperties() {
       sortOrder: sortOrder.value[sortBy.value],
       search: JSON.stringify(searchQuery.value),
     }
+    console.log("FEGFWGWER")
     console.log(params)
 
     const response = await axios.get('/api/property/query', { params })
@@ -90,15 +97,13 @@ async function fetchProperties() {
 }
 
 function mapToProperty(data: any): Property {
-  if (data.status == 0) {
-    data.status = "Pending"
-  }
+
   return {
     id: data.id,
     city: data.address.city,
     street: data.address.street,
     number: data.address.number,
-    status: data.status.toString(),
+    status: data.status === 0 ? "Pending" : (data.status === 1 ? "Declined" : (data.status === 2 ? "Accepted" : data.status.toString())),
     created: data.created_at,
     floors: data.floors,
     households: data.household.length,
@@ -142,6 +147,14 @@ function formatDate(date: string): string {
   const dateObj = new Date(date)
   return dateObj.toLocaleString('en-US', options)
 }
+
+watch(searchQuery, (newVal) => {
+  Object.keys(newVal).forEach((key) => {
+    if (newVal[key as keyof typeof newVal] === '' || newVal[key as keyof typeof newVal] === null) {
+      delete newVal[key as keyof typeof newVal]
+    }
+  })
+}, { deep: true })
 
 </script>
 

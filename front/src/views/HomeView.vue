@@ -14,6 +14,7 @@ onMounted(() => {
   // console.log(decodedUsername)
   const userStore = useUserStore();
   console.log('User role:', userStore.role);
+  console.log('User id:', userStore.id)
   // Check if the username is defined, then assign it to the ref
 //   if (decodedUsername) {
 //     username.value = decodedUsername;
