@@ -34,11 +34,16 @@ var addressServiceSet = wire.NewSet(
 	service.NewAddressService,
 	wire.Bind(new(service.IAddressService), new(*service.AddressService)))
 
+var cityServiceSet = wire.NewSet(
+	service.NewCityService,
+	wire.Bind(new(service.ICityService), new(*service.CityService)))
+
 func InitDeps(env *config.Environment) *Server {
 	wire.Build(db.NewDatabase, util.NewLogger, util.NewInfluxQueryHelper, repository.NewUserRepository, service.NewAuthService, userServiceSet, service.NewRestartService, handler.NewUserHandler,
 		repository.NewPropertyRepository, propertyServiceSet, handler.NewPropertyHandler,
 		repository.NewHouseholdRepository, householdServiceSet, handler.NewHouseholdHandler,
 		repository.NewDeviceStatusRepository, deviceStatusServiceSet, handler.NewDeviceStatusHandler,
-		repository.NewAddressRepository, addressServiceSet, handler.NewAddressHandler, NewServer)
+		repository.NewAddressRepository, addressServiceSet, handler.NewAddressHandler,
+		repository.NewCityRepository, cityServiceSet, handler.NewCityHandler, NewServer)
 	return &Server{}
 }

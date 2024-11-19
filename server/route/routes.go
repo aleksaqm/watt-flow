@@ -24,4 +24,5 @@ func RegisterRoutes(
 	NewAddressRoute(engine).Register(server)
 	NewAdminRoute(engine).Register(server)
 	NewPermissionRoute(engine).Register(server)
+	NewCityRoute(engine).Register(server)
 }

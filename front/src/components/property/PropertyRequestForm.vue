@@ -2,7 +2,7 @@
 import * as z from 'zod'
 import { toTypedSchema } from '@vee-validate/zod'
 import { Field, useForm, useField } from 'vee-validate'
-import { ref, computed, nextTick } from 'vue'
+import { ref, computed, nextTick, onMounted } from 'vue'
 import { useToast } from '../../shad/components/ui/toast/use-toast'
 
 import Toaster from '@/shad/components/ui/toast/Toaster.vue';
@@ -36,7 +36,6 @@ import 'leaflet/dist/leaflet.css';
 import { getUserIdFromToken } from '@/utils/jwtDecoder'
 import { useUserStore } from '@/stores/user';
 
-const cities = ["Novi Sad", "Niš", "Beograd", "Los Angeles"]
 
 const formSchema = toTypedSchema(
   z.object({
@@ -305,7 +304,20 @@ const submitForm = async () => {
   }
 };
 
+const cities = ref<string[]>([]);
 
+const fetchCities = async () => {
+  try{
+    const response = await axios.get('/api/cities')
+    cities.value = response.data?.data || [];
+    console.log(cities)
+  }catch (error){
+    console.log(error)
+  }
+}
+
+
+onMounted(fetchCities)
 
 const onSubmit = handleSubmit(submitForm);
 </script>
@@ -330,21 +342,21 @@ const onSubmit = handleSubmit(submitForm);
 
         <div style="display: flex; gap: 1rem;">
           <FormField name="street" v-slot="{ field }">
-            <FormItem style="flex: 1;">
+            <FormItem style="flex: 1; position: relative;">
               <FormLabel>Street</FormLabel>
               <FormControl>
                 <Input type="text" disabled="true" placeholder="Select address on map" v-model="street" />
               </FormControl>
-              <FormMessage v-if="errors.street">{{ errors.street }}</FormMessage>
+              <FormMessage class="absolute -bottom-5 left-0 text-xs" v-if="errors.street">{{ errors.street }}</FormMessage>
             </FormItem>
           </FormField>
           <FormField name="streetNumber" v-slot="{ field }">
-            <FormItem style="flex: 1;">
+            <FormItem style="flex: 1;  position: relative;">
               <FormLabel>Street number</FormLabel>
               <FormControl>
                 <Input type="text" disabled="true" v-model="streetNumber" placeholder="Select address on map" />
               </FormControl>
-              <FormMessage v-if="errors.streetNumber">{{ errors.streetNumber }}</FormMessage>
+              <FormMessage class="absolute -bottom-5 left-0 text-xs"  v-if="errors.streetNumber">{{ errors.streetNumber }}</FormMessage>
             </FormItem>
           </FormField>
         </div>
@@ -384,7 +396,7 @@ const onSubmit = handleSubmit(submitForm);
             <FormControl>
               <Input type="number" v-bind="field" v-model="numberOfFloors" placeholder="Enter number of floors" />
             </FormControl>
-            <FormMessage v-if="errors.numberOfFloors">{{ errors.numberOfFloors }}</FormMessage>
+            <FormMessage  class="absolute -bottom-5 left-0 text-xs"  v-if="errors.numberOfFloors">{{ errors.numberOfFloors }}</FormMessage>
           </FormItem>
         </FormField>
 
@@ -409,43 +421,43 @@ const onSubmit = handleSubmit(submitForm);
         <div v-for="(household, index) in householdEntries" :key="index" class="space-y-4">
           <div class="flex gap-4 items-center">
             <FormField :name="`households.${index}.floor`" v-slot="{ field, errors }">
-              <FormItem>
+              <FormItem style=" position: relative;">
                 <FormLabel>Floor</FormLabel>
                 <FormControl>
                   <Input type="text" v-bind="field" v-model="household.floor" placeholder="Enter floor" />
                 </FormControl>
-                <FormMessage>{{ errors[0] }}</FormMessage>
+                <FormMessage  class="absolute -bottom-5 left-0 text-xs" >{{ errors[0] }}</FormMessage>
               </FormItem>
             </FormField>
 
             <FormField :name="`households.${index}.suite`" v-slot="{ field, errors }">
-              <FormItem>
+              <FormItem style=" position: relative;">
                 <FormLabel>Suite</FormLabel>
                 <FormControl>
                   <Input type="text" v-bind="field" v-model="household.suite" placeholder="Enter suite" />
                 </FormControl>
-                <FormMessage>{{ errors[0] }}</FormMessage>
+                <FormMessage  class="absolute -bottom-5 left-0 text-xs" >{{ errors[0] }}</FormMessage>
               </FormItem>
             </FormField>
 
             <FormField :name="`households.${index}.area`" v-slot="{ field, errors }">
-              <FormItem>
+              <FormItem style=" position: relative;">
                 <FormLabel>Area (m²)</FormLabel>
                 <FormControl>
                   <Input type="number" v-bind="field" v-model="household.area" placeholder="Enter area in m²" />
                 </FormControl>
-                <FormMessage>{{ errors[0] }}</FormMessage>
+                <FormMessage  class="absolute -bottom-5 left-0 text-xs" >{{ errors[0] }}</FormMessage>
               </FormItem>
             </FormField>
 
             <FormField :name="`households.${index}.identifier`" v-slot="{ field, errors }">
-              <FormItem>
+              <FormItem style=" position: relative;">
                 <FormLabel>Cadastral num</FormLabel>
                 <FormControl>
                   <Input type="text" v-bind="field" v-model="household.identifier"
                     placeholder="Enter cadastral number" />
                 </FormControl>
-                <FormMessage>{{ errors[0] }}</FormMessage>
+                <FormMessage  class="absolute -bottom-5 left-0 text-xs" >{{ errors[0] }}</FormMessage>
               </FormItem>
             </FormField>
 
