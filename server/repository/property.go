@@ -126,6 +126,8 @@ func (repository *PropertyRepository) TableQuery(params *dto.PropertyQueryParams
 	var properties []model.Property
 	var total int64
 
+	repository.Logger.Info(params.Search)
+
 	baseQuery := repository.Database.Model(&model.Property{}).
 		Preload("Owner").
 		Preload("Household")
@@ -141,6 +143,9 @@ func (repository *PropertyRepository) TableQuery(params *dto.PropertyQueryParams
 	}
 	if params.Search.Floors != 0 {
 		baseQuery = baseQuery.Where("floors = ?", params.Search.Floors)
+	}
+	if params.Search.OwnerID != 0 {
+		baseQuery = baseQuery.Where("owner_id = ?", params.Search.OwnerID)
 	}
 
 	if err := baseQuery.Count(&total).Error; err != nil {
