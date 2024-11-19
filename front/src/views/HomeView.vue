@@ -1,36 +1,48 @@
 <script setup lang="ts">
-import { getUsernameFromToken } from '@/utils/jwtDecoder';
-import { ref, onMounted } from 'vue';
-import Spinner from '@/components/Spinner.vue';
-import { useUserStore } from '@/stores/user';
-
-// Create a reactive username variable
-const username = ref<string | null>(null);
-
-const loading = ref(true)
-
-onMounted(() => {
-  const decodedUsername = getUsernameFromToken();
-  // console.log(decodedUsername)
-  const userStore = useUserStore();
-  console.log('User role:', userStore.role);
-  console.log('User id:', userStore.id)
-  // Check if the username is defined, then assign it to the ref
-//   if (decodedUsername) {
-//     username.value = decodedUsername;
-//   } else {
-//     console.log("No username found in token");
-//   }
-});
+import Button from '../shad/components/ui/button/Button.vue';
 </script>
 
 <template>
-  <main>
-    <h1>HOME PAGE</h1>
-    <p v-if="username">Welcome, {{ username }}!</p>
-    <p v-else>No username found in token.</p>
-    <Spinner v-if="loading"/>
-  </main>    
-</template>
+  <div class="min-h-screen flex flex-col items-center bg-gradient-to-r from-[#1d1e26] to-[#4d596a] text-white px-6 py-8">
+    <!-- Header Section -->
+    <header class="text-center mt-6">
+      <h1 class="text-4xl font-bold mb-4">Welcome to Watt-Flow</h1>
+      <p class="text-lg text-gray-300 max-w-2xl mx-auto">
+        Track and optimize your household's energy consumption with ease. 
+        Stay informed and take control of your electricity usage.
+      </p>
+    </header>
 
-<style></style>
+    <!-- Decorative Section -->
+    <section class="mt-8 bg-white rounded-lg shadow-lg p-8 text-gray-800 w-full max-w-3xl">
+      <h2 class="text-2xl font-semibold text-center mb-6">Why Choose Watt-Flow?</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        <div class="flex items-center space-x-4">
+          <div class="p-3 rounded-full bg-[#1d1e26] text-white">
+            ⚡
+          </div>
+          <p class="text-lg">Monitor real-time energy usage</p>
+        </div>
+        <div class="flex items-center space-x-4">
+          <div class="p-3 rounded-full bg-[#1d1e26] text-white">
+            💡
+          </div>
+          <p class="text-lg">Identify consumption patterns</p>
+        </div>
+        <div class="flex items-center space-x-4">
+          <div class="p-3 rounded-full bg-[#1d1e26] text-white">
+            📊
+          </div>
+          <p class="text-lg">Generate detailed usage reports</p>
+        </div>
+        <div class="flex items-center space-x-4">
+          <div class="p-3 rounded-full bg-[#1d1e26] text-white">
+            🌍
+          </div>
+          <p class="text-lg">Contribute to a sustainable future</p>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</template>

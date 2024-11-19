@@ -14,6 +14,8 @@ const props = withDefaults(defineProps<BaseChartProps<T> & {
    * Render custom tooltip component.
    */
   customTooltip?: Component
+  isRealtime: boolean
+  unit: number
   /**
    * Type of curve
    */
@@ -33,6 +35,8 @@ const props = withDefaults(defineProps<BaseChartProps<T> & {
   showLegend: true,
   showGridLine: true,
   showGradiant: true,
+  isRealtime: false,
+  unit: 0,
 })
 
 const emits = defineEmits<{
@@ -81,7 +85,7 @@ function handleLegendItemClick(d: BulletLegendItemInterface, i: number) {
       </svg>
 
       <ChartCrosshair v-if="showTooltip" :colors="colors" :items="legendItems" :index="index"
-        :custom-tooltip="customTooltip" />
+        :custom-tooltip="customTooltip" :is-realtime="isRealtime" :unit="unit" />
 
       <template v-for="(category, i) in categories" :key="category">
         <VisArea :x="(d: Data, i: number) => i" :y="(d: Data) => d[category]" color="auto" :curve-type="curveType"

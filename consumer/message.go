@@ -19,3 +19,8 @@ type Location struct {
 	Street string
 	Number string
 }
+
+type Status struct {
+	DeviceId string
+	IsActive bool
+}

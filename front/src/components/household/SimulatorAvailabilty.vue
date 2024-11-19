@@ -28,6 +28,14 @@ import CustomTooltip from './CustomTooltip.vue';
 
 const { toast } = useToast()
 
+
+const props = defineProps({
+  deviceId: {
+    type: String,
+    default: ""
+  }
+})
+
 const now = new Date()
 const end = new CalendarDate(now.getFullYear(), now.getMonth(), now.getDay())
 
@@ -89,10 +97,16 @@ interface ChartValue {
 const chartData = reactive<{
   data: ChartValue[]
   config: any[]
+  unit: number
+  totalUptime: number
+  totalTime: number
 
 }>({
   data: [],
   config: [],
+  unit: 0,
+  totalUptime: 0,
+  totalTime: 0.0001,
 })
 
 interface FluxQuery {
@@ -104,61 +118,127 @@ interface FluxQuery {
   EndDate?: Date
   Realtime: boolean
 }
+let lastStatusValue = -1
+let refreshJob = -1
 
-const handleFetch = () => {
-  if (selectedTimePeriod.value == "") {
-    toast({
-      title: 'Fetch Failed',
-      description: "Please select time period!",
-      variant: 'default',
-      duration: 3
-    })
+let ws: WebSocket | null = null
+const serverUrl = `ws://localhost:9000/ws?deviceId=${props.deviceId}&connType=avb`
+const isConnectedToWs = ref(false)
+
+const connectToWebSocket = async () => {
+  const authToken = localStorage.getItem("authToken")
+  if (authToken != null) {
+    ws = new WebSocket(serverUrl, authToken)
+    ws.addEventListener("open", (event) => { console.log("Connected to ws!"); isConnectedToWs.value = true })
+    ws.addEventListener("message", (event) => handleStatusUpdate(event))
+    ws.addEventListener("error", (event) => console.log(event))
+  } else {
+    console.log("Token not found!")
     return
   }
+}
+
+const updateRealtimeChart = () => {
+  if (lastStatusValue != -1) {
+    chartData.data.push(
+
+      {
+        "time": xFormatter(new Date()),
+        "value": lastStatusValue,
+      }
+    )
+    chartData.data.shift()
+    console.log("Updated chart from last value!")
+  }
+
+}
+
+const handleStatusUpdate = (event: any) => {
+  const data = JSON.parse(event.data)
+  chartData.data.push(
+
+    {
+      "time": xFormatter(new Date()),
+      "value": data.IsActive ? 1 : 0,
+    }
+  )
+  chartData.data.shift()
+  lastStatusValue = data.IsActive ? 1 : 0
+  console.log("Received status change from server!")
+}
+
+const handleFetch = () => {
+  console.log(props.deviceId)
   let query: FluxQuery | null = null
   if (isRealtimeSelected.value) {
+    if (ws?.readyState !== WebSocket.OPEN) {
+      connectToWebSocket()
+      refreshJob = setInterval(updateRealtimeChart, 60000)
+      console.log(refreshJob)
+    } else {
+      return
+    }
     query = {
       TimePeriod: "3h",
       GroupPeriod: "1m",
       Precision: "m",
-      DeviceId: "be781b42-c3b0-475b-bdc5-cb467d0f4fa1",
+      DeviceId: props.deviceId,
       Realtime: true
     }
-  } else if (selectedTimePeriod.value == "custom") {
-    const startDate = selectedDates.value.start.toDate("Europe/Sarajevo")
-    const endDate = selectedDates.value.end.toDate("Europe/Sarajevo")
-    const difference = (endDate.getTime() - startDate.getTime()) / 3600000
-    console.log("diff", difference)
-    if (difference <= 24) {
-      selectedGroupPeriod = "1h"
-    } else if (difference <= 720) {
-      selectedGroupPeriod = "1d"
-    } else {
-      selectedGroupPeriod = "7d"
-    }
-
-    query = {
-      TimePeriod: selectedTimePeriod.value,
-      GroupPeriod: selectedGroupPeriod,
-      Precision: "m",
-      DeviceId: "be781b42-c3b0-475b-bdc5-cb467d0f4fa1",
-      StartDate: startDate,
-      EndDate: endDate,
-      Realtime: false
-    }
-
   } else {
-    selectedGroupPeriod = GroupPeriodMap[selectedTimePeriod.value]
-
-    query = {
-      TimePeriod: selectedTimePeriod.value,
-      GroupPeriod: GroupPeriodMap[selectedTimePeriod.value],
-      Precision: PrecisionMap[selectedTimePeriod.value],
-      DeviceId: "be781b42-c3b0-475b-bdc5-cb467d0f4fa1",
-      Realtime: false
+    if (ws != null)
+      ws.close()
+    lastStatusValue = -1
+    if (refreshJob != -1) {
+      clearInterval(refreshJob)
+      console.log("Cleared job")
     }
   }
 
+  if (query == null) {
+    switch (selectedTimePeriod.value) {
+      case "":
+        toast({
+          title: 'Fetch Failed',
+          description: "Please select time period!",
+          variant: 'default',
+        })
+        return
+      case "custom":
+        const startDate = selectedDates.value.start.toDate("Europe/Sarajevo")
+        const endDate = selectedDates.value.end.toDate("Europe/Sarajevo")
+        const difference = (endDate.getTime() - startDate.getTime()) / 3600000
+        if (difference <= 24) {
+          selectedGroupPeriod = "1h"
+        } else if (difference <= 720) {
+          selectedGroupPeriod = "1d"
+        } else {
+          selectedGroupPeriod = "7d"
+        }
+
+        query = {
+          TimePeriod: selectedTimePeriod.value,
+          GroupPeriod: selectedGroupPeriod,
+          Precision: "m",
+          DeviceId: props.deviceId,
+          StartDate: startDate,
+          EndDate: endDate,
+          Realtime: false
+        }
+        break
+
+      default:
+        selectedGroupPeriod = GroupPeriodMap[selectedTimePeriod.value]
+
+        query = {
+          TimePeriod: selectedTimePeriod.value,
+          GroupPeriod: GroupPeriodMap[selectedTimePeriod.value],
+          Precision: PrecisionMap[selectedTimePeriod.value],
+          DeviceId: props.deviceId,
+          Realtime: false
+        }
+    }
+  }
   axios.post('/api/device-status/query-status', query).then(
     (result) => {
       if (isRealtimeSelected.value) {
@@ -182,24 +262,30 @@ const formatRealtimeData = (data: any[]) => {
         "value": data[i].Value,
       }
     )
-
-
   }
+  lastStatusValue = data[data.length - 1].Value
+  chartData.unit = -1
 }
 
 const formatData = (data: any[]) => {
   const length = data.length
   const standardUnit = MinutesInGroupPeriod[selectedGroupPeriod]
   const lastTick = new Date(data[length - 1].TimeField).getTime()
+  const firstTick = new Date(data[0].TimeField).getTime()
+
   const secondTick = new Date(data[length - 2].TimeField).getTime()
   const firstUnit = (lastTick - secondTick) / 60000
+
+  const totalTime = (lastTick - firstTick) / 60000
 
   let lastData = data[length - 1].Value
   let currentValue = 0
   let unit = 0
   let remainder = 0
+  let totalUptime = 0
 
   chartData.data = Array.from({ length: length - 1 })
+  chartData.unit = standardUnit
 
   for (let i = length - 2; i >= 0; i--) {
     if (i == length - 2) {
@@ -216,17 +302,37 @@ const formatData = (data: any[]) => {
       currentValue = remainder
       remainder = 0
     }
+    totalUptime += currentValue
     chartData.data[i] =
     {
       "time": xFormatter(new Date(data[i].TimeField)),
-      "value": Math.round(((currentValue / unit) * 100) * 100) / 100,
+      // "value": Math.round(((currentValue / unit) * 100) * 100) / 100,
+      "value": currentValue, // in time unit
     }
   }
+
+  chartData.totalUptime = totalUptime
+  chartData.totalTime = totalTime
 }
 
 const xFormatter = (date: Date) => {
   switch (selectedTimePeriod.value) {
-    case "3h": case "6h": case "12h": case "24h":
+    case "3h":
+      if (isRealtimeSelected.value)
+        return date.toLocaleTimeString("en-US", {
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+          hourCycle: "h24"
+        })
+
+      return date.toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hourCycle: "h24"
+      })
+
+    case "6h": case "12h": case "24h":
       return date.toLocaleTimeString("en-US", {
         hour: "2-digit",
         minute: "2-digit",
@@ -247,20 +353,17 @@ const xFormatter = (date: Date) => {
   }
 }
 
-
-
-
 </script>
 <template>
   <div class="flex flex-col gap-3 items-center justify-center w-full mb-10">
-    <Card class="w-3/4">
+    <Card class="w-5/6">
       <CardHeader>
         <CardTitle>
           <span class="text-gray-600 text-xl">Power meter availability</span>
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div class="flex justify-around items-center spaxe-x-10 gap-10">
+        <div class="flex justify-around items-center gap-10">
           <Select v-model="selectedTimePeriod">
             <SelectTrigger>
               <SelectValue placeholder="Select time period" />
@@ -307,8 +410,22 @@ const xFormatter = (date: Date) => {
         </div>
         <div class="p-10">
           <AreaChart :show-legend="false" :data="chartData.data" index="time" :categories="['value']"
-            :custom-tooltip="CustomTooltip">
+            :custom-tooltip="CustomTooltip" :is-realtime="isRealtimeSelected" :unit="chartData.unit">
           </AreaChart>
+          <div class="flex flex-row gap-20 justify-center text-sm p-5 text-gray-600" v-if="!isRealtimeSelected">
+            <div class="flex flex-row items-center justify-center">
+              <span>Total uptime for selected period: </span>
+              <span class='text-indigo-500 ml-5'>{{ Math.round(chartData.totalUptime) }} minutes</span>
+            </div>
+
+            <div class="flex flex-row items-center justify-center">
+              <span>Uptime: </span>
+              <span class='text-indigo-500 ml-5'>{{ Math.round((chartData.totalUptime / chartData.totalTime) * 10000) /
+                100
+                }} %</span>
+            </div>
+          </div>
+
 
         </div>
 

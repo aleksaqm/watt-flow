@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -18,88 +18,60 @@ import { useUserStore } from '@/stores/user';
 interface MenuItem {
   title: string;
   href: string;
+  roles?: string[];
   children?: {
     title: string;
     href: string;
     description?: string;
+    roles?: string[];
   }[];
 }
 
 const router = useRouter();
+const userStore = useUserStore();
 
 const menuItems = ref<MenuItem[]>([
-  {
-    title: 'Home',
-    href: '/',
-  },
-  {
-    title: 'Users',
-    href: '/products',
-    children: [
-      {
-        title: 'Manage users',
-        href: '/products/feature-2',
-        description: 'Add new or manage existing users',
-      },
-      {
-        title: 'Manage admins',
-        href: '/manage/admins',
-        description: 'Add new admins to the system',
-      },
+  { title: 'Home', href: '/home', roles: ['Regular', 'Clerk','Admin', 'SuperAdmin']},
+  { title: 'Users', href: '/products', roles: ['Admin', 'SuperAdmin'], children: [
+      { title: 'Manage users', href: '/products/feature-2', description: 'Add new or manage existing users', roles: ['Admin', 'SuperAdmin'] },
+      { title: 'Manage admins', href: '/manage/admins', description: 'Add new admins to the system', roles: ['SuperAdmin'] },
     ],
   },
-  {
-    title: 'Properties',
-    href: '/properties',
-    children: [
-      {
-        title: 'Requests',
-        href: '/properties/requests-manage',
-        description: 'Manage new property requests',
-      },
+  { title: 'Properties', href: '/properties', roles: ['Admin'], children: [
+      { title: 'Requests', href: '/properties/requests-manage', description: 'Manage new property requests', roles: ['Admin'] },
     ],
   },
-  {
-    title: 'Households',
-    href: '/household',
-    children: [
-      {
-        title: 'Search',
-        href: '/household/search',
-        description: 'Search for households',
-      },
-      {
-        title: 'Requests',
-        href: '/households/requests-manage',
-        description: 'Manage household ownership requests',
-      },
+  { title: 'Households', href: '/household', roles: ['Regular', 'Admin'], children: [
+      { title: 'Search', href: '/household/search', description: 'Search for households', roles: ['Regular', 'Admin'] },
+      { title: 'Requests', href: '/households/requests-manage', description: 'Manage household ownership requests', roles: ['Admin'] },
     ],
   },
-  {
-    title: 'Bills',
-    href: '/bills',
-    children: [
-      {
-        title: 'Price Management',
-        href: '/bills/prices',
-        description: 'Manage active and create new price lists',
-      },
-      {
-        title: 'Send bills',
-        href: '/bills/send',
-        description: 'Send bills to users',
-      },
+  { title: 'Bills', href: '/bills', roles: ['Admin'], children: [
+      { title: 'Price Management', href: '/bills/prices', description: 'Manage active and create new price lists', roles: ['Admin'] },
+      { title: 'Send bills', href: '/bills/send', description: 'Send bills to users', roles: ['Admin'] },
     ],
   },
-  {
-    title: 'Profile',
-    href: '/profile',
-  },
-  {
-    title: 'Logout',
-    href: '/logout',
-  },
-])
+  { title: 'Profile', href: '/profile', roles: ['Regular'] },
+  { title: 'Logout', href: '/logout', roles: ['Regular', 'Clerk','Admin', 'SuperAdmin'] },
+]);
+
+const filteredMenuItems = computed(() => {
+  const role = userStore.role;
+  if (role !== null){
+    return menuItems.value.filter(item => {
+      return !item.roles || item.roles.includes(role);
+    }).map(item => ({
+      ...item,
+      children: item.children?.filter(child => !child.roles || child.roles.includes(role)),
+    }));
+  }
+  return menuItems.value.filter(item => {
+      return !item.roles;
+    }).map(item => ({
+      ...item,
+      children: item.children?.filter(child => !child.roles),
+    })); 
+});
 
 
 const isMenuOpen = ref(false)
@@ -138,7 +110,7 @@ const handleNavigation = (item: MenuItem) => {
         <div class="hidden md:block">
           <NavigationMenu>
             <NavigationMenuList>
-              <NavigationMenuItem v-for="item in menuItems" :key="item.title">
+              <NavigationMenuItem v-for="item in filteredMenuItems" :key="item.title">
                 <template v-if="item.children">
                   <NavigationMenuTrigger class="nav-item">{{ item.title }}</NavigationMenuTrigger>
                   <NavigationMenuContent>
