@@ -1,9 +1,8 @@
 package model
 
 type DeviceStatus struct {
-	Address     string `gorm:"primaryKey" json:"address"`
-	IsActive    bool   `json:"is_active"`
-	HouseholdID uint64 `gorm:"column:household_id" json:"household_id"`
+	DeviceId string `gorm:"primaryKey" json:"device_id"`
+	IsActive bool   `json:"is_active"`
 }
 
 func (DeviceStatus) TableName() string {

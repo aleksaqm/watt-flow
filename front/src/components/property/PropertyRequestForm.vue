@@ -257,6 +257,10 @@ const submitForm = async () => {
         status: 0,
         sq_footage: entry.area,
         cadastral_number: entry.identifier,
+        device_status: {
+          device_id: crypto.randomUUID(),
+          is_active: false
+        },
       })),
 
       address: {

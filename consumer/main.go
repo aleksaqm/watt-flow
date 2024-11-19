@@ -40,6 +40,7 @@ type Consumer struct {
 	cancelContext context.CancelFunc
 	amqpURI       string
 	wg            sync.WaitGroup
+	wsServer      *WsServer
 }
 
 type DeviceStatus struct {
@@ -48,7 +49,7 @@ type DeviceStatus struct {
 	IsActive bool
 }
 
-func NewConsumer(amqpURI, influxURI, influxToken, pgConnStr, redisAddr string, cancelFunc context.CancelFunc) (*Consumer, error) {
+func NewConsumer(amqpURI, influxURI, influxToken, pgConnStr, redisAddr string, cancelFunc context.CancelFunc, wsServer *WsServer) (*Consumer, error) {
 	// Connect to InfluxDB
 	influxClient := influxdb2.NewClient(influxURI, influxToken)
 
@@ -91,6 +92,7 @@ func NewConsumer(amqpURI, influxURI, influxToken, pgConnStr, redisAddr string, c
 		pgDB:          pgDB,
 		redisClient:   redisClient,
 		cancelContext: cancelFunc,
+		wsServer:      wsServer,
 	}, nil
 }
 
@@ -385,6 +387,15 @@ func (c *Consumer) updateStatusInDB(key string, status bool, ctx *context.Contex
 
 	// websocket
 
+	msg, err := json.Marshal(Status{
+		DeviceId: key,
+		IsActive: status,
+	})
+	if err != nil {
+		log.Printf("Failed marshalling to json!", err)
+	}
+	c.wsServer.SendMessage(key, msg, "avb")
+
 	if err := writeAPI.WritePoint(*ctx, p); err != nil {
 		log.Printf("Failed to write status change to InfluxDB: %v", err)
 	} else {
@@ -440,6 +451,7 @@ func (c *Consumer) Shutdown(ctx context.Context) error {
 		log.Printf("Error closing PostgreSQL connection: %v", err)
 	}
 	c.influxClient.Close()
+	c.wsServer.Shutdown()
 	if err := c.redisClient.Close(); err != nil {
 		log.Printf("Error closing Redis connection: %v", err)
 	}
@@ -475,7 +487,12 @@ func main() {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	consumer, err := NewConsumer(amqpURI, influxURI, influxToken, pgConnStr, redisAddr, cancel)
+	wsServer := NewWsServer()
+	go wsServer.Run()
+
+	go HttpServer(":9000", wsServer)
+
+	consumer, err := NewConsumer(amqpURI, influxURI, influxToken, pgConnStr, redisAddr, cancel, wsServer)
 	if err != nil {
 		log.Fatal(err)
 	}

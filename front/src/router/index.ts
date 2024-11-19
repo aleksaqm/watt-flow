@@ -35,7 +35,7 @@ const router = createRouter({
       meta: { requiresAuth: true }
     },
     {
-      path: '/household',
+      path: '/household/info/:id',
       name: 'household',
       component: HouseholdView,
       meta: { requiresAuth: true }

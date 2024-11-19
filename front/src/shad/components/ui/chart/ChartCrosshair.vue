@@ -8,6 +8,8 @@ import { ChartTooltip } from '.'
 const props = withDefaults(defineProps<{
   colors: string[]
   index: string
+  isRealtime: boolean
+  unit: number
   items: BulletLegendItemInterface[]
   customTooltip?: Component
 }>(), {
@@ -27,7 +29,7 @@ function template(d: any) {
       return { ...legendReference, value }
     })
     const TooltipComponent = props.customTooltip ?? ChartTooltip
-    createApp(TooltipComponent, { title: d[props.index].toString(), data: omittedData }).mount(componentDiv)
+    createApp(TooltipComponent, { title: d[props.index].toString(), data: omittedData, isRealtime: props.isRealtime, unit: props.unit }).mount(componentDiv)
     wm.set(d, componentDiv.innerHTML)
     return componentDiv.innerHTML
   }

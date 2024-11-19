@@ -18,6 +18,7 @@ services:
       DB_PORT: ${DB_PORT}
       JWT_SECRET: ${JWT_SECRET}
       INFLUX_URL: "http://influxdb2:8086"
+      INFLUX_TOKEN: ${INFLUX_TOKEN}
     depends_on:
       postgres:
         condition: service_healthy
@@ -101,6 +102,8 @@ services:
     build: ./consumer/
     restart: always
     stop_grace_period: 50s
+    ports:
+      - "9000:9000"
     networks:
       - watt-flow-network
     environment:

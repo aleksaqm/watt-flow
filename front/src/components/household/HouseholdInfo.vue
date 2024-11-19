@@ -3,6 +3,28 @@ import Card from '@/shad/components/ui/card/Card.vue';
 import CardContent from '@/shad/components/ui/card/CardContent.vue';
 import CardHeader from '@/shad/components/ui/card/CardHeader.vue';
 import CardTitle from '@/shad/components/ui/card/CardTitle.vue';
+import { useRoute } from 'vue-router';
+import type { HouseholdFull } from './household';
+import { ref } from 'vue';
+import { computed } from 'vue';
+
+import "leaflet/dist/leaflet.css";
+import { LMap, LTileLayer, LMarker, LPopup } from "@vue-leaflet/vue-leaflet";
+
+
+
+
+const props = defineProps<{
+  household: HouseholdFull
+}>()
+
+const center = computed<[number, number]>(() => {
+  return [props.household.latitude, props.household.longitude]
+})
+
+const zoom = ref(15);
+
+
 
 </script>
 <template>
@@ -11,7 +33,7 @@ import CardTitle from '@/shad/components/ui/card/CardTitle.vue';
       <CardHeader>
         <CardTitle>
           Household:
-          <span class="mx-4 text-indigo-500">1232131</span>
+          <span class="mx-4 text-indigo-500">{{ props.household.cadastral_number }}</span>
         </CardTitle>
       </CardHeader>
     </Card>
@@ -26,47 +48,64 @@ import CardTitle from '@/shad/components/ui/card/CardTitle.vue';
           <CardContent class="mt-5 flex flex-col gap-2">
             <div class="info-member">
               <span class="info-name text-gray-800">Owner:</span>
-              <div class="info-value font-semibold">none</div>
+              <div class="info-value font-semibold">{{ props.household.owner_name == "" ? "unowned" :
+                props.household.owner_name }}</div>
             </div>
 
             <div class="info-member">
               <span class="info-name text-gray-800">Address:</span>
-              <div class="info-value font-semibold">Bulevar oslobodjenja 12</div>
+              <div class="info-value font-semibold">{{ props.household.street }}</div>
             </div>
 
             <div class="info-member">
               <span class="info-name text-gray-800">City:</span>
-              <div class="info-value font-semibold">Novi Sad</div>
+              <div class="info-value font-semibold">{{ props.household.city }}</div>
             </div>
 
             <div class="info-member">
               <span class="info-name text-gray-800">Status:</span>
-              <div class="info-value font-semibold">Unowned</div>
+              <div class="info-value font-semibold">{{ props.household.status }}</div>
             </div>
             <div class="info-member">
               <span class="info-name text-gray-800">Floor:</span>
-              <div class="info-value font-semibold">2</div>
+              <div class="info-value font-semibold">{{ props.household.floor }}</div>
             </div>
             <div class="info-member">
               <span class="info-name text-gray-800">Suite:</span>
-              <div class="info-value font-semibold">21</div>
+              <div class="info-value font-semibold">{{ props.household.suite }}</div>
+            </div>
+
+            <div class="info-member">
+              <span class="info-name text-gray-800">Power meter:</span>
+              <div class="info-value font-semibold text-xs">{{ props.household.device_address }}</div>
             </div>
 
             <div class="info-member">
               <span class="info-name text-gray-800">Square footage:</span>
-              <div class="info-value font-semibold">89 m<sup>2</sup></div>
+              <div class="info-value font-semibold">{{ props.household.sq_footage }} m<sup>2</sup></div>
             </div>
           </CardContent>
         </CardHeader>
 
       </Card>
 
-      <Card class="w-2/5 min-w-fit h-96">
+      <Card class="min-w-fit w-1/2">
         <CardHeader>
           <CardTitle>
             <span class="text-gray-600 text-xl">Location</span>
           </CardTitle>
           <CardContent class="mt-5 flex flex-col gap-2">
+
+            <div class="w-full h-64 sm:h-96">
+              <l-map ref="map" v-model:zoom="zoom" :center="center" :use-global-leaflet="false" class="w-full h-full">
+                <l-tile-layer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" layer-type="base"
+                  name="OpenStreetMap"></l-tile-layer>
+                <l-marker :lat-lng="center">
+                  <l-popup>{{ props.household.street + ", " + props.household.number }} </l-popup>
+
+                </l-marker>
+              </l-map>
+            </div>
           </CardContent>
         </CardHeader>
 
@@ -74,6 +113,7 @@ import CardTitle from '@/shad/components/ui/card/CardTitle.vue';
     </div>
 
   </div>
+
 
 </template>
 
@@ -84,6 +124,7 @@ import CardTitle from '@/shad/components/ui/card/CardTitle.vue';
   align-items: center;
   justify-content: start;
   gap: 10px;
+  color: #474747;
 }
 
 .info-name {
