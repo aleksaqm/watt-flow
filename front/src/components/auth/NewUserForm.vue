@@ -83,7 +83,7 @@ const onSubmit = handleSubmit((values) => {
 <template>
     <main>
       <Spinner v-if="loading"/>
-      <form v-if="!loading" class="w-full space-y-6" @submit="onSubmit">
+      <form class="w-full space-y-6" @submit="onSubmit">
         <FormField name="username" v-slot="{ field }">
           <FormItem class="relative pb-2">
             <FormLabel>Username</FormLabel>

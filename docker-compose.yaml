@@ -111,7 +111,7 @@ services:
       DB_PORT: ${DB_PORT}
       AMQP_URI: "amqp://guest:guest@rabbitmq:5672/"
       INFLUX_URI: "http://influxdb2:8086"
-      INFLUX_TOKEN: -nua9ItUoqiYqUS7UZVtz5gU92-H5kdJI1Yr89Aifx2vzAVAMNfWHI4xouZaKZzC1eL5uljiCuI-CMln-CFSkQ==
+      INFLUX_TOKEN: ${INFLUX_TOKEN}
       REDIS_ADDR: "redis:6379"
     depends_on:
       rabbitmq:
