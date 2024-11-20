@@ -37,17 +37,23 @@ const { handleSubmit, errors } = useForm({
 
 const submitForm = async (formData: { username: string; password: string }) => {
   try {
-    loading.value=true
+    loading.value = true
     const response = await axios.post('/api/login', formData)
-    loading.value=false
+    loading.value = false
     console.log('Response:', response.data)
     localStorage.setItem("authToken", response.data['token'])
     const userStore = useUserStore();
-    userStore.setRole(getRoleFromToken())
+    const role = getRoleFromToken()
+    userStore.setRole(role)
     userStore.setId(getUserIdFromToken())
-    router.push({ name: 'home' })
+    if (role == "Admin" || role == "SuperAdmin") {
+      router.push({ path: '/properties/requests-manage' })
+    } else {
+      router.push({ name: 'home' })
+
+    }
   } catch (error: any) {
-    loading.value=false
+    loading.value = false
     console.error('Error:', error)
     const errorMessage = error.response?.data?.error || 'An unexpected error occurred'
     toast({
@@ -65,7 +71,7 @@ const onSubmit = handleSubmit((values) => {
 
 <template>
   <div class="w-1/2 p-10 flex flex-col justify-center items-center bg-white">
-    <Spinner v-if="loading"/>
+    <Spinner v-if="loading" />
     <div v-if="!loading" class="p-10 flex flex-col justify-center items-center gap-5 w-full">
       <span class="text-gray-800 text-lg">Sign In</span>
       <form class="w-full space-y-6" @submit="onSubmit">

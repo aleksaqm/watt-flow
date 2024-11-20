@@ -1,6 +1,7 @@
 package route
 
 import (
+	"watt-flow/middleware"
 	"watt-flow/server"
 
 	"github.com/gin-gonic/gin"
@@ -12,16 +13,12 @@ type HouseholdRoute struct {
 
 func (r HouseholdRoute) Register(server *server.Server) {
 	server.Logger.Info("Setting up household routes")
-	// authMid := middleware.NewAuthMiddleware(server.AuthService, server.Logger)
+	authMid := middleware.NewAuthMiddleware(server.AuthService, server.Logger)
 
-	api := r.engine.Group("/api")
+	api := r.engine.Group("/api").Use(authMid.Handler())
 	{
-		api.GET("/household/:id", server.HouseholdHandler.GetById)
-		api.POST("/household", server.HouseholdHandler.Create)
-		api.PUT("/household/:id", server.HouseholdHandler.Update)
-		api.GET("/households", server.HouseholdHandler.FindByStatus)
-		api.DELETE("/household/:id", server.HouseholdHandler.Delete)
-		api.POST("/household/query", server.HouseholdHandler.Query)
+		api.GET("/household/:id", authMid.RoleMiddleware([]string{"Admin", "Clerk", "Regular", "SuperAdmin"}), server.HouseholdHandler.GetById)
+		api.POST("/household/query", authMid.RoleMiddleware([]string{"Admin", "SuperAdmin"}), server.HouseholdHandler.Query)
 	}
 }
 

@@ -31,33 +31,38 @@ const router = useRouter();
 const userStore = useUserStore();
 
 const menuItems = ref<MenuItem[]>([
-  { title: 'Home', href: '/home', roles: ['Regular', 'Clerk','Admin', 'SuperAdmin']},
-  { title: 'Users', href: '/products', roles: ['Admin', 'SuperAdmin'], children: [
-      { title: 'Manage users', href: '/products/feature-2', description: 'Add new or manage existing users', roles: ['Admin', 'SuperAdmin'] },
+  { title: 'Home', href: '/home', roles: ['Regular', 'Clerk', 'Admin', 'SuperAdmin'] },
+  {
+    title: 'Users', href: '/users', roles: ['Admin', 'SuperAdmin'], children: [
+      { title: 'Manage users', href: '/users/manage', description: 'Add new or manage existing users', roles: ['Admin', 'SuperAdmin'] },
       { title: 'Manage admins', href: '/manage/admins', description: 'Add new admins to the system', roles: ['SuperAdmin'] },
     ],
   },
-  { title: 'Properties', href: '/properties', roles: ['Admin'], children: [
-      { title: 'Requests', href: '/properties/requests-manage', description: 'Manage new property requests', roles: ['Admin'] },
+  {
+    title: 'Properties', href: '/properties', roles: ['Admin', 'SuperAdmin', 'Regular'], children: [
+      { title: 'Requests', href: '/properties/requests-manage', description: 'Manage new property requests', roles: ['Admin', 'SuperAdmin'] },
+      { title: 'Requests', href: '/property-request', description: 'Create new property requests', roles: ['Regular'] },
+      { title: 'My requests', href: '/my-property-request', description: 'View my property requests', roles: ['Regular'] },
     ],
   },
-  { title: 'Households', href: '/household', roles: ['Regular', 'Admin'], children: [
-      { title: 'Search', href: '/household/search', description: 'Search for households', roles: ['Regular', 'Admin'] },
-      { title: 'Requests', href: '/households/requests-manage', description: 'Manage household ownership requests', roles: ['Admin'] },
+  {
+    title: 'Households', href: '/household', roles: ['Regular', 'Admin', 'SuperAdmin'], children: [
+      { title: 'Search', href: '/household/search', description: 'Search for households', roles: ['Admin', 'SuperAdmin'] },
     ],
   },
-  { title: 'Bills', href: '/bills', roles: ['Admin'], children: [
+  {
+    title: 'Bills', href: '/bills', roles: [], children: [
       { title: 'Price Management', href: '/bills/prices', description: 'Manage active and create new price lists', roles: ['Admin'] },
       { title: 'Send bills', href: '/bills/send', description: 'Send bills to users', roles: ['Admin'] },
     ],
   },
   { title: 'Profile', href: '/profile', roles: ['Regular'] },
-  { title: 'Logout', href: '/logout', roles: ['Regular', 'Clerk','Admin', 'SuperAdmin'] },
+  { title: 'Logout', href: '/logout', roles: ['Regular', 'Clerk', 'Admin', 'SuperAdmin'] },
 ]);
 
 const filteredMenuItems = computed(() => {
   const role = userStore.role;
-  if (role !== null){
+  if (role !== null) {
     return menuItems.value.filter(item => {
       return !item.roles || item.roles.includes(role);
     }).map(item => ({
@@ -66,11 +71,11 @@ const filteredMenuItems = computed(() => {
     }));
   }
   return menuItems.value.filter(item => {
-      return !item.roles;
-    }).map(item => ({
-      ...item,
-      children: item.children?.filter(child => !child.roles),
-    })); 
+    return !item.roles;
+  }).map(item => ({
+    ...item,
+    children: item.children?.filter(child => !child.roles),
+  }));
 });
 
 

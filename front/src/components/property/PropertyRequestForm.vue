@@ -35,6 +35,7 @@ import "leaflet/dist/leaflet.css";
 import { LMap, LTileLayer, LMarker, LPopup } from "@vue-leaflet/vue-leaflet";
 import 'leaflet/dist/leaflet.css';
 import { useUserStore } from '@/stores/user';
+import router from '@/router'
 
 
 const formSchema = toTypedSchema(
@@ -77,7 +78,7 @@ const formSchema = toTypedSchema(
       )
       .min(1, { message: "At least one document is required" })
       .max(5, { message: "You can upload up to 5 documents" }),
-    }).superRefine((data, ctx) => {
+  }).superRefine((data, ctx) => {
     data.households.forEach((household, index) => {
       if (household.floor > data.numberOfFloors) {
         ctx.addIssue({
@@ -258,8 +259,8 @@ const convertToBase64 = (file: File): Promise<string> => {
 
 const submitForm = async () => {
   try {
-    if (householdEntries.value.length == 0){
-        toast({
+    if (householdEntries.value.length == 0) {
+      toast({
         title: 'Property Registration Error',
         description: "You can register property without households.",
         variant: 'destructive',
@@ -311,6 +312,7 @@ const submitForm = async () => {
       description: 'Your request is now under review.',
       variant: 'default',
     });
+    router.push("/my-property-request")
   } catch (error) {
     let errorMessage = 'An unexpected error occurred';
 
@@ -340,11 +342,11 @@ const submitForm = async () => {
 const cities = ref<string[]>([]);
 
 const fetchCities = async () => {
-  try{
+  try {
     const response = await axios.get('/api/cities')
     cities.value = response.data?.data || [];
     console.log(cities)
-  }catch (error){
+  } catch (error) {
     console.log(error)
   }
 }
@@ -378,18 +380,22 @@ const onSubmit = handleSubmit(submitForm);
             <FormItem style="flex: 1; position: relative;">
               <FormLabel>Street</FormLabel>
               <FormControl>
-                <Input type="text" disabled="true" v-bind="field" placeholder="Select address on map" v-model="street" />
+                <Input type="text" disabled="true" v-bind="field" placeholder="Select address on map"
+                  v-model="street" />
               </FormControl>
-              <FormMessage class="absolute -bottom-5 left-0 text-xs" v-if="errors.street">{{ errors.street }}</FormMessage>
+              <FormMessage class="absolute -bottom-5 left-0 text-xs" v-if="errors.street">{{ errors.street }}
+              </FormMessage>
             </FormItem>
           </FormField>
           <FormField name="streetNumber" v-slot="{ field }">
             <FormItem style="flex: 1;  position: relative;">
               <FormLabel>Street number</FormLabel>
               <FormControl>
-                <Input type="text" v-bind="field" disabled="true" v-model="streetNumber" placeholder="Select address on map" />
+                <Input type="text" v-bind="field" disabled="true" v-model="streetNumber"
+                  placeholder="Select address on map" />
               </FormControl>
-              <FormMessage class="absolute -bottom-5 left-0 text-xs"  v-if="errors.streetNumber">{{ errors.streetNumber }}</FormMessage>
+              <FormMessage class="absolute -bottom-5 left-0 text-xs" v-if="errors.streetNumber">{{ errors.streetNumber
+                }}</FormMessage>
             </FormItem>
           </FormField>
         </div>
@@ -409,10 +415,7 @@ const onSubmit = handleSubmit(submitForm);
                   <CommandList>
                     <CommandEmpty>No city found.</CommandEmpty>
                     <CommandGroup>
-                      <CommandItem 
-                        v-for="cityItem in cities" 
-                        :key="cityItem" 
-                        :value="cityItem" 
+                      <CommandItem v-for="cityItem in cities" :key="cityItem" :value="cityItem"
                         @select="selectCity(cityItem)">
                         {{ cityItem }}
                       </CommandItem>
@@ -432,19 +435,21 @@ const onSubmit = handleSubmit(submitForm);
             <FormControl>
               <Input type="number" v-bind="field" v-model="numberOfFloors" placeholder="Enter number of floors" />
             </FormControl>
-            <FormMessage  class="absolute -bottom-5 left-0 text-xs"  v-if="errors.numberOfFloors">{{ errors.numberOfFloors }}</FormMessage>
+            <FormMessage class="absolute -bottom-5 left-0 text-xs" v-if="errors.numberOfFloors">{{ errors.numberOfFloors
+              }}</FormMessage>
           </FormItem>
         </FormField>
 
-        <FormField  class="pt-2" name="propertyImages">
-          <FormItem  style="position: relative;">
+        <FormField class="pt-2" name="propertyImages">
+          <FormItem style="position: relative;">
             <FormLabel>Property Images: </FormLabel>
             <FormControl>
               <input type="file" @change="e => onFileChange(e, 'propertyImages')" accept="image/*" multiple />
             </FormControl>
-            <FormMessage class="absolute -bottom-5 left-0 text-xs" v-if="errors.propertyImages">{{ errors.propertyImages }}</FormMessage>
+            <FormMessage class="absolute -bottom-5 left-0 text-xs" v-if="errors.propertyImages">{{ errors.propertyImages
+              }}</FormMessage>
           </FormItem>
-          
+
         </FormField>
 
         <FormField name="documents">
@@ -453,12 +458,12 @@ const onSubmit = handleSubmit(submitForm);
             <FormControl>
               <input type="file" @change="e => onFileChange(e, 'documents')" accept="application/pdf" multiple />
             </FormControl>
-            
-            <FormMessage class="absolute -bottom-5 left-0 text-xs"  v-if="errors ">{{ errors  }}</FormMessage>
+
+            <FormMessage class="absolute -bottom-5 left-0 text-xs" v-if="errors">{{ errors }}</FormMessage>
           </FormItem>
         </FormField>
 
-        
+
         <div v-for="(household, index) in householdEntries" :key="index" class="space-y-4">
           <div class="flex gap-4 items-center">
             <FormField :name="`households.${index}.floor`" v-slot="{ field, errors }">
@@ -467,7 +472,7 @@ const onSubmit = handleSubmit(submitForm);
                 <FormControl>
                   <Input type="text" v-bind="field" v-model="household.floor" placeholder="Enter floor" />
                 </FormControl>
-                <FormMessage  class="absolute -bottom-5 left-0 text-xs" >{{ errors[0] }}</FormMessage>
+                <FormMessage class="absolute -bottom-5 left-0 text-xs">{{ errors[0] }}</FormMessage>
               </FormItem>
             </FormField>
 
@@ -477,7 +482,7 @@ const onSubmit = handleSubmit(submitForm);
                 <FormControl>
                   <Input type="text" v-bind="field" v-model="household.suite" placeholder="Enter suite" />
                 </FormControl>
-                <FormMessage  class="absolute -bottom-5 left-0 text-xs" >{{ errors[0] }}</FormMessage>
+                <FormMessage class="absolute -bottom-5 left-0 text-xs">{{ errors[0] }}</FormMessage>
               </FormItem>
             </FormField>
 
@@ -487,7 +492,7 @@ const onSubmit = handleSubmit(submitForm);
                 <FormControl>
                   <Input type="number" v-bind="field" v-model="household.area" placeholder="Enter area in m²" />
                 </FormControl>
-                <FormMessage  class="absolute -bottom-5 left-0 text-xs" >{{ errors[0] }}</FormMessage>
+                <FormMessage class="absolute -bottom-5 left-0 text-xs">{{ errors[0] }}</FormMessage>
               </FormItem>
             </FormField>
 
@@ -498,7 +503,7 @@ const onSubmit = handleSubmit(submitForm);
                   <Input type="text" v-bind="field" v-model="household.identifier"
                     placeholder="Enter cadastral number" />
                 </FormControl>
-                <FormMessage  class="absolute -bottom-5 left-0 text-xs" >{{ errors[0] }}</FormMessage>
+                <FormMessage class="absolute -bottom-5 left-0 text-xs">{{ errors[0] }}</FormMessage>
               </FormItem>
             </FormField>
 
@@ -507,14 +512,14 @@ const onSubmit = handleSubmit(submitForm);
             </Button>
           </div>
         </div>
-        
+
         <div class="flex items-center gap-5 text-red-500">
           <Button type="button" @click="addHouseholdEntry" class="bg-indigo-500 text-white hover:bg-gray-600">Add
-          Household</Button>
+            Household</Button>
           <span v-if="errors.households">{{ errors.households }}</span>
         </div>
-        
-        
+
+
         <Button type="submit" class="w-full bg-gray-800 text-white hover:bg-gray-600 rounded-full py-2">
           Submit Request
         </Button>

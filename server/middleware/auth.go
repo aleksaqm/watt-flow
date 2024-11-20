@@ -1,13 +1,14 @@
 package middleware
 
 import (
-	"github.com/dgrijalva/jwt-go"
-	"github.com/gin-gonic/gin"
 	"net/http"
 	"slices"
 	"strings"
 	"watt-flow/service"
 	"watt-flow/util"
+
+	"github.com/dgrijalva/jwt-go"
+	"github.com/gin-gonic/gin"
 )
 
 type AuthMiddleware struct {

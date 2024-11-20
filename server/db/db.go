@@ -3,9 +3,8 @@ package db
 import (
 	"fmt"
 	"log"
-	"watt-flow/model"
-
 	"watt-flow/config"
+	"watt-flow/model"
 	"watt-flow/util"
 
 	"gorm.io/driver/postgres"
@@ -37,4 +36,37 @@ func NewDatabase(env *config.Environment, logger util.Logger) Database {
 	return Database{
 		DB: db,
 	}
+}
+
+func (db Database) TruncateAllTables() error {
+	return db.Transaction(func(tx *gorm.DB) error {
+		// Disable foreign key checks during truncation
+		if err := tx.Exec("SET CONSTRAINTS ALL DEFERRED").Error; err != nil {
+			return err
+		}
+
+		// List of all tables in order considering foreign key dependencies
+		tables := []interface{}{
+			&model.Household{},
+			&model.DeviceStatus{},
+			&model.Property{},
+			&model.User{},
+			&model.Address{},
+			&model.City{},
+		}
+
+		// Truncate each table
+		for _, table := range tables {
+			if err := tx.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(table).Error; err != nil {
+				return err
+			}
+		}
+
+		// Re-enable foreign key checks
+		if err := tx.Exec("SET CONSTRAINTS ALL IMMEDIATE").Error; err != nil {
+			return err
+		}
+
+		return nil
+	})
 }

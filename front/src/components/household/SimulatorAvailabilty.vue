@@ -208,6 +208,16 @@ const handleFetch = () => {
         const startDate = selectedDates.value.start.toDate("Europe/Sarajevo")
         const endDate = selectedDates.value.end.toDate("Europe/Sarajevo")
         const difference = (endDate.getTime() - startDate.getTime()) / 3600000
+        if (difference >= 8760) {
+          toast({
+            title: 'Invalid time period',
+            description: "Maximum time period is one year!",
+            variant: 'default',
+          })
+          return
+
+        }
+
         if (difference <= 24) {
           selectedGroupPeriod = "1h"
         } else if (difference <= 720) {

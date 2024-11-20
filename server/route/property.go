@@ -1,8 +1,10 @@
 package route
 
 import (
-	"github.com/gin-gonic/gin"
+	"watt-flow/middleware"
 	"watt-flow/server"
+
+	"github.com/gin-gonic/gin"
 )
 
 type PropertyRoute struct {
@@ -11,18 +13,18 @@ type PropertyRoute struct {
 
 func (r PropertyRoute) Register(server *server.Server) {
 	server.Logger.Info("Setting up property routes")
-	//authMid := middleware.NewAuthMiddleware(server.AuthService, server.Logger)
+	authMid := middleware.NewAuthMiddleware(server.AuthService, server.Logger)
 
 	api := r.engine.Group("/api")
 	{
-		api.GET("/property/:id", server.PropertyHandler.GetById)
-		api.POST("/property", server.PropertyHandler.Create)
-		api.PUT("/property/:id", server.PropertyHandler.Update)
-		api.GET("/properties", server.PropertyHandler.FindByStatus)
-		api.DELETE("/property/:id", server.PropertyHandler.Delete)
-		api.GET("/property/query", server.PropertyHandler.TableQuery)
-		api.PUT("/property/:id/accept", server.PropertyHandler.AcceptProperty)
-		api.PUT("/property/:id/decline", server.PropertyHandler.DeclineProperty)
+		// api.GET("/property/:id", server.PropertyHandler.GetById)
+		api.POST("/property", authMid.RoleMiddleware([]string{"Regular"}), server.PropertyHandler.Create)
+		// api.PUT("/property/:id", server.PropertyHandler.Update)
+		// api.GET("/properties", server.PropertyHandler.FindByStatus)
+		// api.DELETE("/property/:id", server.PropertyHandler.Delete)
+		api.GET("/property/query", authMid.RoleMiddleware([]string{"Regular", "Admin", "SuperAdmin", "Clerk"}), server.PropertyHandler.TableQuery)
+		api.PUT("/property/:id/accept", authMid.RoleMiddleware([]string{"Admin", "SuperAdmin"}), server.PropertyHandler.AcceptProperty)
+		api.PUT("/property/:id/decline", authMid.RoleMiddleware([]string{"Admin", "SuperAdmin"}), server.PropertyHandler.DeclineProperty)
 	}
 }
 

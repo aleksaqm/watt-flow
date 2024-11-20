@@ -12,7 +12,8 @@ type RestartService struct {
 }
 
 func (service RestartService) ResetDatabase() error {
-	err := service.database.Exec("TRUNCATE TABLE users RESTART IDENTITY CASCADE").Error
+	err := service.database.TruncateAllTables()
+	// err := service.database.Exec("TRUNCATE TABLE users RESTART IDENTITY CASCADE").Error
 	if err != nil {
 		return err
 	}
@@ -34,7 +35,6 @@ func (service RestartService) InitSuperAdmin() error {
 		return err3
 	}
 	return nil
-
 }
 
 func NewRestartService(database db.Database, userService IUserService) *RestartService {
