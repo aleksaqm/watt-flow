@@ -126,7 +126,7 @@ const onSubmit = handleSubmit((values) => {
   
   <div class="w-1/3 p-7 flex flex-col justify-center items-center bg-white shadow-lg">
     <Spinner  v-if="loading"/>
-    <div class="flex flex-col justify-center items-center gap-5 w-full" v-if="!loading">
+    <div class="flex flex-col justify-center items-center gap-5 w-full">
       <span class="text-gray-800 text-2xl">Sign Up</span>
       <form class="w-full space-y-6" @submit="onSubmit">
         <FormField name="username" v-slot="{ field }">
