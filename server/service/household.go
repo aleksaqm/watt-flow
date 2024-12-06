@@ -19,15 +19,18 @@ type IHouseholdService interface {
 	FindByCadastralNumber(id string) (*model.Household, error)
 	Query(queryParams *dto.HouseholdQueryParams) ([]dto.HouseholdResultDto, int64, error)
 	AcceptHouseholds(tx *gorm.DB, propertyID uint64) error
+	CreateOwnershipRequest(ownershipRequest dto.OwnershipRequestDto) (*dto.OwnershipRequestDto, error)
 }
 
 type HouseholdService struct {
-	repository *repository.HouseholdRepository
+	repository          *repository.HouseholdRepository
+	ownershipRepository *repository.OwnershipRepository
 }
 
-func NewHouseholdService(repository *repository.HouseholdRepository) *HouseholdService {
+func NewHouseholdService(repository *repository.HouseholdRepository, ownershipRepository *repository.OwnershipRepository) *HouseholdService {
 	return &HouseholdService{
-		repository: repository,
+		repository:          repository,
+		ownershipRepository: ownershipRepository,
 	}
 }
 
@@ -160,4 +163,26 @@ func (service *HouseholdService) AcceptHouseholds(tx *gorm.DB, propertyID uint64
 		return err
 	}
 	return nil
+}
+
+func (service *HouseholdService) CreateOwnershipRequest(ownershipRequestDto dto.OwnershipRequestDto) (*dto.OwnershipRequestDto, error) {
+	ownershipRequest := model.OwnershipRequest{
+		Images:      ownershipRequestDto.Images,
+		Documents:   ownershipRequestDto.Documents,
+		Status:      model.Pending,
+		OwnerID:     ownershipRequestDto.OwnerID,
+		HouseholdID: ownershipRequestDto.HouseholdID,
+	}
+	createdRequest, err := service.ownershipRepository.Create(&ownershipRequest)
+	if err != nil {
+		return nil, err
+	}
+	requestDto := dto.OwnershipRequestDto{
+		Id:          createdRequest.Id,
+		Images:      createdRequest.Images,
+		Documents:   createdRequest.Documents,
+		OwnerID:     createdRequest.OwnerID,
+		HouseholdID: createdRequest.HouseholdID,
+	}
+	return &requestDto, nil
 }

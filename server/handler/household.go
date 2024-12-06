@@ -138,6 +138,22 @@ func (h HouseholdHandler) FindByStatus(c *gin.Context) {
 	c.JSON(200, gin.H{"data": households})
 }
 
+func (h HouseholdHandler) CreateOwnershipRequest(c *gin.Context) {
+	//validation to check does household have owner
+	var ownershipRequest dto.OwnershipRequestDto
+	if err := c.BindJSON(&ownershipRequest); err != nil {
+		h.logger.Error(err)
+		c.JSON(400, gin.H{"error": "Invalid ownership request"})
+		return
+	}
+	request, err := h.service.CreateOwnershipRequest(ownershipRequest)
+	if err != nil {
+		c.JSON(400, gin.H{"error": "Invalid request data"})
+		return
+	}
+	c.JSON(201, gin.H{"data": request})
+}
+
 func NewHouseholdHandler(householdService service.IHouseholdService, logger util.Logger) *HouseholdHandler {
 	return &HouseholdHandler{
 		service: householdService,

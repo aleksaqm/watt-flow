@@ -47,6 +47,7 @@ func (db Database) TruncateAllTables() error {
 
 		// List of all tables in order considering foreign key dependencies
 		tables := []interface{}{
+			//&model.OwnershipRequest{},
 			&model.Household{},
 			&model.DeviceStatus{},
 			&model.Property{},
