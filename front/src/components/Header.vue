@@ -47,7 +47,7 @@ const menuItems = ref<MenuItem[]>([
   },
   {
     title: 'Households', href: '/household', roles: ['Regular', 'Admin', 'SuperAdmin'], children: [
-      { title: 'Search', href: '/household/search', description: 'Search for households', roles: ['Admin', 'SuperAdmin'] },
+      { title: 'Search', href: '/household/search', description: 'Search for households', roles: ['Admin', 'SuperAdmin', 'Regular'] },
     ],
   },
   {

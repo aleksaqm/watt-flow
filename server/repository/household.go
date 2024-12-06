@@ -67,6 +67,10 @@ func (repository *HouseholdRepository) Query(params *dto.HouseholdQueryParams) (
 	baseQuery = baseQuery.Joins("JOIN properties ON properties.id = households.property_id")
 	log.Println(baseQuery)
 
+	if params.Search.WithoutOwner {
+		baseQuery = baseQuery.Where("owner_id IS NULL")
+	}
+
 	if params.Search.City != "" {
 		baseQuery = baseQuery.Where("city ILIKE ?", "%"+params.Search.City+"%")
 	}

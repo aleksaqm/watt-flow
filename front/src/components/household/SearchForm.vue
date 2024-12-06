@@ -9,12 +9,18 @@ import {
   FormLabel,
 } from '@/shad/components/ui/form'
 import { ref } from 'vue';
+import { useUserStore } from '@/stores/user';
 
-
-const searchQuery = ref<{ City?: string; Street?: string; Number?: string; Id?: string }>({})
+const userStore = useUserStore();
+const searchQuery = ref<{ City?: string; Street?: string; Number?: string; Id?: string ; WithoutOwner?: boolean}>({})
 const emit = defineEmits(['search'])
 
 const onSubmit = () => {
+  if (userStore.role == "Regular"){
+    searchQuery.value.WithoutOwner = true;
+  }else{
+    searchQuery.value.WithoutOwner = false;
+  }
   emit('search', searchQuery.value)
 }
 

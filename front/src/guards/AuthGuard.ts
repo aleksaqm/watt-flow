@@ -9,7 +9,7 @@ export const authGuard: NavigationGuard = async (to, from, next) => {
     "Admin": ['/household/info/:id', '/household/search', '/home', '/properties/requests-manage'],
     "SuperAdmin": ['/manage/admins', '/household/info/:id', '/household/search', '/home', '/properties/requests-manage'],
     "Clerk": ["/home"],
-    "Regular": ['/profile', '/home', '/my-property-request', '/property-request']
+    "Regular": ['/profile', '/home', '/my-property-request', '/property-request', '/household/search',]
   };
   const role = userStore.role;
   let allowedPaths: string[];
