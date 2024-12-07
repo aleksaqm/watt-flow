@@ -3,6 +3,7 @@ package service
 import (
 	"errors"
 	"fmt"
+	"log"
 	"strings"
 	"watt-flow/dto"
 	"watt-flow/model"
@@ -22,7 +23,11 @@ type IUserService interface {
 	ChangeAdminPassword(passwordDto dto.NewPasswordDto) error
 	IsAdminActive() bool
 	FindAllByRole(role string) (*[]dto.UserDto, error)
+	Query(queryParams *dto.UserQueryParams) ([]dto.UserDto, int64, error)
+	Suspend(id uint64) error
+	Unsuspend(id uint64) error
 }
+
 type UserService struct {
 	repository  *repository.UserRepository
 	authService *AuthService
@@ -37,6 +42,22 @@ func (service *UserService) FindById(id uint64) (*dto.UserDto, error) {
 		Role:     user.Role.RoleToString(),
 	}
 	return &userReturn, nil
+}
+
+func (service *UserService) Suspend(id uint64) error {
+	err := service.repository.ChangeStatus(id, 2)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (service *UserService) Unsuspend(id uint64) error {
+	err := service.repository.ChangeStatus(id, 0)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (service *UserService) FindByEmail(email string) (*model.User, error) {
@@ -280,6 +301,48 @@ func (service *UserService) FindAllByRole(roleStr string) (*[]dto.UserDto, error
 		}
 	}
 	return &usersDto, nil
+}
+
+func (service *UserService) Query(queryParams *dto.UserQueryParams) ([]dto.UserDto, int64, error) {
+	var users []dto.UserDto
+	if queryParams.Search.Id != 0 {
+		user, err := service.FindById(queryParams.Search.Id)
+		if err != nil {
+			return nil, 0, err
+		}
+		users = make([]dto.UserDto, 0)
+		if user != nil {
+			users = append(users, *user)
+
+			return users, 1, nil
+		}
+
+		return users, 0, nil
+	}
+
+	data, count, err := service.repository.Query(queryParams)
+	if err != nil {
+		log.Printf("Error on query: %v", err)
+		return nil, 0, err
+	}
+	users = make([]dto.UserDto, 0)
+	for _, user := range data {
+		mapped_user, _ := MapToDto(&user)
+		users = append(users, mapped_user)
+	}
+
+	return users, count, nil
+}
+
+func MapToDto(user *model.User) (dto.UserDto, error) {
+	response := dto.UserDto{
+		Id:       user.Id,
+		Email:    user.Email,
+		Role:     user.Role.RoleToString(),
+		Username: user.Username,
+		Status:   user.Status.StatusToString(),
+	}
+	return response, nil
 }
 
 func NewUserService(repository *repository.UserRepository, authService *AuthService) *UserService {

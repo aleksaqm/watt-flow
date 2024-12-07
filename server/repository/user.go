@@ -1,7 +1,9 @@
 package repository
 
 import (
+	"fmt"
 	"watt-flow/db"
+	"watt-flow/dto"
 	"watt-flow/model"
 	"watt-flow/util"
 )
@@ -77,6 +79,44 @@ func (repository *UserRepository) FindByEmailAndUsername(email string, username 
 	return &user, nil
 }
 
+func (repository *UserRepository) Query(params *dto.UserQueryParams) ([]model.User, int64, error) {
+	var users []model.User
+	var total int64
+
+	baseQuery := repository.database.Model(&model.User{})
+	role, _ := model.ParseRole(params.Search.Role)
+
+	if params.Search.Role != "" {
+		baseQuery = baseQuery.Where("role = ?", role)
+	}
+	if params.Search.Username != "" {
+		baseQuery = baseQuery.Where("username ILIKE ?", "%"+params.Search.Username+"%")
+	}
+	// if params.Search.Number != "" {
+	// 	baseQuery = baseQuery.Where("number ILIKE ?", "%"+params.Search.Number+"%")
+	// }
+	if err := baseQuery.Count(&total).Error; err != nil {
+		repository.logger.Error("Error querying user count", err)
+		return nil, 0, err
+	}
+
+	sortOrder := params.SortOrder
+	if sortOrder != "asc" && sortOrder != "desc" {
+		sortOrder = "asc"
+	}
+	query := baseQuery.Order(fmt.Sprintf("%s %s", params.SortBy, sortOrder))
+	offset := (params.Page - 1) * params.PageSize
+	query = query.Offset(offset).Limit(params.PageSize)
+
+	if err := query.
+		Find(&users).Error; err != nil {
+		repository.logger.Error("Error querying users", err)
+		return nil, 0, err
+	}
+
+	return users, total, nil
+}
+
 func (repository *UserRepository) Update(user *model.User) (model.User, error) {
 	result := repository.database.Save(user)
 	if result.Error != nil {
@@ -95,4 +135,16 @@ func (repository *UserRepository) FindAllByRole(role model.Role) (*[]model.User,
 		return nil, result.Error
 	}
 	return &users, nil
+}
+
+func (repository *UserRepository) ChangeStatus(userId uint64, status int) error {
+	err := repository.database.Model(&model.User{}).
+		Where("id = ?", userId).
+		Update("status", status).
+		Error
+	if err != nil {
+		repository.logger.Error("Error updating account status", err)
+		return err
+	}
+	return nil
 }
