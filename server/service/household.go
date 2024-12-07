@@ -2,10 +2,16 @@ package service
 
 import (
 	"fmt"
+	"github.com/google/uuid"
 	"log"
+	"os"
+	"strconv"
+	"strings"
+	"time"
 	"watt-flow/dto"
 	"watt-flow/model"
 	"watt-flow/repository"
+	"watt-flow/util"
 
 	"gorm.io/gorm"
 )
@@ -166,12 +172,45 @@ func (service *HouseholdService) AcceptHouseholds(tx *gorm.DB, propertyID uint64
 }
 
 func (service *HouseholdService) CreateOwnershipRequest(ownershipRequestDto dto.OwnershipRequestDto) (*dto.OwnershipRequestDto, error) {
+	UUID := uuid.New()
+	var savedFilePaths []string
 	ownershipRequest := model.OwnershipRequest{
-		Images:      ownershipRequestDto.Images,
-		Documents:   ownershipRequestDto.Documents,
 		Status:      model.Pending,
 		OwnerID:     ownershipRequestDto.OwnerID,
 		HouseholdID: ownershipRequestDto.HouseholdID,
+		Images:      make([]string, len(ownershipRequestDto.Images)),
+		Documents:   make([]string, len(ownershipRequestDto.Documents)),
+		CreatedAt:   time.Now(),
+	}
+	if len(ownershipRequestDto.Images) > 0 {
+		for i, base64String := range ownershipRequestDto.Images {
+			if strings.HasPrefix(base64String, "data:image/") {
+				base64String = strings.SplitN(base64String, ",", 2)[1]
+			}
+			filePath, err := util.SaveFile(UUID.String()+"-"+strconv.Itoa(i), base64String, "jpg", "ownership_images")
+			if err != nil {
+				service.cleanupFiles(savedFilePaths)
+				return nil, fmt.Errorf("failed to save image %d: %v", i, err)
+			}
+			//fullPath := filePath + "/" + UUID.String() + "-" + strconv.Itoa(i) + ".jpg"
+			ownershipRequest.Images[i] = filePath
+			savedFilePaths = append(savedFilePaths, filePath)
+		}
+	}
+	if len(ownershipRequestDto.Documents) > 0 {
+		for i, base64String := range ownershipRequestDto.Documents {
+			if strings.HasPrefix(base64String, "data:application/") {
+				base64String = strings.SplitN(base64String, ",", 2)[1]
+			}
+			filePath, err := util.SaveFile(UUID.String()+"-"+strconv.Itoa(i), base64String, "pdf", "ownership_documents")
+			if err != nil {
+				service.cleanupFiles(savedFilePaths)
+				return nil, fmt.Errorf("failed to save document %d: %v", i, err)
+			}
+			//fullPath := filePath + "/" + UUID.String() + "-" + strconv.Itoa(i) + ".pdf"
+			ownershipRequest.Documents[i] = filePath
+			savedFilePaths = append(savedFilePaths, filePath)
+		}
 	}
 	createdRequest, err := service.ownershipRepository.Create(&ownershipRequest)
 	if err != nil {
@@ -183,6 +222,16 @@ func (service *HouseholdService) CreateOwnershipRequest(ownershipRequestDto dto.
 		Documents:   createdRequest.Documents,
 		OwnerID:     createdRequest.OwnerID,
 		HouseholdID: createdRequest.HouseholdID,
+		CreatedAt:   createdRequest.CreatedAt.String(),
 	}
 	return &requestDto, nil
+}
+
+func (service *HouseholdService) cleanupFiles(paths []string) {
+	for _, path := range paths {
+		err := os.Remove(path)
+		if err != nil {
+			service.ownershipRepository.Logger.Error(err)
+		}
+	}
 }

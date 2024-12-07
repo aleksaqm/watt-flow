@@ -26,11 +26,24 @@ import {
   PaginationNext,
   PaginationPrev,
 } from '@/shad/components/ui/pagination'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/shad/components/ui/dialog'
 import Input from '@/shad/components/ui/input/Input.vue';
 import router from '@/router'
 import type { Household } from './household'
+import { useUserStore } from '@/stores/user'
+import OwnershipRequestForm from '@/components/household/OwnershipRequestForm.vue'
+import { useToast } from '@/shad/components/ui/toast/use-toast'
+import Toaster from '@/shad/components/ui/toast/Toaster.vue';
 
-
+const { toast } = useToast()
 const props = defineProps({
   query: {
     type: Object,
@@ -41,6 +54,8 @@ const props = defineProps({
     default: 0
   }
 })
+const dialogKey = ref(0)
+
 
 // Watch for changes in triggerSearch to run fetch
 watch(() => props.triggerSearch, () => {
@@ -134,8 +149,30 @@ function formatDate(date: string): string {
   return dateObj.toLocaleString('en-US', options)
 }
 
+const userStore = useUserStore();
+const isAdmin = ref<boolean>(true)
+onMounted(()=>{
+  if (userStore.role === "Regular"){
+    isAdmin.value = false;
+  }
+})
+
 function viewHousehold(id: number) {
-  router.push({ name: "household", params: { id: id } })
+  if (isAdmin.value){
+    console.log("JEBEM TI")
+    router.push({ name: "household", params: { id: id } })
+  }else{
+    console.log("Nothing");
+  }
+  //triger dialogHere
+}
+
+function handleRequestSent(){
+  toast({
+      title: 'Request Sent Successfully',
+      variant: 'default'
+  })
+  dialogKey.value ++;
 }
 
 </script>
@@ -143,6 +180,7 @@ function viewHousehold(id: number) {
 <template>
 
   <div class="p-7 flex flex-col bg-white shadow-lg">
+    
     <Table class="gap-5 items-center border rounded-2xl border-gray-300 shadow-gray-500 p-10 mb-10">
       <TableHeader>
         <TableRow>
@@ -153,6 +191,7 @@ function viewHousehold(id: number) {
           <TableHead>Floor</TableHead>
           <TableHead>Suite</TableHead>
           <TableHead>C-Number</TableHead>
+          <TableHead v-if="!isAdmin">Ownership</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -164,6 +203,19 @@ function viewHousehold(id: number) {
           <TableCell>{{ household.floor }}</TableCell>
           <TableCell>{{ household.suite }}</TableCell>
           <TableCell>{{ household.cadastral_number }}</TableCell>
+          <TableCell v-if="!isAdmin">
+            <Dialog :key="dialogKey">
+              <DialogTrigger>
+                <Button class="bg-indigo-500 hover:bg-gray-600">Ownership</Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Prove your ownership</DialogTitle>
+                </DialogHeader>
+                <OwnershipRequestForm :household="household.id" @requestSent="handleRequestSent"/>
+              </DialogContent>
+            </Dialog>
+          </TableCell>
         </TableRow>
       </TableBody>
     </Table>
@@ -193,4 +245,5 @@ function viewHousehold(id: number) {
       </div>
     </div>
   </div>
+  <Toaster />
 </template>

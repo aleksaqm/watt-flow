@@ -8,7 +8,7 @@ import (
 
 type OwnershipRepository struct {
 	database db.Database
-	logger   util.Logger
+	Logger   util.Logger
 }
 
 func NewOwnershipRepository(db db.Database, logger util.Logger) *OwnershipRepository {
@@ -18,14 +18,14 @@ func NewOwnershipRepository(db db.Database, logger util.Logger) *OwnershipReposi
 	}
 	return &OwnershipRepository{
 		database: db,
-		logger:   logger,
+		Logger:   logger,
 	}
 }
 
 func (repository *OwnershipRepository) Create(ownershipRequest *model.OwnershipRequest) (model.OwnershipRequest, error) {
 	result := repository.database.Create(ownershipRequest)
 	if result.Error != nil {
-		repository.logger.Error("Error creating ownership request", result.Error)
+		repository.Logger.Error("Error creating ownership request", result.Error)
 		return *ownershipRequest, result.Error
 	}
 	return *ownershipRequest, nil

@@ -1,5 +1,7 @@
 package model
 
+import "time"
+
 type RequestStatus int
 
 const (
@@ -18,4 +20,6 @@ type OwnershipRequest struct {
 	Owner        *User         `gorm:"foreignKey:OwnerID" json:"owner"`
 	HouseholdID  uint64        `gorm:"column:household_id;null" json:"household_id"`
 	Household    *Household    `gorm:"foreignKey:HouseholdID" json:"household"`
+	CreatedAt    time.Time     `json:"created_at"`
+	ClosedAt     time.Time     `json:"closed_at"`
 }
