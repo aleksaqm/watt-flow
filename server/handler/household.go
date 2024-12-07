@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"encoding/json"
 	"strconv"
 	"watt-flow/dto"
 	"watt-flow/model"
@@ -155,6 +156,38 @@ func (h HouseholdHandler) CreateOwnershipRequest(c *gin.Context) {
 }
 
 func (h HouseholdHandler) GetOwnershipRequestsForUser(c *gin.Context) {
+	page := c.DefaultQuery("page", "1")
+	pageSize := c.DefaultQuery("pageSize", "10")
+	sortBy := c.DefaultQuery("sortBy", "city")
+	sortOrder := c.DefaultQuery("sortOrder", "asc")
+	search := c.DefaultQuery("search", "")
+
+	pageInt, err := strconv.Atoi(page)
+	if err != nil {
+		c.JSON(400, gin.H{"error": "Invalid page parameter"})
+		return
+	}
+	pageSizeInt, err := strconv.Atoi(pageSize)
+	if err != nil {
+		c.JSON(400, gin.H{"error": "Invalid pageSize parameter"})
+		return
+	}
+
+	var searchParams dto.OwnershipSearchParams
+	if search != "" {
+		if err := json.Unmarshal([]byte(search), &searchParams); err != nil {
+			c.JSON(400, gin.H{"error": "Invalid search parameter"})
+			return
+		}
+	}
+	params := dto.OwnershipQueryParams{
+		Page:      pageInt,
+		PageSize:  pageSizeInt,
+		SortBy:    sortBy,
+		SortOrder: sortOrder,
+		Search:    searchParams,
+	}
+	h.logger.Info(params)
 	id := c.Param("id")
 	requestId, err := strconv.ParseUint(id, 10, 64)
 	if err != nil {
@@ -162,12 +195,12 @@ func (h HouseholdHandler) GetOwnershipRequestsForUser(c *gin.Context) {
 		c.JSON(400, gin.H{"error": "Invalid household ID"})
 		return
 	}
-	requests, err := h.service.GetOwnersRequests(requestId)
+	requests, total, err := h.service.GetOwnersRequests(requestId, &params)
 	if err != nil {
 		c.JSON(400, gin.H{"error": "Failed to load owners requests"})
 		return
 	}
-	c.JSON(200, gin.H{"data": requests})
+	c.JSON(200, gin.H{"requests": requests, "total": total})
 }
 
 func NewHouseholdHandler(householdService service.IHouseholdService, logger util.Logger) *HouseholdHandler {

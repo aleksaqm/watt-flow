@@ -86,21 +86,19 @@ async function fetchProperties() {
     }
     console.log(params)
 
-    // const response = await axios.get('/api/property/query', { params })
-    // console.log(response)
+    const response = await axios.get('/api/ownership/requests/' + userStore.id, { params })
+    console.log(response)
 
-    // if (response.data) {
-    //     requests.value = response.data.map((request: any) => mapToRequest(request))
-
-    //   pagination.value.total = response.data.total
-    // }
-    const response = await axios.get('/api/ownership/requests/' + userStore.id)
-    console.log(response.data.data)
-    pagination.value.total = 2
-    if (response.data){
-        requests.value = response.data.data.map((request: any) => mapToRequest(request))
+    if (response.data) {
+        requests.value = response.data.requests.map((request: any) => mapToRequest(request))
+        pagination.value.total = response.data.total
     }
-
+    // const response = await axios.get('/api/ownership/requests/' + userStore.id)
+    console.log(response.data.requests)
+    // pagination.value.total = 2
+    // if (response.data){
+    //     requests.value = response.data.data.map((request: any) => mapToRequest(request))
+    // }
   } catch (error) {
     console.error('Failed to fetch properties:', error)
   }

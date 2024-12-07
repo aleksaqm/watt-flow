@@ -26,7 +26,7 @@ type IHouseholdService interface {
 	Query(queryParams *dto.HouseholdQueryParams) ([]dto.HouseholdResultDto, int64, error)
 	AcceptHouseholds(tx *gorm.DB, propertyID uint64) error
 	CreateOwnershipRequest(ownershipRequest dto.OwnershipRequestDto) (*dto.OwnershipRequestDto, error)
-	GetOwnersRequests(ownerId uint64) ([]dto.OwnershipResponseDto, error)
+	GetOwnersRequests(ownerId uint64, params *dto.OwnershipQueryParams) ([]dto.OwnershipResponseDto, int64, error)
 }
 
 type HouseholdService struct {
@@ -228,17 +228,17 @@ func (service *HouseholdService) CreateOwnershipRequest(ownershipRequestDto dto.
 	return &requestDto, nil
 }
 
-func (service *HouseholdService) GetOwnersRequests(ownerId uint64) ([]dto.OwnershipResponseDto, error) {
-	requests, err := service.ownershipRepository.FindForOwner(ownerId)
+func (service *HouseholdService) GetOwnersRequests(ownerId uint64, params *dto.OwnershipQueryParams) ([]dto.OwnershipResponseDto, int64, error) {
+	requests, total, err := service.ownershipRepository.FindForOwner(ownerId, params)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	var results = make([]dto.OwnershipResponseDto, 0)
 	for _, result := range requests {
 		mappedRequest, _ := service.MapToOwnershipDto(&result)
 		results = append(results, mappedRequest)
 	}
-	return results, nil
+	return results, total, nil
 }
 
 func (service *HouseholdService) cleanupFiles(paths []string) {
