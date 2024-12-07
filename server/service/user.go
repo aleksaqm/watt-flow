@@ -16,6 +16,7 @@ type IUserService interface {
 	FindByEmail(email string) (*model.User, error)
 	Login(loginCredentials dto.LoginDto) (string, error)
 	Register(registrationDto *dto.RegistrationDto) (*dto.UserDto, error)
+	RegisterClerk(registrationDto *dto.ClerkRegisterDto) (*dto.UserDto, error)
 	ActivateAccount(token string) error
 	CreateSuperAdmin() (string, error)
 	ChangeAdminPassword(passwordDto dto.NewPasswordDto) error
@@ -124,6 +125,45 @@ func (service *UserService) Register(registrationDto *dto.RegistrationDto) (*dto
 	err := service.SendActivationEmail(&user)
 	if err != nil {
 		return nil, err
+	}
+	createdUser, err := service.repository.Create(&user)
+	if err != nil {
+		return nil, err
+	}
+	userDto := dto.UserDto{
+		Id:       createdUser.Id,
+		Username: createdUser.Username,
+		Email:    createdUser.Email,
+		Role:     createdUser.Role.RoleToString(),
+	}
+	return &userDto, nil
+}
+
+func (service *UserService) RegisterClerk(registrationDto *dto.ClerkRegisterDto) (*dto.UserDto, error) {
+	existingUser, _ := service.repository.FindByUsername(registrationDto.Username)
+	if existingUser != nil {
+		return nil, errors.New("username already taken")
+	}
+	existingUser, _ = service.repository.FindActiveByEmail(registrationDto.Email)
+	if existingUser != nil {
+		return nil, errors.New("already have account with this email")
+	}
+	user := model.User{}
+	user.Username = registrationDto.Username
+	user.Email = registrationDto.Email
+	user.Password = util.HashPassword(registrationDto.Jmbg)
+	user.Role = model.Clerk
+	user.Status = model.Active
+	if registrationDto.ProfileImage != "" {
+		base64String := registrationDto.ProfileImage
+		if strings.HasPrefix(base64String, "data:image/") {
+			base64String = strings.SplitN(base64String, ",", 2)[1]
+		}
+		filePath, err := util.SaveFile(user.Username, base64String, "jpg", "profile_pictures")
+		if err != nil {
+			return nil, err
+		}
+		user.ProfileImage = filePath
 	}
 	createdUser, err := service.repository.Create(&user)
 	if err != nil {

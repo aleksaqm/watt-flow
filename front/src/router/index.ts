@@ -6,14 +6,14 @@ import NotFoundView from '@/views/NotFoundView.vue'
 import HomeView from '@/views/HomeView.vue'
 import HouseholdSearch from '@/views/household/HouseholdSearch.vue'
 import PropertyRequestView from '@/views/property/PropertyRequestView.vue'
-import UsersPropertyesTable from '@/components/property/UsersPropertyesTable.vue'
 import SuperAdminChangePasswordView from '@/views/auth/SuperAdminChangePasswordView.vue'
 import ManageAdminsView from '@/views/user/ManageAdminsView.vue'
 import UserProfileView from '@/views/user/UserProfileView.vue'
 import AdminPropertyRequestsView from '@/views/property/AdminPropertyRequestsView.vue'
 import OwnersPropertyRequestsView from '@/views/property/OwnersPropertyRequestsView.vue'
-import { useUserStore } from '@/stores/user'
+import ManageClerksView from '@/views/user/ManageClerksView.vue'
 import { authGuard } from '@/guards/AuthGuard'
+import RegisterClerkView from '@/views/user/RegisterClerkView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -73,6 +73,18 @@ const router = createRouter({
       path: '/manage/admins',
       name: 'manageAdmins',
       component: ManageAdminsView,
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/manage/clerks',
+      name: 'manageClerks',
+      component: ManageClerksView,
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/manage/clerks/new',
+      name: 'new-clerk',
+      component: RegisterClerkView,
       meta: { requiresAuth: true }
     },
     {

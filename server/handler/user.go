@@ -1,11 +1,12 @@
 package handler
 
 import (
-	"github.com/gin-gonic/gin"
 	"strconv"
 	"watt-flow/dto"
 	"watt-flow/service"
 	"watt-flow/util"
+
+	"github.com/gin-gonic/gin"
 )
 
 type UserHandler struct {
@@ -75,6 +76,21 @@ func (u *UserHandler) Create(c *gin.Context) {
 		return
 	}
 	data, err := u.service.Create(&user)
+	if err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
+	} else {
+		c.JSON(200, gin.H{"data": data})
+	}
+}
+
+func (u *UserHandler) RegisterClerk(c *gin.Context) {
+	var clerk dto.ClerkRegisterDto
+	if err := c.BindJSON(&clerk); err != nil {
+		u.logger.Error(err)
+		c.JSON(400, gin.H{"error": err.Error()})
+		return
+	}
+	data, err := u.service.RegisterClerk(&clerk)
 	if err != nil {
 		c.JSON(400, gin.H{"error": err.Error()})
 	} else {

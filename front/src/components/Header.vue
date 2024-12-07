@@ -34,7 +34,7 @@ const menuItems = ref<MenuItem[]>([
   { title: 'Home', href: '/home', roles: ['Regular', 'Clerk', 'Admin', 'SuperAdmin'] },
   {
     title: 'Users', href: '/users', roles: ['Admin', 'SuperAdmin'], children: [
-      { title: 'Manage users', href: '/users/manage', description: 'Add new or manage existing users', roles: ['Admin', 'SuperAdmin'] },
+      { title: 'Manage clerks', href: '/manage/clerks', description: 'Search or add new clerks', roles: ['Admin', 'SuperAdmin'] },
       { title: 'Manage admins', href: '/manage/admins', description: 'Add new admins to the system', roles: ['SuperAdmin'] },
     ],
   },
