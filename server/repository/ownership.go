@@ -30,3 +30,14 @@ func (repository *OwnershipRepository) Create(ownershipRequest *model.OwnershipR
 	}
 	return *ownershipRequest, nil
 }
+
+func (repository *OwnershipRepository) FindForOwner(ownerId uint64) ([]model.OwnershipRequest, error) {
+	var ownershipRequests []model.OwnershipRequest
+	result := repository.database.Where("owner_id = ?", ownerId).Preload("Household").Preload("Household.Property").Preload("Owner").Find(&ownershipRequests)
+	if result.Error != nil {
+		repository.Logger.Error("Error finding ownership requests", result.Error)
+		return []model.OwnershipRequest{}, result.Error
+	}
+	//repository.Logger.Info(ownershipRequests)
+	return ownershipRequests, nil
+}

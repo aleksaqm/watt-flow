@@ -26,6 +26,7 @@ type IHouseholdService interface {
 	Query(queryParams *dto.HouseholdQueryParams) ([]dto.HouseholdResultDto, int64, error)
 	AcceptHouseholds(tx *gorm.DB, propertyID uint64) error
 	CreateOwnershipRequest(ownershipRequest dto.OwnershipRequestDto) (*dto.OwnershipRequestDto, error)
+	GetOwnersRequests(ownerId uint64) ([]dto.OwnershipResponseDto, error)
 }
 
 type HouseholdService struct {
@@ -227,6 +228,19 @@ func (service *HouseholdService) CreateOwnershipRequest(ownershipRequestDto dto.
 	return &requestDto, nil
 }
 
+func (service *HouseholdService) GetOwnersRequests(ownerId uint64) ([]dto.OwnershipResponseDto, error) {
+	requests, err := service.ownershipRepository.FindForOwner(ownerId)
+	if err != nil {
+		return nil, err
+	}
+	var results = make([]dto.OwnershipResponseDto, 0)
+	for _, result := range requests {
+		mappedRequest, _ := service.MapToOwnershipDto(&result)
+		results = append(results, mappedRequest)
+	}
+	return results, nil
+}
+
 func (service *HouseholdService) cleanupFiles(paths []string) {
 	for _, path := range paths {
 		err := os.Remove(path)
@@ -234,4 +248,26 @@ func (service *HouseholdService) cleanupFiles(paths []string) {
 			service.ownershipRepository.Logger.Error(err)
 		}
 	}
+}
+
+func (service *HouseholdService) MapToOwnershipDto(ownership *model.OwnershipRequest) (dto.OwnershipResponseDto, error) {
+	service.repository.Logger.Info(ownership.Household)
+	service.repository.Logger.Info(ownership.Owner)
+	response := dto.OwnershipResponseDto{
+		Id:          ownership.Id,
+		Images:      ownership.Images,
+		Documents:   ownership.Documents,
+		OwnerID:     ownership.OwnerID,
+		HouseholdID: ownership.HouseholdID,
+		CreatedAt:   ownership.CreatedAt.String(),
+		ClosedAt:    ownership.ClosedAt.String(), //mozda pukne null pointer exception
+		City:        ownership.Household.Property.Address.City,
+		Street:      ownership.Household.Property.Address.Street,
+		Number:      ownership.Household.Property.Address.Number,
+		Floor:       ownership.Household.Floor,
+		Suite:       ownership.Household.Suite,
+		Username:    ownership.Owner.Username,
+		Status:      ownership.Status.RequestStatusToString(),
+	}
+	return response, nil
 }

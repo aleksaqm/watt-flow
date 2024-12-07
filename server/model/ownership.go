@@ -10,6 +10,19 @@ const (
 	Declined
 )
 
+func (r RequestStatus) RequestStatusToString() string {
+	switch r {
+	case 0:
+		return "Pending"
+	case 1:
+		return "Approved"
+	case 2:
+		return "Declined"
+	default:
+		return "Unknown"
+	}
+}
+
 type OwnershipRequest struct {
 	Id           uint64        `gorm:"primaryKey;autoIncrement" json:"id"`
 	Images       []string      `gorm:"serializer:json" json:"images"`

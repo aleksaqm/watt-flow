@@ -154,6 +154,22 @@ func (h HouseholdHandler) CreateOwnershipRequest(c *gin.Context) {
 	c.JSON(201, gin.H{"data": request})
 }
 
+func (h HouseholdHandler) GetOwnershipRequestsForUser(c *gin.Context) {
+	id := c.Param("id")
+	requestId, err := strconv.ParseUint(id, 10, 64)
+	if err != nil {
+		h.logger.Error(err)
+		c.JSON(400, gin.H{"error": "Invalid household ID"})
+		return
+	}
+	requests, err := h.service.GetOwnersRequests(requestId)
+	if err != nil {
+		c.JSON(400, gin.H{"error": "Failed to load owners requests"})
+		return
+	}
+	c.JSON(200, gin.H{"data": requests})
+}
+
 func NewHouseholdHandler(householdService service.IHouseholdService, logger util.Logger) *HouseholdHandler {
 	return &HouseholdHandler{
 		service: householdService,
