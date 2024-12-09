@@ -71,6 +71,7 @@ const requests = ref<OwnershipRequest[]>([])
 const isAdmin = ref<boolean>(true)
 const isLoading = ref<boolean>(false)
 const currentReqyestId = ref<number | null>(null); 
+const isDialogOpen = ref<boolean>(false);
 
 const pagination = ref({ page: 1, total: 0, perPage: 5 })
 const searchQuery = ref<{ city?: string; street?: string; number?: string; floor?: number, suite?: string}>({})
@@ -258,6 +259,18 @@ async function handleDecline(values: any) {
   }
 }
 
+function openDialog(){
+  isDialogOpen.value = true;
+}
+
+function closeDialog(){
+  isDialogOpen.value = false;
+}
+
+function onDialogUpdate(value: any) {
+  isDialogOpen.value = value; // Sync the open state with dialog events
+}
+
 </script>
 
 <template>
@@ -339,8 +352,19 @@ async function handleDecline(values: any) {
         </TableRow>
       </TableHeader>
       <Spinner  v-if="isLoading"/>
+      <Dialog :open="isDialogOpen" @update:open="onDialogUpdate">
+        <DialogContent>
+          <DialogTitle>Dialog Title</DialogTitle>
+          <DialogDescription>
+            This is the dialog content. You can customize it as needed.
+          </DialogDescription>
+          <DialogFooter>
+            <Button @click="closeDialog">Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       <TableBody v-if="!isLoading">
-        <TableRow v-for="request in requests" :key="request.id">
+        <TableRow @click="openDialog" v-for="request in requests" :key="request.id">
           <TableCell>{{ request.city }}</TableCell>
           <TableCell>{{ request.street }}</TableCell>
           <TableCell>{{ request.number }}</TableCell>
@@ -384,8 +408,6 @@ async function handleDecline(values: any) {
                 </Dialog>
             </Form>
           </TableCell>
-          <!-- <TableCell>{{ request.username }}</TableCell> -->
-          <!-- <TableCell>{{ request.households }}</TableCell> -->
         </TableRow>
       </TableBody>
     </Table>
