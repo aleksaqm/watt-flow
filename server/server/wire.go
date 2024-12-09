@@ -26,6 +26,10 @@ var householdServiceSet = wire.NewSet(
 	service.NewHouseholdService,
 	wire.Bind(new(service.IHouseholdService), new(*service.HouseholdService)))
 
+var ownershipServiceSet = wire.NewSet(
+	service.NewOwnershipService,
+	wire.Bind(new(service.IOwnershipService), new(*service.OwnershipService)))
+
 var deviceStatusServiceSet = wire.NewSet(
 	service.NewDeviceStatusService,
 	wire.Bind(new(service.IDeviceStatusService), new(*service.DeviceStatusService)))
@@ -40,9 +44,9 @@ var cityServiceSet = wire.NewSet(
 
 func InitDeps(env *config.Environment) *Server {
 	wire.Build(db.NewDatabase, util.NewLogger, util.NewInfluxQueryHelper, repository.NewUserRepository, service.NewAuthService, userServiceSet, service.NewRestartService, handler.NewUserHandler,
-		repository.NewOwnershipRepository,
 		repository.NewPropertyRepository, propertyServiceSet, handler.NewPropertyHandler,
 		repository.NewHouseholdRepository, householdServiceSet, handler.NewHouseholdHandler,
+		repository.NewOwnershipRepository, ownershipServiceSet, handler.NewOwnershipHandler,
 		repository.NewDeviceStatusRepository, deviceStatusServiceSet, handler.NewDeviceStatusHandler,
 		repository.NewAddressRepository, addressServiceSet, handler.NewAddressHandler,
 		repository.NewCityRepository, cityServiceSet, handler.NewCityHandler,
