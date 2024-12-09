@@ -5,7 +5,7 @@ type HouseholdSearchParams struct {
 	Number       string `json:"number"`
 	City         string `json:"city"`
 	Id           string `json:"id"`
-	WithoutOwner bool   `json:"without_owner"`
+	WithoutOwner bool   `json:"withoutowner"`
 }
 
 type HouseholdQueryParams struct {

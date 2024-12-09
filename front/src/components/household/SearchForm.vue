@@ -12,14 +12,17 @@ import { onMounted, ref } from 'vue';
 import { useUserStore } from '@/stores/user';
 
 const userStore = useUserStore();
-const searchQuery = ref<{ City?: string; Street?: string; Number?: string; Id?: string ; WithoutOwner?: boolean}>({})
+const searchQuery = ref<{ City?: string; Street?: string; Number?: string; Id?: string ; Withoutowner?: boolean}>({})
 const emit = defineEmits(['search'])
 const isAdmin = ref<boolean>(true)
 
 const onSubmit = () => {
-  if (!isAdmin){
-    searchQuery.value.WithoutOwner = true;
+  if (!isAdmin.value){
+    searchQuery.value.Withoutowner = true;
+  }else{
+    searchQuery.value.Withoutowner = false;
   }
+  console.log(searchQuery.value)
   emit('search', searchQuery.value)
 }
 

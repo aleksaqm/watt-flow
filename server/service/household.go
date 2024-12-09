@@ -28,6 +28,7 @@ type IHouseholdService interface {
 	CreateOwnershipRequest(ownershipRequest dto.OwnershipRequestDto) (*dto.OwnershipRequestDto, error)
 	GetOwnersRequests(ownerId uint64, params *dto.OwnershipQueryParams) ([]dto.OwnershipResponseDto, int64, error)
 	AcceptOwnershipRequest(id uint64) error
+	GetPendingRequests(params *dto.OwnershipQueryParams) ([]dto.OwnershipResponseDto, int64, error)
 }
 
 type HouseholdService struct {
@@ -242,6 +243,19 @@ func (service *HouseholdService) GetOwnersRequests(ownerId uint64, params *dto.O
 	return results, total, nil
 }
 
+func (service *HouseholdService) GetPendingRequests(params *dto.OwnershipQueryParams) ([]dto.OwnershipResponseDto, int64, error) {
+	requests, total, err := service.ownershipRepository.FindPendingRequests(params)
+	if err != nil {
+		return nil, 0, err
+	}
+	var results = make([]dto.OwnershipResponseDto, 0)
+	for _, result := range requests {
+		mappedRequest, _ := service.MapToOwnershipDto(&result)
+		results = append(results, mappedRequest)
+	}
+	return results, total, nil
+}
+
 func (service *HouseholdService) AcceptOwnershipRequest(id uint64) error {
 	tx := service.ownershipRepository.Database.Begin()
 	if tx.Error != nil {
@@ -256,6 +270,13 @@ func (service *HouseholdService) AcceptOwnershipRequest(id uint64) error {
 	}
 
 	err = service.ownershipRepository.AcceptRequest(tx, id)
+	if err != nil {
+		tx.Rollback()
+		service.ownershipRepository.Logger.Error("Error accepting request", tx.Error)
+		return err
+	}
+
+	err = service.ownershipRepository.DeclineAllForHousehold(tx, request.HouseholdID)
 	if err != nil {
 		tx.Rollback()
 		service.ownershipRepository.Logger.Error("Error accepting request", tx.Error)

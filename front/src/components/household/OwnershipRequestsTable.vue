@@ -32,6 +32,8 @@ import Input from '@/shad/components/ui/input/Input.vue';
 import { useUserStore } from '@/stores/user';
 import { getUserIdFromToken } from '@/utils/jwtDecoder'
 import type { string } from 'zod'
+import Toaster from '@/shad/components/ui/toast/Toaster.vue';
+import { useToast } from '../../shad/components/ui/toast/use-toast'
 
 
 interface OwnershipRequest {
@@ -49,7 +51,12 @@ interface OwnershipRequest {
   username: string
 }
 
+const { toast } = useToast()
+
 const requests = ref<OwnershipRequest[]>([])
+const isAdmin = ref<boolean>(true)
+const isLoading = ref<boolean>(false)
+
 
 const pagination = ref({ page: 1, total: 0, perPage: 5 })
 const searchQuery = ref<{ city?: string; street?: string; number?: string; floor?: number, suite?: string}>({})
@@ -86,15 +93,23 @@ async function fetchProperties() {
     }
     console.log(params)
 
-    const response = await axios.get('/api/property/query', { params })
+    var requestUrl : string
+    if(isAdmin.value){
+        requestUrl = "/api/ownership/pending"
+    }else{
+        requestUrl = "/api/ownership/requests/"+ userStore.id
+    }
+    isLoading.value = true
+    const response = await axios.get(requestUrl, { params })
+    isLoading.value = false
     console.log(response)
-
     if (response.data) {
         requests.value = response.data.requests.map((request: any) => mapToRequest(request))
         pagination.value.total = response.data.total
     }
     console.log(response.data.requests)
   } catch (error) {
+    isLoading.value = false
     console.error('Failed to fetch properties:', error)
   }
 }
@@ -116,7 +131,14 @@ function mapToRequest(data: any): OwnershipRequest {
   }
 }
 
-onMounted(fetchProperties)
+onMounted(()=>{
+    const userStore = useUserStore()
+    if (userStore.role === "Regular"){
+        isAdmin.value = false
+    }
+    fetchProperties()
+})
+
 
 function onPageChange(page: number) {
   pagination.value.page = page
@@ -167,6 +189,21 @@ watch(searchQuery, (newVal) => {
     }
   })
 }, { deep: true })
+
+async function handleAccept(id: number){
+    try {
+    const response = await axios.patch(`/api/ownership/accept/` + id)
+    console.log(`Request accepteded successfully`, response.data)
+    fetchProperties()
+    toast({
+      title: 'Request Accepted',
+      description: `Request was accepted successfully.`,
+      variant: "default",
+    });
+  } catch (error) {
+    console.error(`Failed to accept request with ID ${id}:`, error)
+  }
+}
 
 </script>
 
@@ -246,6 +283,7 @@ watch(searchQuery, (newVal) => {
           <TableHead @click="onSortChange('status')" :orientation="sortOrder.status">Status</TableHead>
           <TableHead @click="onSortChange('created_at')" :orientation="sortOrder.created_at">Creation Time</TableHead>
           <TableHead @click="onSortChange('closed_at')" :orientation="sortOrder.closed_at">Resolved Time</TableHead>
+          <TableHead v-if="isAdmin">Actions</TableHead>
           <!-- <TableHead @click="onSortChange('username')" :orientation="sortOrder.username">Username</TableHead> -->
           <!-- <TableHead>Households</TableHead> -->
         </TableRow>
@@ -260,6 +298,10 @@ watch(searchQuery, (newVal) => {
           <TableCell>{{ property.status }}</TableCell>
           <TableCell>{{ formatDate(property.created_at) }}</TableCell>
           <TableCell>{{ formatDate(property.closed_at) }}</TableCell>
+          <TableCell v-if="isAdmin">
+            <Button class="bg-indigo-500 text-white mr-2 hover:bg-indigo-300" @click="handleAccept(property.id)">Accept</Button>
+            <Button class="bg-red-500 text-white">Decline</Button>
+          </TableCell>
           <!-- <TableCell>{{ property.username }}</TableCell> -->
           <!-- <TableCell>{{ property.households }}</TableCell> -->
         </TableRow>
@@ -298,4 +340,5 @@ watch(searchQuery, (newVal) => {
         </div>
     </div>
   </div>
+  <Toaster />
 </template>

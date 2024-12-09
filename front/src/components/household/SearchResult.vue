@@ -159,12 +159,10 @@ onMounted(()=>{
 
 function viewHousehold(id: number) {
   if (isAdmin.value){
-    console.log("JEBEM TI")
     router.push({ name: "household", params: { id: id } })
   }else{
     console.log("Nothing");
   }
-  //triger dialogHere
 }
 
 function handleRequestSent(){

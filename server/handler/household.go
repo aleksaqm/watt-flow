@@ -204,6 +204,47 @@ func (h HouseholdHandler) GetOwnershipRequestsForUser(c *gin.Context) {
 	c.JSON(200, gin.H{"requests": requests, "total": total})
 }
 
+func (h HouseholdHandler) GetPendingRequests(c *gin.Context) {
+	page := c.DefaultQuery("page", "1")
+	pageSize := c.DefaultQuery("pageSize", "10")
+	sortBy := c.DefaultQuery("sortBy", "city")
+	sortOrder := c.DefaultQuery("sortOrder", "asc")
+	search := c.DefaultQuery("search", "")
+
+	pageInt, err := strconv.Atoi(page)
+	if err != nil {
+		c.JSON(400, gin.H{"error": "Invalid page parameter"})
+		return
+	}
+	pageSizeInt, err := strconv.Atoi(pageSize)
+	if err != nil {
+		c.JSON(400, gin.H{"error": "Invalid pageSize parameter"})
+		return
+	}
+
+	var searchParams dto.OwnershipSearchParams
+	if search != "" {
+		if err := json.Unmarshal([]byte(search), &searchParams); err != nil {
+			c.JSON(400, gin.H{"error": "Invalid search parameter"})
+			return
+		}
+	}
+	params := dto.OwnershipQueryParams{
+		Page:      pageInt,
+		PageSize:  pageSizeInt,
+		SortBy:    sortBy,
+		SortOrder: sortOrder,
+		Search:    searchParams,
+	}
+	h.logger.Info(params)
+	requests, total, err := h.service.GetPendingRequests(&params)
+	if err != nil {
+		c.JSON(400, gin.H{"error": "Failed to load owners requests"})
+		return
+	}
+	c.JSON(200, gin.H{"requests": requests, "total": total})
+}
+
 func (h HouseholdHandler) AcceptOwnershipRequest(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 64)

@@ -85,6 +85,56 @@ func (repository *OwnershipRepository) FindForOwner(ownerId uint64, params *dto.
 	return ownershipRequests, total, nil
 }
 
+func (repository *OwnershipRepository) FindPendingRequests(params *dto.OwnershipQueryParams) ([]model.OwnershipRequest, int64, error) {
+	var ownershipRequests []model.OwnershipRequest
+	var total int64
+	baseQuery := repository.Database.Model(&model.OwnershipRequest{}).
+		Joins("JOIN households ON households.id = ownership_requests.household_id").
+		Joins("JOIN properties ON properties.id = households.property_id").
+		Where("ownership_requests.status = ?", 0)
+
+	if params.Search.City != "" {
+		baseQuery = baseQuery.Where("properties.city ILIKE ?", "%"+params.Search.City+"%")
+	}
+	if params.Search.Street != "" {
+		baseQuery = baseQuery.Where("properties.street ILIKE ?", "%"+params.Search.Street+"%")
+	}
+	if params.Search.Number != "" {
+		baseQuery = baseQuery.Where("properties.number ILIKE ?", "%"+params.Search.Number+"%")
+	}
+	if params.Search.Floor != 0 {
+		baseQuery = baseQuery.Where("households.floor = ?", params.Search.Floor)
+	}
+	if params.Search.Suite != "" {
+		baseQuery = baseQuery.Where("households.suite = ?", "%"+params.Search.Suite+"%")
+	}
+
+	if err := baseQuery.Count(&total).Error; err != nil {
+		repository.Logger.Error("Error querying requests count", err)
+		return nil, 0, err
+	}
+
+	sortOrder := params.SortOrder
+	if sortOrder != "asc" && sortOrder != "desc" {
+		sortOrder = "asc"
+	}
+
+	query := baseQuery.Order(fmt.Sprintf("%s %s", params.SortBy, sortOrder))
+	offset := (params.Page - 1) * params.PageSize
+	query = query.Offset(offset).Limit(params.PageSize)
+
+	if err := query.
+		Preload("Household").
+		Preload("Household.Property").
+		Preload("Owner").
+		Find(&ownershipRequests).Error; err != nil {
+		repository.Logger.Error("Error querying ownership requests", err)
+		return nil, 0, err
+	}
+
+	return ownershipRequests, total, nil
+}
+
 func (repository *OwnershipRepository) FindById(id uint64) (*model.OwnershipRequest, error) {
 	var ownershipRequest model.OwnershipRequest
 	if err := repository.Database.First(&ownershipRequest, "id = ?", id).Error; err != nil {
@@ -99,7 +149,21 @@ func (repository *OwnershipRepository) AcceptRequest(tx *gorm.DB, id uint64) err
 	closedTime := time.Now()
 	err := tx.Model(&model.OwnershipRequest{}).Where("id = ?", id).
 		Update("status", newRequestStatus).
-		Update("closed_time", closedTime).
+		Update("closed_at", closedTime).
+		Error
+	if err != nil {
+		repository.Logger.Error("Error updating ownership request", err)
+		return err
+	}
+	return nil
+}
+
+func (repository *OwnershipRepository) DeclineAllForHousehold(tx *gorm.DB, householdId uint64) error {
+	const newRequestStatus model.RequestStatus = 2
+	closedTime := time.Now()
+	err := tx.Model(&model.OwnershipRequest{}).Where("household_id = ? AND status = ?", householdId, 0).
+		Update("status", newRequestStatus).
+		Update("closed_at", closedTime).
 		Error
 	if err != nil {
 		repository.Logger.Error("Error updating ownership request", err)
