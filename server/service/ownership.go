@@ -1,6 +1,7 @@
 package service
 
 import (
+	"errors"
 	"fmt"
 	"github.com/google/uuid"
 	"os"
@@ -17,6 +18,7 @@ type IOwnershipService interface {
 	CreateOwnershipRequest(ownershipRequest dto.OwnershipRequestDto) (*dto.OwnershipRequestDto, error)
 	GetOwnersRequests(ownerId uint64, params *dto.OwnershipQueryParams) ([]dto.OwnershipResponseDto, int64, error)
 	AcceptOwnershipRequest(id uint64) error
+	DeclineOwnershipRequest(id uint64, reason string) error
 	GetPendingRequests(params *dto.OwnershipQueryParams) ([]dto.OwnershipResponseDto, int64, error)
 }
 
@@ -127,6 +129,12 @@ func (service *OwnershipService) AcceptOwnershipRequest(id uint64) error {
 		return err
 	}
 
+	if request.Status != 0 {
+		service.ownershipRepository.Logger.Error("Error request isn't pending", tx.Error)
+		tx.Rollback()
+		return errors.New("request isn't pending")
+	}
+
 	err = service.ownershipRepository.AcceptRequest(tx, id)
 	if err != nil {
 		tx.Rollback()
@@ -134,7 +142,7 @@ func (service *OwnershipService) AcceptOwnershipRequest(id uint64) error {
 		return err
 	}
 
-	err = service.ownershipRepository.DeclineAllForHousehold(tx, request.HouseholdID)
+	emailForDenial, err := service.ownershipRepository.DeclineAllForHousehold(tx, request.HouseholdID)
 	if err != nil {
 		tx.Rollback()
 		service.ownershipRepository.Logger.Error("Error accepting request", tx.Error)
@@ -148,8 +156,48 @@ func (service *OwnershipService) AcceptOwnershipRequest(id uint64) error {
 		return err
 	}
 	tx.Commit()
+	emailBody := util.GenerateOwnershipApprovalEmailBody(request.Household.Property.Address.City+", "+request.Household.Property.Address.Street+" "+request.Household.Property.Address.Number+" suite: "+request.Household.Suite,
+		"http://localhost:5173/")
 
-	//salji mejl
+	err = util.SendEmail(request.Owner.Email, "Ownership approved", emailBody)
+
+	for _, s := range emailForDenial {
+		emailBody := util.GenerateOwnershipDenialEmailBody(request.Household.Property.Address.City+", "+request.Household.Property.Address.Street+" "+request.Household.Property.Address.Number+" suite: "+request.Household.Suite, "We accepted someone else's request.",
+			"http://localhost:5173/")
+		err = util.SendEmail(s, "Ownership declined", emailBody)
+	}
+
+	return nil
+}
+
+func (service *OwnershipService) DeclineOwnershipRequest(id uint64, reason string) error {
+	tx := service.ownershipRepository.Database.Begin()
+	if tx.Error != nil {
+		service.ownershipRepository.Logger.Error("Error starting transaction", tx.Error)
+		return tx.Error
+	}
+	request, err := service.ownershipRepository.FindById(id)
+	if err != nil {
+		tx.Rollback()
+		service.ownershipRepository.Logger.Error("Error finding request", tx.Error)
+		return err
+	}
+	if request.Status != 0 {
+		service.ownershipRepository.Logger.Error("Error request isn't pending", tx.Error)
+		tx.Rollback()
+		return errors.New("request isn't pending")
+	}
+
+	err = service.ownershipRepository.DeclineRequest(tx, id, reason)
+	if err != nil {
+		tx.Rollback()
+		service.ownershipRepository.Logger.Error("Error accepting request", tx.Error)
+		return err
+	}
+	tx.Commit()
+	emailBody := util.GenerateOwnershipDenialEmailBody(request.Household.Property.Address.City+", "+request.Household.Property.Address.Street+" "+request.Household.Property.Address.Number+" suite: "+request.Household.Suite, reason,
+		"http://localhost:5173/")
+	err = util.SendEmail(request.Owner.Email, "Ownership declined", emailBody)
 
 	return nil
 }

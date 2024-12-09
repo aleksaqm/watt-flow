@@ -12,7 +12,9 @@ import {
 } from '@/shad/components/ui/table'
 import { Button } from '@/shad/components/ui/button'
 import {
+  Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -28,12 +30,24 @@ import {
   PaginationNext,
   PaginationPrev,
 } from '@/shad/components/ui/pagination'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogClose
+} from '@/shad/components/ui/dialog'
 import Input from '@/shad/components/ui/input/Input.vue';
 import { useUserStore } from '@/stores/user';
 import { getUserIdFromToken } from '@/utils/jwtDecoder'
-import type { string } from 'zod'
+import { z, type string } from 'zod'
 import Toaster from '@/shad/components/ui/toast/Toaster.vue';
 import { useToast } from '../../shad/components/ui/toast/use-toast'
+import { toTypedSchema } from '@vee-validate/zod'
+import Spinner from '../Spinner.vue'
 
 
 interface OwnershipRequest {
@@ -56,7 +70,7 @@ const { toast } = useToast()
 const requests = ref<OwnershipRequest[]>([])
 const isAdmin = ref<boolean>(true)
 const isLoading = ref<boolean>(false)
-
+const currentReqyestId = ref<number | null>(null); 
 
 const pagination = ref({ page: 1, total: 0, perPage: 5 })
 const searchQuery = ref<{ city?: string; street?: string; number?: string; floor?: number, suite?: string}>({})
@@ -74,14 +88,14 @@ const sortOrder = ref<{ [key: string]: "asc" | "desc" | "" }>({
 })
 const totalPages = computed(() => Math.ceil(pagination.value.total / pagination.value.perPage))
 
-function fetchPropertiesForm(event: Event){
+function fetchRequestsForm(event: Event){
   const submitEvent = event as SubmitEvent;
   submitEvent.preventDefault();
-  fetchProperties();
+  fetchRequests();
   (submitEvent.submitter as HTMLButtonElement).blur();
 }
 
-async function fetchProperties() {
+async function fetchRequests() {
   try {
     const userStore = useUserStore()
     const params = {
@@ -110,7 +124,7 @@ async function fetchProperties() {
     console.log(response.data.requests)
   } catch (error) {
     isLoading.value = false
-    console.error('Failed to fetch properties:', error)
+    console.error('Failed to fetch requests:', error)
   }
 }
 
@@ -136,13 +150,13 @@ onMounted(()=>{
     if (userStore.role === "Regular"){
         isAdmin.value = false
     }
-    fetchProperties()
+    fetchRequests()
 })
 
 
 function onPageChange(page: number) {
   pagination.value.page = page
-  fetchProperties()
+  fetchRequests()
 }
 
 function onSortChange(field: string) {
@@ -159,7 +173,7 @@ function onSortChange(field: string) {
   sortOrder.value[field] = temp === "asc" ? "desc" : "asc"
   console.log(sortOrder.value)
   sortBy.value = field
-  fetchProperties()
+  fetchRequests()
 }
 
 function getButtonStyle(isSelected: boolean) {
@@ -192,16 +206,55 @@ watch(searchQuery, (newVal) => {
 
 async function handleAccept(id: number){
     try {
+    isLoading.value = true
     const response = await axios.patch(`/api/ownership/accept/` + id)
     console.log(`Request accepteded successfully`, response.data)
-    fetchProperties()
+    fetchRequests()
+    isLoading.value = false
     toast({
       title: 'Request Accepted',
       description: `Request was accepted successfully.`,
       variant: "default",
     });
   } catch (error) {
+    isLoading.value = false
     console.error(`Failed to accept request with ID ${id}:`, error)
+  }
+}
+const formSchema = toTypedSchema(z.object({
+  declineReason: z.string().min(2).max(50),
+}))
+
+async function handleDecline(values: any) {
+  try {
+    if (!currentReqyestId.value) {
+      throw new Error("No request ID found for declining.");
+    }
+    console.log(`Declining request with ID: ${currentReqyestId.value}`);
+    console.log(`Reason: ${values.declineReason}`);
+    isLoading.value = true
+
+    await axios.put(`/api/ownership/decline/${currentReqyestId.value}`, {
+      message: values.declineReason,
+    });
+
+    fetchRequests();
+    isLoading.value = false
+    toast({
+      title: 'Request Declined',
+      description: `Request was declined successfully.`,
+      variant: "default",
+    });
+  } catch (error) {
+    isLoading.value = false
+    console.error(`Failed to decline request with ID ${currentReqyestId.value}:`, error);
+    toast({
+      title: 'Error:',
+      description: "Error declining  request.",
+      variant: "destructive",
+    });
+  } finally {
+    currentReqyestId.value = null; 
   }
 }
 
@@ -212,11 +265,10 @@ async function handleAccept(id: number){
   <div class="p-7 flex flex-col bg-white shadow-lg">
     <div>
       <div class="w-full text-center my-10 text-xl">
-        Your Ownership Requests
+        Ownership Requests
       </div>
       <form class="w-full flex flex-wrap gap-5 items-center border rounded-2xl border-gray-300 shadow-gray-500 p-10 mb-10"
-        @submit.prevent="fetchPropertiesForm">
-
+        @submit.prevent="fetchRequestsForm">
         <FormField name="city" v-slot="{ field }">
           <FormItem class="flex items-center gap-5">
             <FormLabel class="w-1/4 text-right">City:</FormLabel>
@@ -284,26 +336,56 @@ async function handleAccept(id: number){
           <TableHead @click="onSortChange('created_at')" :orientation="sortOrder.created_at">Creation Time</TableHead>
           <TableHead @click="onSortChange('closed_at')" :orientation="sortOrder.closed_at">Resolved Time</TableHead>
           <TableHead v-if="isAdmin">Actions</TableHead>
-          <!-- <TableHead @click="onSortChange('username')" :orientation="sortOrder.username">Username</TableHead> -->
-          <!-- <TableHead>Households</TableHead> -->
         </TableRow>
       </TableHeader>
-      <TableBody>
-        <TableRow v-for="property in requests" :key="property.id">
-          <TableCell>{{ property.city }}</TableCell>
-          <TableCell>{{ property.street }}</TableCell>
-          <TableCell>{{ property.number }}</TableCell>
-          <TableCell>{{ property.floor }}</TableCell>
-          <TableCell>{{ property.suite }}</TableCell>
-          <TableCell>{{ property.status }}</TableCell>
-          <TableCell>{{ formatDate(property.created_at) }}</TableCell>
-          <TableCell>{{ formatDate(property.closed_at) }}</TableCell>
+      <Spinner  v-if="isLoading"/>
+      <TableBody v-if="!isLoading">
+        <TableRow v-for="request in requests" :key="request.id">
+          <TableCell>{{ request.city }}</TableCell>
+          <TableCell>{{ request.street }}</TableCell>
+          <TableCell>{{ request.number }}</TableCell>
+          <TableCell>{{ request.floor }}</TableCell>
+          <TableCell>{{ request.suite }}</TableCell>
+          <TableCell>{{ request.status }}</TableCell>
+          <TableCell>{{ formatDate(request.created_at) }}</TableCell>
+          <TableCell>{{ formatDate(request.closed_at) }}</TableCell>
           <TableCell v-if="isAdmin">
-            <Button class="bg-indigo-500 text-white mr-2 hover:bg-indigo-300" @click="handleAccept(property.id)">Accept</Button>
-            <Button class="bg-red-500 text-white">Decline</Button>
+            <Button class="bg-indigo-500 text-white mr-2 hover:bg-indigo-300" @click="handleAccept(request.id)">Accept</Button>
+            <Form v-slot="{ handleSubmit }" as="" :validation-schema="formSchema">
+                <Dialog>
+                    <DialogTrigger as-child>
+                        <Button class="bg-red-500 text-white" @click="currentReqyestId = request.id">Decline</Button>
+                    </DialogTrigger>
+                    <DialogContent class="sm:max-w-[425px]">
+                        <DialogHeader>
+                            <DialogTitle>Decline reason</DialogTitle>
+                            <DialogDescription>
+                                Reason for declining ownership request
+                            </DialogDescription>
+                        </DialogHeader>
+                        <Spinner  v-if="isLoading"/>
+                        <form v-if="!isLoading" id="dialogForm" @submit="handleSubmit($event, handleDecline)">
+                            <FormField v-slot="{ componentField }" name="declineReason">
+                                <FormItem>
+                                    <FormLabel>Decline reason</FormLabel>
+                                    <FormControl>
+                                        <Input type="text" placeholder="Reason" v-bind="componentField" />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            </FormField>
+                        </form>
+                        <DialogFooter>
+                            <Button type="submit" form="dialogForm">
+                                Submit
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+            </Form>
           </TableCell>
-          <!-- <TableCell>{{ property.username }}</TableCell> -->
-          <!-- <TableCell>{{ property.households }}</TableCell> -->
+          <!-- <TableCell>{{ request.username }}</TableCell> -->
+          <!-- <TableCell>{{ request.households }}</TableCell> -->
         </TableRow>
       </TableBody>
     </Table>
@@ -334,7 +416,7 @@ async function handleAccept(id: number){
             type="number"
             class="w-20"
             min="1"
-            @input="fetchProperties"
+            @input="fetchRequests"
             placeholder="Rows per page"
           />
         </div>

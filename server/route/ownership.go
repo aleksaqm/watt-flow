@@ -21,6 +21,7 @@ func (r OwnershipRoute) Register(server *server.Server) {
 		api.GET("/ownership/requests/:id", authMid.RoleMiddleware([]string{"Regular"}), server.OwnershipHandler.GetOwnershipRequestsForUser)
 		api.GET("/ownership/pending", authMid.RoleMiddleware([]string{"Admin", "SuperAdmin"}), server.OwnershipHandler.GetPendingRequests)
 		api.PATCH("/ownership/accept/:id", authMid.RoleMiddleware([]string{"Admin", "SuperAdmin"}), server.OwnershipHandler.AcceptOwnershipRequest)
+		api.PUT("/ownership/decline/:id", authMid.RoleMiddleware([]string{"Admin", "SuperAdmin"}), server.OwnershipHandler.DeclineOwnershipRequest)
 	}
 }
 

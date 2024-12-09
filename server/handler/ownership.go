@@ -136,6 +136,28 @@ func (h OwnershipHandler) AcceptOwnershipRequest(c *gin.Context) {
 	c.JSON(200, gin.H{"message": "Owner ship request accepted successfully"})
 }
 
+func (h OwnershipHandler) DeclineOwnershipRequest(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid property ID"})
+		return
+	}
+	var requestBody struct {
+		Message string `json:"message"`
+	}
+	if err := c.ShouldBindJSON(&requestBody); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		return
+	}
+	err = h.service.DeclineOwnershipRequest(id, requestBody.Message)
+	if err != nil {
+		c.JSON(400, gin.H{"error": "Failed to decline ownership request"})
+		return
+	}
+	c.JSON(200, gin.H{"message": "Owner ship request accepted successfully"})
+}
+
 func NewOwnershipHandler(ownershipService service.IOwnershipService, logger util.Logger) *OwnershipHandler {
 	return &OwnershipHandler{
 		service: ownershipService,

@@ -137,7 +137,7 @@ func (repository *OwnershipRepository) FindPendingRequests(params *dto.Ownership
 
 func (repository *OwnershipRepository) FindById(id uint64) (*model.OwnershipRequest, error) {
 	var ownershipRequest model.OwnershipRequest
-	if err := repository.Database.First(&ownershipRequest, "id = ?", id).Error; err != nil {
+	if err := repository.Database.Preload("Household").Preload("Household.Property").Preload("Owner").First(&ownershipRequest, "id = ?", id).Error; err != nil {
 		repository.Logger.Error("Error finding ownership request", err)
 		return nil, err
 	}
@@ -158,16 +158,46 @@ func (repository *OwnershipRepository) AcceptRequest(tx *gorm.DB, id uint64) err
 	return nil
 }
 
-func (repository *OwnershipRepository) DeclineAllForHousehold(tx *gorm.DB, householdId uint64) error {
+func (repository *OwnershipRepository) DeclineRequest(tx *gorm.DB, id uint64, reason string) error {
 	const newRequestStatus model.RequestStatus = 2
 	closedTime := time.Now()
-	err := tx.Model(&model.OwnershipRequest{}).Where("household_id = ? AND status = ?", householdId, 0).
+	err := tx.Model(&model.OwnershipRequest{}).Where("id = ?", id).
 		Update("status", newRequestStatus).
 		Update("closed_at", closedTime).
+		Update("denial_reason", reason).
 		Error
 	if err != nil {
 		repository.Logger.Error("Error updating ownership request", err)
 		return err
 	}
 	return nil
+}
+
+func (repository *OwnershipRepository) DeclineAllForHousehold(tx *gorm.DB, householdId uint64) ([]string, error) {
+	const newRequestStatus model.RequestStatus = 2
+	closedTime := time.Now()
+
+	var ownerEmails []string
+	err := tx.Model(&model.OwnershipRequest{}).
+		Where("household_id = ? AND ownership_requests.status = ?", householdId, 0).
+		Joins("JOIN users ON users.id = ownership_requests.owner_id").
+		Pluck("users.email", &ownerEmails).Error
+	if err != nil {
+		repository.Logger.Error("Error fetching owner emails", err)
+		return nil, err
+	}
+
+	err = tx.Model(&model.OwnershipRequest{}).
+		Where("household_id = ? AND status = ?", householdId, 0).
+		Updates(map[string]interface{}{
+			"status":        newRequestStatus,
+			"closed_at":     closedTime,
+			"denial_reason": "We accepted someone else's request.",
+		}).Error
+	if err != nil {
+		repository.Logger.Error("Error updating ownership requests", err)
+		return nil, err
+	}
+
+	return ownerEmails, nil
 }
