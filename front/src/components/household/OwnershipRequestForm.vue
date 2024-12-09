@@ -22,6 +22,7 @@ const images = ref<File[]>([]);
 const imagePreviews = ref<string[]>([]); // Added for image previews
 const documents = ref<File[]>([]);
 const documentPreviews = ref<string[]>([]); // Added for document previews
+const documentURLs = ref<string[]>([]); // Added to store document URLs
 const { toast } = useToast();
 const emit = defineEmits(['requestSent']);
 
@@ -83,9 +84,13 @@ const onFileChange = (event: any, type: 'images' | 'documents') => {
     documents.value = files;
     setFieldValue('documents', documents.value);
 
-    // Display document names
     documentPreviews.value = files.map((file) => file.name);
+    documentURLs.value = files.map((file) => URL.createObjectURL(file));
   }
+};
+
+const openFile = (url: string) => {
+  window.open(url, '_blank');
 };
 
 const submitForm = async () => {
@@ -157,7 +162,8 @@ const onSubmit = handleSubmit(submitForm);
             :key="index"
             :src="preview"
             alt="Image Preview"
-            class="w-24 h-24 object-cover rounded"
+            class="w-24 h-24 object-cover rounded cursor-pointer"
+            @click="openFile(preview)"
           />
         </div>
       </FormItem>
@@ -181,7 +187,12 @@ const onSubmit = handleSubmit(submitForm);
           {{ errors.documents }}
         </FormMessage>
         <ul class="list-disc list-inside mt-2">
-          <li v-for="(name, index) in documentPreviews" :key="index">
+          <li
+            v-for="(name, index) in documentPreviews"
+            :key="index"
+            class="cursor-pointer text-blue-500 underline"
+            @click="openFile(documentURLs[index])"
+          >
             {{ name }}
           </li>
         </ul>
