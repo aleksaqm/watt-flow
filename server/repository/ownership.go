@@ -2,6 +2,8 @@ package repository
 
 import (
 	"fmt"
+	"gorm.io/gorm"
+	"time"
 	"watt-flow/db"
 	"watt-flow/dto"
 	"watt-flow/model"
@@ -9,7 +11,7 @@ import (
 )
 
 type OwnershipRepository struct {
-	database db.Database
+	Database db.Database
 	Logger   util.Logger
 }
 
@@ -19,13 +21,13 @@ func NewOwnershipRepository(db db.Database, logger util.Logger) *OwnershipReposi
 		logger.Error("Error migrating Ownership Repository", err)
 	}
 	return &OwnershipRepository{
-		database: db,
+		Database: db,
 		Logger:   logger,
 	}
 }
 
 func (repository *OwnershipRepository) Create(ownershipRequest *model.OwnershipRequest) (model.OwnershipRequest, error) {
-	result := repository.database.Create(ownershipRequest)
+	result := repository.Database.Create(ownershipRequest)
 	if result.Error != nil {
 		repository.Logger.Error("Error creating ownership request", result.Error)
 		return *ownershipRequest, result.Error
@@ -36,7 +38,7 @@ func (repository *OwnershipRepository) Create(ownershipRequest *model.OwnershipR
 func (repository *OwnershipRepository) FindForOwner(ownerId uint64, params *dto.OwnershipQueryParams) ([]model.OwnershipRequest, int64, error) {
 	var ownershipRequests []model.OwnershipRequest
 	var total int64
-	baseQuery := repository.database.Model(&model.OwnershipRequest{}).
+	baseQuery := repository.Database.Model(&model.OwnershipRequest{}).
 		Joins("JOIN households ON households.id = ownership_requests.household_id").
 		Joins("JOIN properties ON properties.id = households.property_id").
 		Where("ownership_requests.owner_id = ?", ownerId)
@@ -81,4 +83,27 @@ func (repository *OwnershipRepository) FindForOwner(ownerId uint64, params *dto.
 	}
 
 	return ownershipRequests, total, nil
+}
+
+func (repository *OwnershipRepository) FindById(id uint64) (*model.OwnershipRequest, error) {
+	var ownershipRequest model.OwnershipRequest
+	if err := repository.Database.First(&ownershipRequest, "id = ?", id).Error; err != nil {
+		repository.Logger.Error("Error finding ownership request", err)
+		return nil, err
+	}
+	return &ownershipRequest, nil
+}
+
+func (repository *OwnershipRepository) AcceptRequest(tx *gorm.DB, id uint64) error {
+	const newRequestStatus model.RequestStatus = 1
+	closedTime := time.Now()
+	err := tx.Model(&model.OwnershipRequest{}).Where("id = ?", id).
+		Update("status", newRequestStatus).
+		Update("closed_time", closedTime).
+		Error
+	if err != nil {
+		repository.Logger.Error("Error updating ownership request", err)
+		return err
+	}
+	return nil
 }

@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"net/http"
 	"strconv"
 	"watt-flow/dto"
 	"watt-flow/model"
@@ -201,6 +202,21 @@ func (h HouseholdHandler) GetOwnershipRequestsForUser(c *gin.Context) {
 		return
 	}
 	c.JSON(200, gin.H{"requests": requests, "total": total})
+}
+
+func (h HouseholdHandler) AcceptOwnershipRequest(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid property ID"})
+		return
+	}
+	err = h.service.AcceptOwnershipRequest(id)
+	if err != nil {
+		c.JSON(400, gin.H{"error": "Failed to accept ownership request"})
+		return
+	}
+	c.JSON(200, gin.H{"message": "Owner ship request accepted successfully"})
 }
 
 func NewHouseholdHandler(householdService service.IHouseholdService, logger util.Logger) *HouseholdHandler {

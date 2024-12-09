@@ -27,6 +27,7 @@ type IHouseholdService interface {
 	AcceptHouseholds(tx *gorm.DB, propertyID uint64) error
 	CreateOwnershipRequest(ownershipRequest dto.OwnershipRequestDto) (*dto.OwnershipRequestDto, error)
 	GetOwnersRequests(ownerId uint64, params *dto.OwnershipQueryParams) ([]dto.OwnershipResponseDto, int64, error)
+	AcceptOwnershipRequest(id uint64) error
 }
 
 type HouseholdService struct {
@@ -239,6 +240,39 @@ func (service *HouseholdService) GetOwnersRequests(ownerId uint64, params *dto.O
 		results = append(results, mappedRequest)
 	}
 	return results, total, nil
+}
+
+func (service *HouseholdService) AcceptOwnershipRequest(id uint64) error {
+	tx := service.ownershipRepository.Database.Begin()
+	if tx.Error != nil {
+		service.ownershipRepository.Logger.Error("Error starting transaction", tx.Error)
+		return tx.Error
+	}
+	request, err := service.ownershipRepository.FindById(id)
+	if err != nil {
+		tx.Rollback()
+		service.ownershipRepository.Logger.Error("Error finding request", tx.Error)
+		return err
+	}
+
+	err = service.ownershipRepository.AcceptRequest(tx, id)
+	if err != nil {
+		tx.Rollback()
+		service.ownershipRepository.Logger.Error("Error accepting request", tx.Error)
+		return err
+	}
+
+	err = service.repository.AddOwnerToHousehold(tx, request.HouseholdID, request.OwnerID)
+	if err != nil {
+		tx.Rollback()
+		service.repository.Logger.Error("Error adding owner to household", tx.Error)
+		return err
+	}
+	tx.Commit()
+
+	//salji mejl
+
+	return nil
 }
 
 func (service *HouseholdService) cleanupFiles(paths []string) {

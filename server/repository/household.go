@@ -152,3 +152,15 @@ func (repository *HouseholdRepository) AcceptHouseholds(tx *gorm.DB, propertyID 
 
 	return nil
 }
+
+func (repository *HouseholdRepository) AddOwnerToHousehold(tx *gorm.DB, householdId uint64, ownerId uint64) error {
+	err := tx.Model(&model.Household{}).
+		Where("id = ?", householdId).
+		Update("owner_id", ownerId).
+		Error
+	if err != nil {
+		repository.Logger.Error("Error updating household owner", err)
+		return err
+	}
+	return nil
+}

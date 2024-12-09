@@ -21,6 +21,7 @@ func (r HouseholdRoute) Register(server *server.Server) {
 		api.POST("/household/query", authMid.RoleMiddleware([]string{"Admin", "SuperAdmin", "Regular"}), server.HouseholdHandler.Query)
 		api.POST("/household/owner", authMid.RoleMiddleware([]string{"Regular"}), server.HouseholdHandler.CreateOwnershipRequest)
 		api.GET("/ownership/requests/:id", authMid.RoleMiddleware([]string{"Regular"}), server.HouseholdHandler.GetOwnershipRequestsForUser)
+		api.PATCH("/ownership/accept/:id", authMid.RoleMiddleware([]string{"Admin", "SuperAdmin"}))
 	}
 }
 
