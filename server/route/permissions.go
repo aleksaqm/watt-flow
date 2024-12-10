@@ -15,7 +15,7 @@ func (r PermissionRoute) Register(server *server.Server) {
 	authMid := middleware.NewAuthMiddleware(server.AuthService, server.Logger)
 	api := r.engine.Group("/api").Use(authMid.Handler())
 	{
-		api.GET("/validate/admin", authMid.RoleMiddleware([]string{"Admin"}), server.UserHandler.ReturnOk)
+		api.GET("/validate/admin", authMid.RoleMiddleware([]string{"Admin", "SuperAdmin"}), server.UserHandler.ReturnOk)
 	}
 }
 

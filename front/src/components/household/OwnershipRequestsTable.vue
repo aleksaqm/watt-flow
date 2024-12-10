@@ -48,6 +48,7 @@ import Toaster from '@/shad/components/ui/toast/Toaster.vue';
 import { useToast } from '../../shad/components/ui/toast/use-toast'
 import { toTypedSchema } from '@vee-validate/zod'
 import Spinner from '../Spinner.vue'
+import ImageDocumentsDisplay from '@/components/household/ImageDocumentsDisplay.vue'
 
 
 interface OwnershipRequest {
@@ -61,8 +62,8 @@ interface OwnershipRequest {
   number: string
   floor: number
   suite: string
-  status: string
   username: string
+  status: string
 }
 
 const { toast } = useToast()
@@ -72,6 +73,7 @@ const isAdmin = ref<boolean>(true)
 const isLoading = ref<boolean>(false)
 const currentReqyestId = ref<number | null>(null); 
 const isDialogOpen = ref<boolean>(false);
+const dialogsOpen = ref<boolean[]>([])
 
 const pagination = ref({ page: 1, total: 0, perPage: 5 })
 const searchQuery = ref<{ city?: string; street?: string; number?: string; floor?: number, suite?: string}>({})
@@ -81,7 +83,7 @@ const sortOrder = ref<{ [key: string]: "asc" | "desc" | "" }>({
   city: "",
   street: "",
   number: "",
-  status: "",
+  username: "",
   created_at: "",
   closed_at: "",
   floor: "",
@@ -165,12 +167,12 @@ function onSortChange(field: string) {
   sortOrder.value.city = ""
   sortOrder.value.street = ""
   sortOrder.value.number = ""
-  sortOrder.value.status = ""
+  sortOrder.value.username = ""
   sortOrder.value.created_at = ""
   sortOrder.value.closed_at = ""
   sortOrder.value.floor = ""
   sortOrder.value.suite = ""
-//   sortOrder.value.username = ""
+//   sortOrder.value.status = ""
   sortOrder.value[field] = temp === "asc" ? "desc" : "asc"
   console.log(sortOrder.value)
   sortBy.value = field
@@ -206,7 +208,7 @@ watch(searchQuery, (newVal) => {
 }, { deep: true })
 
 async function handleAccept(id: number){
-    try {
+  try {
     isLoading.value = true
     const response = await axios.patch(`/api/ownership/accept/` + id)
     console.log(`Request accepteded successfully`, response.data)
@@ -268,7 +270,7 @@ function closeDialog(){
 }
 
 function onDialogUpdate(value: any) {
-  isDialogOpen.value = value; // Sync the open state with dialog events
+  isDialogOpen.value = value; 
 }
 
 </script>
@@ -345,34 +347,42 @@ function onDialogUpdate(value: any) {
           <TableHead @click="onSortChange('number')" :orientation="sortOrder.number">Number</TableHead>
           <TableHead @click="onSortChange('floor')" :orientation="sortOrder.floor">Floor</TableHead>
           <TableHead @click="onSortChange('suite')" :orientation="sortOrder.suite">Suite</TableHead>
-          <TableHead @click="onSortChange('status')" :orientation="sortOrder.status">Status</TableHead>
+          <TableHead @click="onSortChange('username')" :orientation="sortOrder.username">username</TableHead>
           <TableHead @click="onSortChange('created_at')" :orientation="sortOrder.created_at">Creation Time</TableHead>
           <TableHead @click="onSortChange('closed_at')" :orientation="sortOrder.closed_at">Resolved Time</TableHead>
+          <TableHead v-if="isAdmin">Documentation</TableHead>
           <TableHead v-if="isAdmin">Actions</TableHead>
         </TableRow>
       </TableHeader>
       <Spinner  v-if="isLoading"/>
-      <Dialog :open="isDialogOpen" @update:open="onDialogUpdate">
-        <DialogContent>
-          <DialogTitle>Dialog Title</DialogTitle>
-          <DialogDescription>
-            This is the dialog content. You can customize it as needed.
-          </DialogDescription>
-          <DialogFooter>
-            <Button @click="closeDialog">Close</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      
       <TableBody v-if="!isLoading">
-        <TableRow @click="openDialog" v-for="request in requests" :key="request.id">
-          <TableCell>{{ request.city }}</TableCell>
-          <TableCell>{{ request.street }}</TableCell>
-          <TableCell>{{ request.number }}</TableCell>
-          <TableCell>{{ request.floor }}</TableCell>
-          <TableCell>{{ request.suite }}</TableCell>
-          <TableCell>{{ request.status }}</TableCell>
-          <TableCell>{{ formatDate(request.created_at) }}</TableCell>
-          <TableCell>{{ formatDate(request.closed_at) }}</TableCell>
+        <TableRow v-for="request in requests" :key="request.id">
+          <TableCell @click="openDialog">{{ request.city }}</TableCell>
+          <TableCell @click="openDialog">{{ request.street }}</TableCell>
+          <TableCell @click="openDialog">{{ request.number }}</TableCell>
+          <TableCell @click="openDialog">{{ request.floor }}</TableCell>
+          <TableCell @click="openDialog">{{ request.suite }}</TableCell>
+          <TableCell @click="openDialog">{{ request.username }}</TableCell>
+          <TableCell @click="openDialog">{{ formatDate(request.created_at) }}</TableCell>
+          <TableCell @click="openDialog">{{ formatDate(request.closed_at) }}</TableCell>
+          <TableCell v-if="isAdmin">
+            <Dialog>
+              <DialogTrigger>
+                <Button class="bg-indigo-500 text-white">Details</Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogTitle>Photos & Documents for proof</DialogTitle>
+                <DialogDescription>
+                  Analize documentation for ownership
+                </DialogDescription>
+                <div class="flex justify-center items-center w-full h-full">
+                  <ImageDocumentsDisplay :images="request.images" :documents="request.documents" />
+                </div>
+              </DialogContent>
+            </Dialog>
+          </TableCell>
+            
           <TableCell v-if="isAdmin">
             <Button class="bg-indigo-500 text-white mr-2 hover:bg-indigo-300" @click="handleAccept(request.id)">Accept</Button>
             <Form v-slot="{ handleSubmit }" as="" :validation-schema="formSchema">

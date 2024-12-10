@@ -196,6 +196,9 @@ services:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf
       - ./data/profile_pictures:/usr/share/nginx/html/profile_pictures
       - ./data/protected_files:/usr/share/nginx/html/protected_files
+      - ./data/ownership_images:/usr/share/nginx/html/ownership_images
+      - ./data/ownership_documents:/usr/share/nginx/html/ownership_documents
+
     networks:
       - watt-flow-network
     restart: always

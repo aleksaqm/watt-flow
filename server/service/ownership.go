@@ -45,6 +45,7 @@ func (service *OwnershipService) CreateOwnershipRequest(ownershipRequestDto dto.
 		Documents:   make([]string, len(ownershipRequestDto.Documents)),
 		CreatedAt:   time.Now(),
 	}
+	prefix := "/app/data/"
 	if len(ownershipRequestDto.Images) > 0 {
 		for i, base64String := range ownershipRequestDto.Images {
 			if strings.HasPrefix(base64String, "data:image/") {
@@ -55,8 +56,7 @@ func (service *OwnershipService) CreateOwnershipRequest(ownershipRequestDto dto.
 				service.cleanupFiles(savedFilePaths)
 				return nil, fmt.Errorf("failed to save image %d: %v", i, err)
 			}
-			//fullPath := filePath + "/" + UUID.String() + "-" + strconv.Itoa(i) + ".jpg"
-			ownershipRequest.Images[i] = filePath
+			ownershipRequest.Images[i] = strings.TrimPrefix(filePath, prefix)
 			savedFilePaths = append(savedFilePaths, filePath)
 		}
 	}
@@ -70,8 +70,7 @@ func (service *OwnershipService) CreateOwnershipRequest(ownershipRequestDto dto.
 				service.cleanupFiles(savedFilePaths)
 				return nil, fmt.Errorf("failed to save document %d: %v", i, err)
 			}
-			//fullPath := filePath + "/" + UUID.String() + "-" + strconv.Itoa(i) + ".pdf"
-			ownershipRequest.Documents[i] = filePath
+			ownershipRequest.Documents[i] = strings.TrimPrefix(filePath, prefix)
 			savedFilePaths = append(savedFilePaths, filePath)
 		}
 	}
