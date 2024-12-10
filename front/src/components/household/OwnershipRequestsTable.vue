@@ -369,7 +369,7 @@ function onDialogUpdate(value: any) {
           <TableCell v-if="isAdmin">
             <Dialog>
               <DialogTrigger>
-                <Button class="bg-indigo-500 text-white">Details</Button>
+                <Button class="bg-gray-600 text-white">Details</Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogTitle>Photos & Documents for proof</DialogTitle>
@@ -384,11 +384,11 @@ function onDialogUpdate(value: any) {
           </TableCell>
             
           <TableCell v-if="isAdmin">
-            <Button class="bg-indigo-500 text-white mr-2 hover:bg-indigo-300" @click="handleAccept(request.id)">Accept</Button>
+            <Button class="bg-indigo-700 text-white mr-2 hover:bg-indigo-300" @click="handleAccept(request.id)">Accept</Button>
             <Form v-slot="{ handleSubmit }" as="" :validation-schema="formSchema">
                 <Dialog>
                     <DialogTrigger as-child>
-                        <Button class="bg-red-500 text-white" @click="currentReqyestId = request.id">Decline</Button>
+                        <Button class="bg-gray-500 text-white" @click="currentReqyestId = request.id">Decline</Button>
                     </DialogTrigger>
                     <DialogContent class="sm:max-w-[425px]">
                         <DialogHeader>
