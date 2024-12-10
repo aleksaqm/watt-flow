@@ -261,18 +261,6 @@ async function handleDecline(values: any) {
   }
 }
 
-function openDialog(){
-  isDialogOpen.value = true;
-}
-
-function closeDialog(){
-  isDialogOpen.value = false;
-}
-
-function onDialogUpdate(value: any) {
-  isDialogOpen.value = value; 
-}
-
 </script>
 
 <template>
@@ -358,14 +346,14 @@ function onDialogUpdate(value: any) {
       
       <TableBody v-if="!isLoading">
         <TableRow v-for="request in requests" :key="request.id">
-          <TableCell @click="openDialog">{{ request.city }}</TableCell>
-          <TableCell @click="openDialog">{{ request.street }}</TableCell>
-          <TableCell @click="openDialog">{{ request.number }}</TableCell>
-          <TableCell @click="openDialog">{{ request.floor }}</TableCell>
-          <TableCell @click="openDialog">{{ request.suite }}</TableCell>
-          <TableCell @click="openDialog">{{ request.username }}</TableCell>
-          <TableCell @click="openDialog">{{ formatDate(request.created_at) }}</TableCell>
-          <TableCell v-if="!isAdmin"@click="openDialog">{{ formatDate(request.closed_at) }}</TableCell>
+          <TableCell>{{ request.city }}</TableCell>
+          <TableCell>{{ request.street }}</TableCell>
+          <TableCell>{{ request.number }}</TableCell>
+          <TableCell>{{ request.floor }}</TableCell>
+          <TableCell>{{ request.suite }}</TableCell>
+          <TableCell>{{ request.username }}</TableCell>
+          <TableCell>{{ formatDate(request.created_at) }}</TableCell>
+          <TableCell v-if="!isAdmin">{{ formatDate(request.closed_at) }}</TableCell>
           <TableCell v-if="isAdmin">
             <Dialog>
               <DialogTrigger>
