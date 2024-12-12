@@ -14,6 +14,7 @@ import OwnersPropertyRequestsView from '@/views/property/OwnersPropertyRequestsV
 import ManageClerksView from '@/views/user/ManageClerksView.vue'
 import { authGuard } from '@/guards/AuthGuard'
 import RegisterClerkView from '@/views/user/RegisterClerkView.vue'
+import ClerkMeetingScheduleView from '@/views/schedule/ClerkMeetingScheduleView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -85,6 +86,12 @@ const router = createRouter({
       path: '/manage/clerks/new',
       name: 'new-clerk',
       component: RegisterClerkView,
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/clerk/schedule',
+      name: 'clerk-schedule',
+      component: ClerkMeetingScheduleView,
       meta: { requiresAuth: true }
     },
     {
