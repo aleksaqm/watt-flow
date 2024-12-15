@@ -34,7 +34,7 @@ func (inf *InfluxQueryHelper) SendStatusQuery(queryParams dto.FluxQueryStatusDto
 	client := influxdb2.NewClient(inf.influxURL, inf.influxToken)
 	defer client.Close()
 
-	// Create a query API client
+	// CreateTimeSlot a query API client
 	queryAPI := client.QueryAPI(inf.organization)
 	fluxQuery := ""
 

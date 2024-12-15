@@ -72,4 +72,5 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gorm.io/datatypes v1.2.5 // indirect
 	gorm.io/driver/mysql v1.5.7 // indirect
+	gorm.io/plugin/optimisticlock v1.1.3 // indirect
 )

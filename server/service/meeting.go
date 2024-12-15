@@ -11,17 +11,22 @@ import (
 
 type IMeetingService interface {
 	FindByDate(id datatypes.Date) (*dto.TimeSlotDto, error)
-	Create(timeslot *dto.TimeSlotDto) (*dto.TimeSlotDto, error)
+	CreateTimeSlot(timeslot *dto.TimeSlotDto) (*dto.TimeSlotDto, error)
 	CreateOrUpdate(timeslot *dto.UpdateTimeSlotDto) (*dto.TimeSlotDto, error)
+	CreateMeeting(meetingDto *dto.MeetingDTO) (*dto.MeetingDTO, error)
+	FindMeetingById(id uint64) (*dto.MeetingDTO, error)
+	FindMeetingBySlotId(slotId uint64) (*dto.MeetingDTO, error)
 }
 
 type MeetingService struct {
-	slotRepository *repository.TimeSlotRepository
+	slotRepository    *repository.TimeSlotRepository
+	meetingRepository *repository.MeetingRepository
 }
 
-func NewMeetingService(timeslotRepository *repository.TimeSlotRepository) *MeetingService {
+func NewMeetingService(timeslotRepository *repository.TimeSlotRepository, meetingRepository *repository.MeetingRepository) *MeetingService {
 	return &MeetingService{
-		slotRepository: timeslotRepository,
+		slotRepository:    timeslotRepository,
+		meetingRepository: meetingRepository,
 	}
 }
 
@@ -30,7 +35,7 @@ func (t *MeetingService) FindByDate(date datatypes.Date) (*dto.TimeSlotDto, erro
 	if err != nil {
 		return nil, err
 	}
-	var slots [15]bool
+	var slots [15]uint64
 	err = json.Unmarshal(timeslot.Slots, &slots)
 	if err != nil {
 		return nil, err
@@ -43,7 +48,38 @@ func (t *MeetingService) FindByDate(date datatypes.Date) (*dto.TimeSlotDto, erro
 	}, nil
 }
 
-func (t *MeetingService) Create(timeslot *dto.TimeSlotDto) (*dto.TimeSlotDto, error) {
+func (t *MeetingService) FindMeetingById(id uint64) (*dto.MeetingDTO, error) {
+	meeting, err := t.meetingRepository.FindById(id)
+	if err != nil {
+		return nil, err
+	}
+	return &dto.MeetingDTO{
+		ID:        meeting.ID,
+		StartTime: meeting.StartTime,
+		Duration:  meeting.Duration,
+		ClerkID:   meeting.ClerkID,
+		UserID:    meeting.UserID,
+		Username:  meeting.User.Username,
+	}, nil
+
+}
+func (t *MeetingService) FindMeetingBySlotId(slotId uint64) (*dto.MeetingDTO, error) {
+	meeting, err := t.meetingRepository.FindBySlotId(slotId)
+	if err != nil {
+		return nil, err
+	}
+	return &dto.MeetingDTO{
+		ID:        meeting.ID,
+		StartTime: meeting.StartTime,
+		Duration:  meeting.Duration,
+		ClerkID:   meeting.ClerkID,
+		UserID:    meeting.UserID,
+		Username:  meeting.User.Username,
+	}, nil
+
+}
+
+func (t *MeetingService) CreateTimeSlot(timeslot *dto.TimeSlotDto) (*dto.TimeSlotDto, error) {
 	slotsJson, err := json.Marshal(timeslot.Slots)
 	if err != nil {
 		return nil, err
@@ -59,16 +95,38 @@ func (t *MeetingService) Create(timeslot *dto.TimeSlotDto) (*dto.TimeSlotDto, er
 	}
 	return timeslot, nil
 }
+
+func (t *MeetingService) CreateMeeting(meetingDto *dto.MeetingDTO) (*dto.MeetingDTO, error) {
+	meeting := model.Meeting{
+		StartTime: meetingDto.StartTime,
+		Duration:  meetingDto.Duration,
+		ClerkID:   meetingDto.ClerkID,
+		UserID:    meetingDto.UserID,
+	}
+	_, err := t.meetingRepository.Create(&meeting)
+	if err != nil {
+		return nil, err
+	}
+	return &dto.MeetingDTO{
+		ID:        meeting.ID,
+		StartTime: meeting.StartTime,
+		Duration:  meeting.Duration,
+		ClerkID:   meeting.ClerkID,
+		UserID:    meeting.UserID,
+		Username:  meeting.User.Username,
+	}, nil
+
+}
 func (t *MeetingService) CreateOrUpdate(update *dto.UpdateTimeSlotDto) (*dto.TimeSlotDto, error) {
 	timeslot, err := t.slotRepository.FindByDate(update.Date)
 	if timeslot != nil { //update
-		var slots [15]bool
+		var slots [15]uint64
 		err = json.Unmarshal(timeslot.Slots, &slots)
 		if err != nil {
 			return nil, err
 		}
 		for _, slot := range update.Occupied {
-			slots[slot] = false
+			slots[slot] = update.MeetingId
 		}
 		slotsJson, err := json.Marshal(slots)
 		if err != nil {
@@ -87,15 +145,15 @@ func (t *MeetingService) CreateOrUpdate(update *dto.UpdateTimeSlotDto) (*dto.Tim
 		}, nil
 
 	} else { //create new
-		boolArray := make([]bool, 15)
+		emptySlot := make([]uint64, 15)
 
-		for i := range boolArray {
-			boolArray[i] = true
+		for i := range emptySlot {
+			emptySlot[i] = 0
 		}
 		for i := range update.Occupied {
-			boolArray[i] = false
+			emptySlot[i] = update.MeetingId
 		}
-		slotsJson, err := json.Marshal(boolArray)
+		slotsJson, err := json.Marshal(emptySlot)
 		if err != nil {
 			return nil, err
 		}
@@ -110,7 +168,7 @@ func (t *MeetingService) CreateOrUpdate(update *dto.UpdateTimeSlotDto) (*dto.Tim
 		}
 		return &dto.TimeSlotDto{
 			Date:    newSlot.Date,
-			Slots:   [15]bool(boolArray),
+			Slots:   [15]uint64(emptySlot),
 			ClerkId: newSlot.Clerk.Id,
 			Id:      newSlot.Id,
 		}, nil

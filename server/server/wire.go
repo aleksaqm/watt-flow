@@ -49,6 +49,6 @@ func InitDeps(env *config.Environment) *Server {
 		repository.NewDeviceStatusRepository, deviceStatusServiceSet, handler.NewDeviceStatusHandler,
 		repository.NewAddressRepository, addressServiceSet, handler.NewAddressHandler,
 		repository.NewCityRepository, cityServiceSet, handler.NewCityHandler,
-		repository.NewTimeSlotRepository, meetingServiceSet, handler.NewMeetingHandler, NewServer)
+		repository.NewTimeSlotRepository, repository.NewMeetingRepository, meetingServiceSet, handler.NewMeetingHandler, NewServer)
 	return &Server{}
 }

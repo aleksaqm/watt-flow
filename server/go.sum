@@ -250,4 +250,6 @@ gorm.io/driver/postgres v1.5.11/go.mod h1:DX3GReXH+3FPWGrrgffdvCk3DQ1dwDPdmbenSk
 gorm.io/gorm v1.25.7/go.mod h1:hbnx/Oo0ChWMn1BIhpy1oYozzpM15i4YPuHDmfYtwg8=
 gorm.io/gorm v1.25.12 h1:I0u8i2hWQItBq1WfE0o2+WuL9+8L21K9e2HHSTE/0f8=
 gorm.io/gorm v1.25.12/go.mod h1:xh7N7RHfYlNc5EmcI/El95gXusucDrQnHXe0+CgWcLQ=
+gorm.io/plugin/optimisticlock v1.1.3 h1:uFK8zz+Ln6ju3vGkTd1LY3xR2VBmMxjdU12KBb58PBA=
+gorm.io/plugin/optimisticlock v1.1.3/go.mod h1:S+MH7qnHGQHxDBc9phjgN+DpNPn/qESd1q69fA3dtkg=
 nullprogram.com/x/optparse v1.0.0/go.mod h1:KdyPE+Igbe0jQUrVfMqDMeJQIJZEuyV7pjYmp6pbG50=

@@ -17,7 +17,8 @@ func (r MeetingRoute) Register(server *server.Server) {
 
 	api := r.engine.Group("/api")
 	{
-		api.PUT("/timeslot", authMid.RoleMiddleware([]string{"Clerk", "Regular"}), server.MeetingHandler.CreateOrUpdateTimeSlot)
+		api.POST("/meeting", authMid.RoleMiddleware([]string{"Clerk", "Regular"}), server.MeetingHandler.CreateNewMeeting)
+		api.GET("/meeting/:id", authMid.RoleMiddleware([]string{"Clerk", "Regular"}), server.MeetingHandler.GetMeetingById)
 		api.GET("/timeslot", authMid.RoleMiddleware([]string{"Clerk", "Regular"}), server.MeetingHandler.GetSlotById)
 	}
 }

@@ -2,6 +2,7 @@ package handler
 
 import (
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 	"watt-flow/dto"
@@ -46,6 +47,24 @@ func (h MeetingHandler) GetSlotById(c *gin.Context) {
 		return
 	}
 	c.JSON(200, gin.H{"data": data})
+
+}
+
+func (h MeetingHandler) GetMeetingById(c *gin.Context) {
+	id := c.Param("id")
+	meetingId, err := strconv.ParseUint(id, 10, 64)
+	if err != nil {
+		h.logger.Error(err)
+		c.JSON(400, gin.H{"error": "Invalid meeting ID"})
+		return
+	}
+	data, err := h.service.FindMeetingById(meetingId)
+	if err != nil {
+		h.logger.Error(err)
+		c.JSON(404, gin.H{"error": "meeting not found"})
+		return
+	}
+	c.JSON(200, gin.H{"data": data})
 }
 
 func (h MeetingHandler) CreateSlot(c *gin.Context) {
@@ -56,7 +75,7 @@ func (h MeetingHandler) CreateSlot(c *gin.Context) {
 		return
 	}
 
-	data, err := h.service.Create(&timeslotDto)
+	data, err := h.service.CreateTimeSlot(&timeslotDto)
 	if err != nil {
 		h.logger.Error(err)
 		c.JSON(500, gin.H{"error": "Failed to create timeslot"})
@@ -64,19 +83,31 @@ func (h MeetingHandler) CreateSlot(c *gin.Context) {
 	}
 	c.JSON(201, gin.H{"data": data})
 }
-func (h MeetingHandler) CreateOrUpdateTimeSlot(c *gin.Context) {
-	var timeslotDto dto.UpdateTimeSlotDto
-	if err := c.BindJSON(&timeslotDto); err != nil {
+
+func (h MeetingHandler) CreateNewMeeting(c *gin.Context) {
+	var meeting dto.NewMeetingDTO
+	if err := c.BindJSON(&meeting); err != nil {
 		h.logger.Error(err)
-		c.JSON(400, gin.H{"error": "Invalid timeslot data"})
+		c.JSON(400, gin.H{"error": "Invalid meeting data"})
+		return
+	}
+	timeslotDto := meeting.TimeSlot
+	meetingDto := meeting.Meeting
+
+	newMeeting, err := h.service.CreateMeeting(&meetingDto)
+	if err != nil {
+		h.logger.Error(err)
+		c.JSON(500, gin.H{"error": "Failed to create meeting"})
 		return
 	}
 
-	data, err := h.service.CreateOrUpdate(&timeslotDto)
+	timeslotDto.MeetingId = newMeeting.ID
+	_, err = h.service.CreateOrUpdate(&timeslotDto)
 	if err != nil {
 		h.logger.Error(err)
-		c.JSON(500, gin.H{"error": "Failed to update timeslot"})
+		c.JSON(500, gin.H{"error": "Failed to create or update timeslot"})
 		return
 	}
-	c.JSON(201, gin.H{"data": data})
+
+	c.JSON(201, gin.H{"data": newMeeting})
 }

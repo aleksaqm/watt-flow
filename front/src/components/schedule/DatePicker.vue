@@ -5,17 +5,15 @@ import { computed, onMounted, type Ref, ref, watch } from 'vue'
 import TimeSlot from './TimeSlot.vue';
 import axios from 'axios';
 import { useUserStore } from '@/stores/user';
-import type { boolean } from 'zod';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/shad/components/ui/dialog'
 import NewMeetingFrom from './NewMeetingForm.vue';
+import { useToast } from '@/shad/components/ui/toast';
+import Toaster from '@/shad/components/ui/toast/Toaster.vue';
 
 const userStore = useUserStore()
 
@@ -26,7 +24,7 @@ interface TimeSlot {
   Id?: number
 }
 
-const emit = defineEmits(['meeting-slot-id'])
+const emit = defineEmits(['meeting-id'])
 
 const dateValue = ref(today(getLocalTimeZone())) as Ref<DateValue>
 const hourValue = ref(0)
@@ -60,7 +58,7 @@ const fetchTimeTable = async (date: string) => {
   try {
     const response = await axios.get("/api/timeslot", { params: { date: date } })
     for (let i = 0; i < 15; i++) {
-      slots.value[i] = { ...slots.value[i], isAvailable: response.data.data.slots[i], past: isPast.value }
+      slots.value[i] = { ...slots.value[i], meetingId: response.data.data.slots[i], past: isPast.value, id: response.data.data.id }
     }
 
 
@@ -68,17 +66,12 @@ const fetchTimeTable = async (date: string) => {
     if (error.status == 404) {
       console.log(isPast.value)
       if (isPast.value) {
-        slots.value = generateSlots(true, true)
+        slots.value = generateSlots()
         return
       } else {
-        slots.value = generateSlots(true)
-      } // date is before
-      //const response = await createNewSlot(date)
-      // for (let i = 0; i < 15; i++) {
-      //   slots.value[i] = { ...slots.value[i], isAvailable: response[i] }
-      // }
+        slots.value = generateSlots()
+      }
     } else {
-
       console.log("Error fetching timetable", error)
     }
 
@@ -100,8 +93,8 @@ const fetchTimeTable = async (date: string) => {
 const openSlot = async (slot: any) => {
   if (dateValue.value == undefined)
     return
-  if (!slot.isAvailable) {
-    emit('meeting-slot-id', slot.id)
+  if (slot.meetingId != 0) {
+    emit('meeting-id', slot.meetingId)
   } else {
     if (!slot.past) {
       isDialogOpen.value = true
@@ -112,7 +105,7 @@ const openSlot = async (slot: any) => {
       let last = 30;
       console.log(slot.number)
       for (let i = slot.number + 1; i < 15; i++) {
-        if (slots.value[i].isAvailable && i != 7 && last != 180) {
+        if (slots.value[i].meetingId == 0 && i != 7 && last != 180) {
           last += 30
           availableDuration.value.push(last)
         } else {
@@ -124,13 +117,14 @@ const openSlot = async (slot: any) => {
   }
 }
 
-const generateSlots = (available: boolean, past: boolean = false) => {
+const { toast } = useToast()
+const generateSlots = () => {
   const slots = [];
   let i = 0;
   for (let hour = 8; hour < 16; hour++) {
     for (let minute of [0, 30]) {
       if (hour === 12 && minute === 0) continue; // Skip 12:00 to 12:30
-      slots.push({ hour, minute, isAvailable: available, past: past, number: i });
+      slots.push({ hour, minute, meetingId: 0, past: isPast.value, number: i, id: -1 });
       i++;
     }
   }
@@ -146,8 +140,16 @@ const splitIntoColumns = (slots: any, columnCount: any) => {
   return columns;
 };
 
-const slots = ref(generateSlots(true));
+const slots = ref(generateSlots());
 const availableSlots = computed(() => splitIntoColumns(slots.value, 3))
+const closeDialog = () => {
+  updateDialog(false)
+  fetchTimeTable(dateValue.value.toString())
+  toast({
+    title: 'Creation Successful',
+    variant: 'default'
+  })
+}
 </script>
 
 <template>
@@ -162,7 +164,7 @@ const availableSlots = computed(() => splitIntoColumns(slots.value, 3))
       <div class="grid grid-cols-3 gap-4 border border-gray-200 p-10 rounded-md">
         <div v-for="(column, colIndex) in availableSlots" :key="colIndex" class="flex flex-col gap-4">
           <TimeSlot v-for="(slot, index) in column" :key="index" :startHour="slot.hour" :startMinute="slot.minute"
-            :isAvailable="slot.isAvailable" :past="slot.past" @click.prevent="openSlot(slot)" />
+            :isAvailable="slot.meetingId == 0" :past="slot.past" @click.prevent="openSlot(slot)" />
         </div>
       </div>
     </div>
@@ -173,9 +175,10 @@ const availableSlots = computed(() => splitIntoColumns(slots.value, 3))
         <DialogTitle>New meeting</DialogTitle>
       </DialogHeader>
       <NewMeetingFrom :clerk-id="userStore?.id" :date="dateValue" :hour="hourValue" :minute="minuteValue"
-        :available-duration="availableDuration" :slot-number="slotNumber">
+        :available-duration="availableDuration" :slot-number="slotNumber" @meeting-created="closeDialog">
       </NewMeetingFrom>
     </DialogContent>
   </Dialog>
 
+  <Toaster />
 </template>

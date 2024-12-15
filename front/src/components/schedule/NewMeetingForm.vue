@@ -59,21 +59,13 @@ const emit = defineEmits(['meetingCreated'])
 const loading = ref(false)
 
 
-const updateTimeSlot = async (date: string, occupiedIds: number[]) => {
-  try {
-
-    const slot = {
-      Date: date + "T00:00:00Z",
-      ClerkId: props.clerkId,
-      Occupied: occupiedIds,
-    }
-    const response = await axios.put("/api/timeslot", slot)
-    console.log(response.data)
-    return response.data.data.slots
-
-  } catch (error) {
-    console.log(error)
+const generateTimeslot = (date: string, occupiedIds: number[]) => {
+  const slot = {
+    Date: date + "T00:00:00Z",
+    ClerkId: props.clerkId,
+    Occupied: occupiedIds,
   }
+  return slot
 }
 
 const submitForm = async (formData: { username: string; duration: string; user_id: number }) => {
@@ -82,34 +74,33 @@ const submitForm = async (formData: { username: string; duration: string; user_i
   for (let i = props.slotNumber; i < props.slotNumber + slotSpan; i++) {
     occupiedIds.push(i)
   }
-  await updateTimeSlot(props.date.toString(), occupiedIds)
-  // try {
-  //   const data = {
-  //     user_id: formData.user_id,
-  //     duration: formData.duration,
-  //     clerk_id: props.clerkId,
-  //     start_time: new Date(),
-  //     time_slot_id: props.slotNumber
-  //   }
-  //   loading.value = true
-  //   const response = await axios.post(props.url, data)
-  //   loading.value = false
-  //   console.log('Response:', response.data)
-  //   emit('meetingCreated')
-  //   toast({
-  //     title: 'Creation Successful',
-  //     variant: 'default'
-  //   })
-  // } catch (error: any) {
-  //   loading.value = false
-  //   const errorMessage = error.response?.data?.error || 'Please check your information again and try again.'
-  //   console.error('Error:', error)
-  //   toast({
-  //     title: 'Creation Failed',
-  //     description: errorMessage,
-  //     variant: 'destructive'
-  //   })
-  // }
+  const slot = generateTimeslot(props.date.toString(), occupiedIds)
+  const meeting = {
+    user_id: formData.user_id,
+    duration: Number(formData.duration),
+    clerk_id: props.clerkId,
+    start_time: new Date(props.date.year, props.date.month - 1, props.date.day, props.hour, props.minute, 0),
+    time_slot_id: props.slotNumber
+  }
+  console.log("time: ---", meeting.start_time)
+  const data = { timeslot: slot, meeting: meeting }
+
+  try {
+    loading.value = true
+    const response = await axios.post("/api/meeting", data)
+    loading.value = false
+    console.log('Response:', response.data)
+    emit('meetingCreated')
+  } catch (error: any) {
+    loading.value = false
+    const errorMessage = error.response?.data?.error || 'Please check your information again and try again.'
+    console.error('Error:', error)
+    toast({
+      title: 'Creation Failed',
+      description: errorMessage,
+      variant: 'destructive'
+    })
+  }
 }
 
 const onSubmit = handleSubmit((values) => {

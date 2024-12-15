@@ -2,6 +2,7 @@ package model
 
 import (
 	"gorm.io/datatypes"
+	"gorm.io/plugin/optimisticlock"
 )
 
 type TimeSlot struct {
@@ -10,4 +11,5 @@ type TimeSlot struct {
 	ClerkID uint64         `json:"clerkId"`
 	Slots   datatypes.JSON `gorm:"type:jsonb;not null"`
 	Id      uint64         `json:"id" gorm:"primaryKey;autoIncrement"`
+	Version optimisticlock.Version
 }

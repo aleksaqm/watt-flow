@@ -1,4 +1,14 @@
 <script setup lang="ts">
+import { ref } from 'vue';
+
+const props = defineProps({
+  meeting: {
+    type: Object,
+    default: () => ({})
+  },
+})
+
+
 </script>
 
 <template>
@@ -7,19 +17,19 @@
     <div class="flex flex-col p-10 items-center justify-center border border-gray-199 rounded-sm w-full">
       <div class="info-member">
         <span class="info-name text-gray-800">Meeting with:</span>
-        <div class="info-value font-semibold">{{ "danilo" }}</div>
+        <div class="info-value font-semibold">{{ props.meeting?.User }}</div>
       </div>
       <div class="info-member">
         <span class="info-name text-gray-800">Date:</span>
-        <div class="info-value font-semibold">{{ "12-12-2022" }}</div>
+        <div class="info-value font-semibold">{{ props.meeting?.Date }}</div>
       </div>
       <div class="info-member">
         <span class="info-name text-gray-800">Time:</span>
-        <div class="info-value font-semibold">{{ "12:20" }}</div>
+        <div class="info-value font-semibold">{{ props.meeting?.Time }}</div>
       </div>
       <div class="info-member">
         <span class="info-name text-gray-800">Duration:</span>
-        <div class="info-value font-semibold">{{ "30 minutes" }}</div>
+        <div class="info-value font-semibold">{{ props.meeting?.Duration + " minutes" }}</div>
       </div>
 
     </div>
