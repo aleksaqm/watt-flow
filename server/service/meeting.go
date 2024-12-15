@@ -150,8 +150,8 @@ func (t *MeetingService) CreateOrUpdate(update *dto.UpdateTimeSlotDto) (*dto.Tim
 		for i := range emptySlot {
 			emptySlot[i] = 0
 		}
-		for i := range update.Occupied {
-			emptySlot[i] = update.MeetingId
+		for _, element := range update.Occupied {
+			emptySlot[element] = update.MeetingId
 		}
 		slotsJson, err := json.Marshal(emptySlot)
 		if err != nil {

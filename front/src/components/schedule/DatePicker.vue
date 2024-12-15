@@ -97,6 +97,7 @@ const openSlot = async (slot: any) => {
     emit('meeting-id', slot.meetingId)
   } else {
     if (!slot.past) {
+      console.log(slot.number)
       isDialogOpen.value = true
       hourValue.value = slot.hour
       minuteValue.value = slot.minute

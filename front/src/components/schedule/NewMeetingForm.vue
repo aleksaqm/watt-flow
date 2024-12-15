@@ -82,7 +82,6 @@ const submitForm = async (formData: { username: string; duration: string; user_i
     start_time: new Date(props.date.year, props.date.month - 1, props.date.day, props.hour, props.minute, 0),
     time_slot_id: props.slotNumber
   }
-  console.log("time: ---", meeting.start_time)
   const data = { timeslot: slot, meeting: meeting }
 
   try {
