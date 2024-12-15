@@ -22,10 +22,6 @@
         <div class="info-value font-semibold">{{ "30 minutes" }}</div>
       </div>
 
-      <div class="info-member">
-        <span class="info-name text-gray-800">Status:</span>
-        <div class="info-value font-semibold">{{ "Pending" }}</div>
-      </div>
     </div>
   </div>
 </template>

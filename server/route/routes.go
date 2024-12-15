@@ -1,8 +1,9 @@
 package route
 
 import (
-	"github.com/gin-gonic/gin"
 	"watt-flow/server"
+
+	"github.com/gin-gonic/gin"
 )
 
 type Routes []Route
@@ -25,4 +26,5 @@ func RegisterRoutes(
 	NewAdminRoute(engine).Register(server)
 	NewPermissionRoute(engine).Register(server)
 	NewCityRoute(engine).Register(server)
+	NewMeetingRoute(engine).Register(server)
 }

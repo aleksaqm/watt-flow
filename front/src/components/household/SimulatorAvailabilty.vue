@@ -128,7 +128,7 @@ const isConnectedToWs = ref(false)
 const connectToWebSocket = async () => {
   const authToken = localStorage.getItem("authToken")
   if (authToken != null) {
-    ws = new WebSocket(serverUrl, authToken)
+    ws = new WebSocket(serverUrl, [authToken, "token"])
     ws.addEventListener("open", (event) => { console.log("Connected to ws!"); isConnectedToWs.value = true })
     ws.addEventListener("message", (event) => handleStatusUpdate(event))
     ws.addEventListener("error", (event) => console.log(event))

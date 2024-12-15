@@ -39,10 +39,13 @@ func InitDeps(env *config.Environment) *Server {
 	addressRepository := repository.NewAddressRepository(database, logger)
 	addressService := service.NewAddressService(addressRepository)
 	addressHandler := handler.NewAddressHandler(addressService, logger)
+	timeSlotRepository := repository.NewTimeSlotRepository(database, logger)
+	meetingService := service.NewMeetingService(timeSlotRepository)
+	meetingHandler := handler.NewMeetingHandler(meetingService, logger)
 	cityRepository := repository.NewCityRepository(database, logger)
 	cityService := service.NewCityService(cityRepository)
 	cityHandler := handler.NewCityHandler(cityService, logger)
-	server := NewServer(logger, userService, authService, restartService, userHandler, propertyService, propertyHandler, householdService, householdHandler, deviceStatusService, deviceStatusHandler, addressService, addressHandler, cityService, cityHandler, database)
+	server := NewServer(logger, userService, authService, restartService, userHandler, propertyService, propertyHandler, householdService, householdHandler, deviceStatusService, deviceStatusHandler, addressService, addressHandler, meetingService, meetingHandler, cityService, cityHandler, database)
 	return server
 }
 
@@ -59,3 +62,5 @@ var deviceStatusServiceSet = wire.NewSet(service.NewDeviceStatusService, wire.Bi
 var addressServiceSet = wire.NewSet(service.NewAddressService, wire.Bind(new(service.IAddressService), new(*service.AddressService)))
 
 var cityServiceSet = wire.NewSet(service.NewCityService, wire.Bind(new(service.ICityService), new(*service.CityService)))
+
+var meetingServiceSet = wire.NewSet(service.NewMeetingService, wire.Bind(new(service.IMeetingService), new(*service.MeetingService)))
