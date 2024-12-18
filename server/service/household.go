@@ -2,12 +2,11 @@ package service
 
 import (
 	"fmt"
+	"gorm.io/gorm"
 	"log"
 	"watt-flow/dto"
 	"watt-flow/model"
 	"watt-flow/repository"
-
-	"gorm.io/gorm"
 )
 
 type IHouseholdService interface {
@@ -22,12 +21,14 @@ type IHouseholdService interface {
 }
 
 type HouseholdService struct {
-	repository *repository.HouseholdRepository
+	repository          *repository.HouseholdRepository
+	ownershipRepository *repository.OwnershipRepository
 }
 
-func NewHouseholdService(repository *repository.HouseholdRepository) *HouseholdService {
+func NewHouseholdService(repository *repository.HouseholdRepository, ownershipRepository *repository.OwnershipRepository) *HouseholdService {
 	return &HouseholdService{
-		repository: repository,
+		repository:          repository,
+		ownershipRepository: ownershipRepository,
 	}
 }
 

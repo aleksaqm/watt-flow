@@ -28,6 +28,6 @@ func (m CorsMiddleware) Register() {
 			//AllowOriginFunc:  func(origin string) bool { return true }, // here origins need to be configured
 			AllowHeaders: []string{"*"},
 			//AllowHeaders:     []string{"Content-Type", "Authorization"},
-			AllowMethods: []string{"GET", "POST", "PUT", "HEAD", "OPTIONS"},
+			AllowMethods: []string{"GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"},
 		}))
 }

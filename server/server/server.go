@@ -15,6 +15,8 @@ type Server struct {
 	propertyService     service.IPropertyService
 	HouseholdHandler    *handler.HouseholdHandler
 	householdService    service.IHouseholdService
+	OwnershipHandler    *handler.OwnershipHandler
+	ownershipService    service.IOwnershipService
 	DeviceStatusHandler *handler.DeviceStatusHandler
 	deviceStatusService service.IDeviceStatusService
 	AddressHandler      *handler.AddressHandler
@@ -29,6 +31,7 @@ type Server struct {
 func NewServer(logger util.Logger, userService service.IUserService, authService *service.AuthService, restartService *service.RestartService, userHandler *handler.UserHandler,
 	propertyService service.IPropertyService, propertyHandler *handler.PropertyHandler,
 	householdService service.IHouseholdService, householdHandler *handler.HouseholdHandler,
+	ownershipService service.IOwnershipService, ownershipHandler *handler.OwnershipHandler,
 	deviceStatusService service.IDeviceStatusService, deviceStatusHandler *handler.DeviceStatusHandler,
 	addressService service.IAddressService, addressHandler *handler.AddressHandler,
 	cityService service.ICityService, cityHandler *handler.CityHandler, db db.Database) *Server {
@@ -42,6 +45,8 @@ func NewServer(logger util.Logger, userService service.IUserService, authService
 		propertyService:     propertyService,
 		HouseholdHandler:    householdHandler,
 		householdService:    householdService,
+		OwnershipHandler:    ownershipHandler,
+		ownershipService:    ownershipService,
 		DeviceStatusHandler: deviceStatusHandler,
 		deviceStatusService: deviceStatusService,
 		addressService:      addressService,

@@ -3,7 +3,6 @@ package repository
 import (
 	"errors"
 	"fmt"
-	"log"
 	"watt-flow/db"
 	"watt-flow/dto"
 	"watt-flow/model"
@@ -65,7 +64,13 @@ func (repository *HouseholdRepository) Query(params *dto.HouseholdQueryParams) (
 	baseQuery := repository.Database.Model(&model.Household{})
 
 	baseQuery = baseQuery.Joins("JOIN properties ON properties.id = households.property_id")
-	log.Println(baseQuery)
+
+	repository.Logger.Info("AAAAAAA")
+	repository.Logger.Info(params.Search.WithoutOwner)
+
+	if params.Search.WithoutOwner {
+		baseQuery = baseQuery.Where("households.status = ?", 2)
+	}
 
 	if params.Search.City != "" {
 		baseQuery = baseQuery.Where("city ILIKE ?", "%"+params.Search.City+"%")
@@ -146,5 +151,18 @@ func (repository *HouseholdRepository) AcceptHouseholds(tx *gorm.DB, propertyID 
 		return err
 	}
 
+	return nil
+}
+
+func (repository *HouseholdRepository) AddOwnerToHousehold(tx *gorm.DB, householdId uint64, ownerId uint64) error {
+	err := tx.Model(&model.Household{}).
+		Where("id = ?", householdId).
+		Update("owner_id", ownerId).
+		Update("status", 1).
+		Error
+	if err != nil {
+		repository.Logger.Error("Error updating household owner", err)
+		return err
+	}
 	return nil
 }

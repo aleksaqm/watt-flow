@@ -14,6 +14,7 @@ import AdminPropertyRequestsView from '@/views/property/AdminPropertyRequestsVie
 import OwnersPropertyRequestsView from '@/views/property/OwnersPropertyRequestsView.vue'
 import { useUserStore } from '@/stores/user'
 import { authGuard } from '@/guards/AuthGuard'
+import OwnershipRequestsView from '@/views/household/OwnershipRequestsView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -79,6 +80,12 @@ const router = createRouter({
       path: '/profile',
       name: 'profile',
       component: UserProfileView,
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/ownership/requests',
+      name: 'ownership-requests',
+      component: OwnershipRequestsView,
       meta: { requiresAuth: true }
     },
     {

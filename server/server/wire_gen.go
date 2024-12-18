@@ -28,10 +28,13 @@ func InitDeps(env *config.Environment) *Server {
 	userHandler := handler.NewUserHandler(userService, logger)
 	propertyRepository := repository.NewPropertyRepository(database, logger)
 	householdRepository := repository.NewHouseholdRepository(database, logger)
-	householdService := service.NewHouseholdService(householdRepository)
+	ownershipRepository := repository.NewOwnershipRepository(database, logger)
+	householdService := service.NewHouseholdService(householdRepository, ownershipRepository)
 	propertyService := service.NewPropertyService(propertyRepository, householdService)
 	propertyHandler := handler.NewPropertyHandler(propertyService, logger)
 	householdHandler := handler.NewHouseholdHandler(householdService, logger)
+	ownershipService := service.NewOwnershipService(householdRepository, ownershipRepository)
+	ownershipHandler := handler.NewOwnershipHandler(ownershipService, logger)
 	deviceStatusRepository := repository.NewDeviceStatusRepository(database, logger)
 	influxQueryHelper := util.NewInfluxQueryHelper(env)
 	deviceStatusService := service.NewDeviceStatusService(deviceStatusRepository, influxQueryHelper)
@@ -42,7 +45,7 @@ func InitDeps(env *config.Environment) *Server {
 	cityRepository := repository.NewCityRepository(database, logger)
 	cityService := service.NewCityService(cityRepository)
 	cityHandler := handler.NewCityHandler(cityService, logger)
-	server := NewServer(logger, userService, authService, restartService, userHandler, propertyService, propertyHandler, householdService, householdHandler, deviceStatusService, deviceStatusHandler, addressService, addressHandler, cityService, cityHandler, database)
+	server := NewServer(logger, userService, authService, restartService, userHandler, propertyService, propertyHandler, householdService, householdHandler, ownershipService, ownershipHandler, deviceStatusService, deviceStatusHandler, addressService, addressHandler, cityService, cityHandler, database)
 	return server
 }
 
@@ -53,6 +56,8 @@ var userServiceSet = wire.NewSet(service.NewUserService, wire.Bind(new(service.I
 var propertyServiceSet = wire.NewSet(service.NewPropertyService, wire.Bind(new(service.IPropertyService), new(*service.PropertyService)))
 
 var householdServiceSet = wire.NewSet(service.NewHouseholdService, wire.Bind(new(service.IHouseholdService), new(*service.HouseholdService)))
+
+var ownershipServiceSet = wire.NewSet(service.NewOwnershipService, wire.Bind(new(service.IOwnershipService), new(*service.OwnershipService)))
 
 var deviceStatusServiceSet = wire.NewSet(service.NewDeviceStatusService, wire.Bind(new(service.IDeviceStatusService), new(*service.DeviceStatusService)))
 
