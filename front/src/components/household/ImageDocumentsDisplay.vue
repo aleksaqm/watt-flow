@@ -6,7 +6,6 @@ import { computed, onBeforeMount, onMounted, ref } from 'vue'
 import { watchOnce } from '@vueuse/core';
 import Button from '@/shad/components/ui/button/Button.vue';
 import axios from 'axios';
-import { omit } from 'node_modules/radix-vue/dist/shared';
 
 const props = defineProps<{ images: string[]; documents: string[] }>()
 const api = ref<CarouselApi>()
@@ -38,30 +37,30 @@ watchOnce(api, (api) => {
   })
 })
 
-async function getDocs(){
-    try {
-        for (let index = 0; index < imageSources.value.length; index++) {
-            const response = await axios.get(imageSources.value[index], { responseType: 'blob' });
-            const blob = new Blob([response.data], { type: response.headers['content-type'] });
-            images.value.push(URL.createObjectURL(blob));
-        }
-        for (let index = 0; index < documentSources.value.length; index++) {
-            const response2 = await axios.get(documentSources.value[index], { responseType: 'blob' });
-            const blob = new Blob([response2.data], { type: response2.headers['content-type'] });
-            documents.value.push(URL.createObjectURL(blob))
-        }
-    } catch (error) {
-        console.error("Fail")
+async function getDocs() {
+  try {
+    for (let index = 0; index < imageSources.value.length; index++) {
+      const response = await axios.get(imageSources.value[index], { responseType: 'blob' });
+      const blob = new Blob([response.data], { type: response.headers['content-type'] });
+      images.value.push(URL.createObjectURL(blob));
     }
+    for (let index = 0; index < documentSources.value.length; index++) {
+      const response2 = await axios.get(documentSources.value[index], { responseType: 'blob' });
+      const blob = new Blob([response2.data], { type: response2.headers['content-type'] });
+      documents.value.push(URL.createObjectURL(blob))
+    }
+  } catch (error) {
+    console.error("Fail")
+  }
 }
 
 const openFile = (url: string) => {
   window.open(url, '_blank')
 }
 
-onBeforeMount(async ()=>{
-    await getDocs()
-    isLoaded.value = true
+onBeforeMount(async () => {
+  await getDocs()
+  isLoaded.value = true
 })
 </script>
 
@@ -75,7 +74,8 @@ onBeforeMount(async ()=>{
           <div class="p-1">
             <Card>
               <CardContent class="flex aspect-square items-center justify-center p-6">
-                <img :src="src" alt="Carousel Image" class="object-cover w-full h-full rounded-md" @click="openFile(src)" />
+                <img :src="src" alt="Carousel Image" class="object-cover w-full h-full rounded-md"
+                  @click="openFile(src)" />
               </CardContent>
             </Card>
           </div>

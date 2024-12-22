@@ -49,7 +49,7 @@ func InitDeps(env *config.Environment) *Server {
 	cityRepository := repository.NewCityRepository(database, logger)
 	cityService := service.NewCityService(cityRepository)
 	cityHandler := handler.NewCityHandler(cityService, logger)
-	server := NewServer(logger, userService, authService, restartService, userHandler, propertyService, propertyHandler, householdService, householdHandler, deviceStatusService, deviceStatusHandler, addressService, addressHandler, meetingService, meetingHandler, cityService, cityHandler, database)
+	server := NewServer(logger, userService, authService, restartService, userHandler, propertyService, propertyHandler, householdService, householdHandler, ownershipService, ownershipHandler, deviceStatusService, deviceStatusHandler, addressService, addressHandler, meetingService, meetingHandler, cityService, cityHandler, database)
 	return server
 }
 
