@@ -1,9 +1,10 @@
 package route
 
 import (
-	"github.com/gin-gonic/gin"
 	"watt-flow/middleware"
 	"watt-flow/server"
+
+	"github.com/gin-gonic/gin"
 )
 
 type PermissionRoute struct {

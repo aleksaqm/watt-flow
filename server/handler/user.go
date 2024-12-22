@@ -1,11 +1,12 @@
 package handler
 
 import (
-	"github.com/gin-gonic/gin"
 	"strconv"
 	"watt-flow/dto"
 	"watt-flow/service"
 	"watt-flow/util"
+
+	"github.com/gin-gonic/gin"
 )
 
 type UserHandler struct {
@@ -67,6 +68,36 @@ func (u *UserHandler) GetById(c *gin.Context) {
 	c.JSON(200, gin.H{"data": data})
 }
 
+func (u *UserHandler) Suspend(c *gin.Context) {
+	id := c.Param("id")
+	userId, err := strconv.ParseUint(id, 10, 64)
+	if err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
+		return
+	}
+	err = u.service.Suspend(userId)
+	if err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(200, gin.H{"data": "success"})
+}
+
+func (u *UserHandler) Unsuspend(c *gin.Context) {
+	id := c.Param("id")
+	userId, err := strconv.ParseUint(id, 10, 64)
+	if err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
+		return
+	}
+	err = u.service.Unsuspend(userId)
+	if err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(200, gin.H{"data": "success"})
+}
+
 func (u *UserHandler) Create(c *gin.Context) {
 	var user dto.UserCreateDto
 	if err := c.BindJSON(&user); err != nil {
@@ -75,6 +106,61 @@ func (u *UserHandler) Create(c *gin.Context) {
 		return
 	}
 	data, err := u.service.Create(&user)
+	if err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
+	} else {
+		c.JSON(200, gin.H{"data": data})
+	}
+}
+
+func (h *UserHandler) Query(c *gin.Context) {
+	page := c.DefaultQuery("page", "1")
+	pageSize := c.DefaultQuery("pageSize", "10")
+	sortBy := c.DefaultQuery("sortBy", "id")
+	sortOrder := c.DefaultQuery("sortOrder", "asc")
+
+	pageInt, err := strconv.Atoi(page)
+	if err != nil {
+		c.JSON(400, gin.H{"error": "Invalid page parameter"})
+		return
+	}
+	pageSizeInt, err := strconv.Atoi(pageSize)
+	if err != nil {
+		c.JSON(400, gin.H{"error": "Invalid pageSize parameter"})
+		return
+	}
+
+	var searchParams dto.UserSearchParams
+	if err := c.BindJSON(&searchParams); err != nil {
+		c.JSON(400, gin.H{"error": "Invalid search parameter"})
+		return
+	}
+
+	params := dto.UserQueryParams{
+		Page:      pageInt,
+		PageSize:  pageSizeInt,
+		SortBy:    sortBy,
+		SortOrder: sortOrder,
+		Search:    searchParams,
+	}
+	h.logger.Info(params)
+	users, total, err := h.service.Query(&params)
+	if err != nil {
+		h.logger.Error(err)
+		c.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(200, gin.H{"users": users, "total": total})
+}
+
+func (u *UserHandler) RegisterClerk(c *gin.Context) {
+	var clerk dto.ClerkRegisterDto
+	if err := c.BindJSON(&clerk); err != nil {
+		u.logger.Error(err)
+		c.JSON(400, gin.H{"error": err.Error()})
+		return
+	}
+	data, err := u.service.RegisterClerk(&clerk)
 	if err != nil {
 		c.JSON(400, gin.H{"error": err.Error()})
 	} else {

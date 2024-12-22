@@ -20,24 +20,14 @@ import {
   PaginationNext,
   PaginationPrev,
 } from '@/shad/components/ui/pagination'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/shad/components/ui/dialog'
 import Input from '@/shad/components/ui/input/Input.vue';
 import router from '@/router'
-import type { Household } from './household'
-import { useUserStore } from '@/stores/user'
-import OwnershipRequestForm from '@/components/household/OwnershipRequestForm.vue'
+import type { Clerk } from './clerk'
+
 import { useToast } from '@/shad/components/ui/toast/use-toast'
 import Toaster from '@/shad/components/ui/toast/Toaster.vue';
 
-const { toast } = useToast()
+
 const props = defineProps({
   query: {
     type: Object,
@@ -48,28 +38,28 @@ const props = defineProps({
     default: 0
   }
 })
-const dialogKey = ref(0)
-
 
 // Watch for changes in triggerSearch to run fetch
 watch(() => props.triggerSearch, () => {
   pagination.value.page = 1
-  fetchHouseholds()
+  fetchClerks()
 })
-const households = ref<Household[]>([])
+const clerks = ref<Clerk[]>([])
 
 const pagination = ref({ page: 1, total: 0, perPage: 10 })
 
-const sortBy = ref("city")
+const { toast } = useToast()
+
+const sortBy = ref("username")
 const sortOrder = ref<{ [key: string]: "asc" | "desc" | "" }>({
-  city: "",
-  street: "",
-  number: "",
+  firstName: "",
+  lastName: "",
+  username: "",
   status: "",
 })
 const totalPages = computed(() => Math.ceil(pagination.value.total / pagination.value.perPage))
 
-async function fetchHouseholds() {
+async function fetchClerks() {
 
   try {
     const params = {
@@ -80,133 +70,106 @@ async function fetchHouseholds() {
     }
     console.log(props.query)
 
-    const response = await axios.post('/api/household/query', props.query, { params: params })
+    const response = await axios.post('/api/user/query', props.query, { params: params })
 
-    if (response.data && response.data.households) {
-      households.value = response.data.households.map((household: any) => mapToHousehold(household))
+    if (response.data && response.data.users) {
+      clerks.value = response.data.users.map((user: any) => mapToUser(user))
 
       pagination.value.total = response.data.total
     }
   } catch (error) {
-    console.error('Failed to fetch households:', error)
+    console.error('Failed to fetch clerks:', error)
   }
 }
 
-function mapToHousehold(data: any): Household {
-  if (data.status == 0) {
-    data.status = "Pending"
-  }
+function mapToUser(data: any): Clerk {
   return {
     id: data.id,
-    city: data.city,
-    street: data.street,
-    number: data.number,
-    status: data.status.toString(),
-    cadastral_number: data.cadastral_number,
-    floor: data.floor,
-    suite: data.suite,
+    firstName: data.firstName,
+    lastName: data.lastName,
+    username: data.username,
+    status: data.status,
   }
 }
 
 
 function onPageChange(page: number) {
   pagination.value.page = page
-  fetchHouseholds()
+  fetchClerks()
 }
 
 function onSortChange(field: string) {
   let temp = sortOrder.value[field]
-  sortOrder.value.city = ""
-  sortOrder.value.street = ""
-  sortOrder.value.number = ""
-  sortOrder.value.status = ""
+  sortOrder.value.firstName = ""
+  sortOrder.value.lastName = ""
+  sortOrder.value.username = ""
+  sortOrder.value.statsu = ""
   sortOrder.value[field] = temp === "asc" ? "desc" : "asc"
-  console.log(sortOrder.value)
   sortBy.value = field
-  fetchHouseholds()
+  fetchClerks()
 }
 
 function getButtonStyle(isSelected: boolean) {
   return isSelected ? ["bg-indigo-500"] : []
 }
 
-function formatDate(date: string): string {
-  const options: Intl.DateTimeFormatOptions = {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-  }
-  const dateObj = new Date(date)
-  return dateObj.toLocaleString('en-US', options)
+
+function viewClerk(id: number) {
+  router.push({ name: "clerk", params: { id: id } })
 }
 
-const userStore = useUserStore();
-const isAdmin = ref<boolean>(true)
-onMounted(()=>{
-  if (userStore.role === "Regular"){
-    isAdmin.value = false;
-  }
-})
+const changeAccountStatus = async (id: number, status: string) => {
+  try {
+    const action = status === "Active" ? 'suspend' : 'unsuspend'
+    const response = await axios.get('/api/user/' + action + '/' + id)
+    if (response.status == 200) {
+      if (action === 'suspend') {
+        toast({
+          title: 'Account suspended!',
+          description: 'Account is suspended and user will not be able to login!',
+          variant: 'default'
+        })
+      } else {
+        toast({
+          title: 'Account unsuspended!',
+          description: 'Account is unsuspended and user will be able to login!',
+          variant: 'default'
+        })
+      }
+      fetchClerks()
+    }
 
-function viewHousehold(id: number) {
-  if (isAdmin.value){
-    router.push({ name: "household", params: { id: id } })
-  }else{
-    console.log("Nothing");
+  } catch (error) {
+    console.error('Failed to fetch users:', error)
   }
-}
 
-function handleRequestSent(){
-  toast({
-      title: 'Request Sent Successfully',
-      variant: 'default'
-  })
-  dialogKey.value ++;
 }
 
 </script>
 
 <template>
 
-  <div class="p-7 flex flex-col bg-white shadow-lg">
-    
+  <div class="p-7 flex flex-col bg-white w-10/12 shadow-lg">
     <Table class="gap-5 items-center border rounded-2xl border-gray-300 shadow-gray-500 p-10 mb-10">
       <TableHeader>
         <TableRow>
-          <TableHead @click="onSortChange('city')" :orientation="sortOrder.city">City</TableHead>
-          <TableHead @click="onSortChange('street')" :orientation="sortOrder.street">Street</TableHead>
-          <TableHead @click="onSortChange('number')" :orientation="sortOrder.number">Number</TableHead>
+          <TableHead @click="onSortChange('firstName')" :orientation="sortOrder.firstName">First name</TableHead>
+          <TableHead @click="onSortChange('lastName')" :orientation="sortOrder.lastName">Last name</TableHead>
+          <TableHead @click="onSortChange('username')" :orientation="sortOrder.username">Username</TableHead>
           <TableHead @click="onSortChange('status')" :orientation="sortOrder.status">Status</TableHead>
-          <TableHead>Floor</TableHead>
-          <TableHead>Suite</TableHead>
-          <TableHead>C-Number</TableHead>
-          <TableHead v-if="!isAdmin">Ownership</TableHead>
+          <TableHead>Actions</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
-        <TableRow v-for="household in households" :key="household.id" @click="viewHousehold(household.id)">
-          <TableCell>{{ household.city }}</TableCell>
-          <TableCell>{{ household.street }}</TableCell>
-          <TableCell>{{ household.number }}</TableCell>
-          <TableCell>{{ household.status }}</TableCell>
-          <TableCell>{{ household.floor }}</TableCell>
-          <TableCell>{{ household.suite }}</TableCell>
-          <TableCell>{{ household.cadastral_number }}</TableCell>
-          <TableCell v-if="!isAdmin">
-            <Dialog :key="dialogKey">
-              <DialogTrigger>
-                <Button class="bg-indigo-500 hover:bg-gray-600">Ownership</Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Prove your ownership</DialogTitle>
-                </DialogHeader>
-                <OwnershipRequestForm :household="household.id" @requestSent="handleRequestSent"/>
-              </DialogContent>
-            </Dialog>
+        <TableRow v-for="clerk in clerks" :key="clerk.id" @click="viewClerk(clerk.id)">
+          <TableCell>{{ clerk.firstName }}</TableCell>
+          <TableCell>{{ clerk.lastName }}</TableCell>
+          <TableCell>{{ clerk.username }}</TableCell>
+          <TableCell>{{ clerk.status }}</TableCell>
+          <TableCell>
+            <Button class="bg-indigo-500 text-white mr-2 hover:bg-indigo-300"
+              @click.stop="changeAccountStatus(clerk.id, clerk.status)">{{ clerk.status === 'Active' ? 'Suspend' :
+                'Unsuspend' }}</Button>
           </TableCell>
         </TableRow>
       </TableBody>
