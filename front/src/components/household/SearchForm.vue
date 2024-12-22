@@ -8,21 +8,38 @@ import {
   FormItem,
   FormLabel,
 } from '@/shad/components/ui/form'
-import { ref } from 'vue';
+import { onMounted, ref } from 'vue';
+import { useUserStore } from '@/stores/user';
 
-
-const searchQuery = ref<{ City?: string; Street?: string; Number?: string; Id?: string }>({})
+const userStore = useUserStore();
+const searchQuery = ref<{ City?: string; Street?: string; Number?: string; Id?: string ; Withoutowner?: boolean}>({})
 const emit = defineEmits(['search'])
+const isAdmin = ref<boolean>(true)
 
 const onSubmit = () => {
+  if (!isAdmin.value){
+    searchQuery.value.Withoutowner = true;
+  }else{
+    searchQuery.value.Withoutowner = false;
+  }
+  console.log(searchQuery.value)
   emit('search', searchQuery.value)
 }
+
+onMounted(()=>{
+  if (userStore.role == "Regular"){
+    isAdmin.value = false;
+  }
+})
 
 </script>
 <template>
   <div>
-    <div class="w-full text-center my-10 text-xl">
+    <div v-if="isAdmin" class="w-full text-center my-10 text-xl">
       Search household
+    </div>
+    <div v-if="!isAdmin" class="w-full text-center my-10 text-xl">
+      Find your household 
     </div>
 
     <form class="w-full flex flex-wrap gap-5 items-center border rounded-2xl border-gray-300 shadow-gray-500 p-10">

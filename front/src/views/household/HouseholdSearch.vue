@@ -6,7 +6,7 @@ import { ref } from 'vue';
 
 
 const triggerSearch = ref(0)
-const searchQuery = ref<{ City?: string; Street?: string; Number?: string; Id?: string }>({})
+const searchQuery = ref<{ City?: string; Street?: string; Number?: string; Id?: string ; Withoutowner?: boolean}>({})
 const onSearch = (query: any) => {
   searchQuery.value = query
   triggerSearch.value++

@@ -1,10 +1,11 @@
 package dto
 
 type HouseholdSearchParams struct {
-	Street string `json:"street"`
-	Number string `json:"number"`
-	City   string `json:"city"`
-	Id     string `json:"id"`
+	Street       string `json:"street"`
+	Number       string `json:"number"`
+	City         string `json:"city"`
+	Id           string `json:"id"`
+	WithoutOwner bool   `json:"withoutowner"`
 }
 
 type HouseholdQueryParams struct {

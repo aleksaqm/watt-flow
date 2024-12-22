@@ -89,6 +89,7 @@ function onPageChange(newPage: number) {
 function getButtonStyle(isSelected: boolean) {
   return isSelected ? ["bg-indigo-500"] : []
 }
+
 </script>
 
 

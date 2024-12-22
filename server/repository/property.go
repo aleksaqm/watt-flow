@@ -76,7 +76,6 @@ func (repository *PropertyRepository) FindByAddress(city string, street string, 
 
 func (repository *PropertyRepository) AcceptProperty(tx *gorm.DB, id uint64) error {
 	const newPropertyStatus model.PropertyStatus = 2
-
 	err := tx.Model(&model.Property{}).
 		Where("id = ?", id).
 		Update("status", newPropertyStatus).

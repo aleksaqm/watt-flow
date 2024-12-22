@@ -18,7 +18,7 @@ func (r HouseholdRoute) Register(server *server.Server) {
 	api := r.engine.Group("/api").Use(authMid.Handler())
 	{
 		api.GET("/household/:id", authMid.RoleMiddleware([]string{"Admin", "Clerk", "Regular", "SuperAdmin"}), server.HouseholdHandler.GetById)
-		api.POST("/household/query", authMid.RoleMiddleware([]string{"Admin", "SuperAdmin"}), server.HouseholdHandler.Query)
+		api.POST("/household/query", authMid.RoleMiddleware([]string{"Admin", "SuperAdmin", "Regular"}), server.HouseholdHandler.Query)
 	}
 }
 

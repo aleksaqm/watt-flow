@@ -11,6 +11,7 @@ const householdId = computed(() => route.params.id)
 const household = ref<any | null>(null)
 const isLoading = ref(true)
 
+
 const fetchHousehold = async () => {
   try {
     isLoading.value = true
@@ -35,7 +36,7 @@ onMounted(() => {
   <main>
     <div class="w-10/12 h-screen wrapper">
       <HouseholdInfo v-if="!isLoading" :household="household"> </HouseholdInfo>
-      <SimulatorAvailabilty v-if="!isLoading" :device-id="household.device_address"></SimulatorAvailabilty>
+      <SimulatorAvailabilty v-if="!isLoading " :device-id="household.device_address"></SimulatorAvailabilty>
     </div>
   </main>
 </template>

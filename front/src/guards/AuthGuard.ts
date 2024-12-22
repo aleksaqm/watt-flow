@@ -4,10 +4,10 @@ import type { NavigationGuard } from 'vue-router';
 export const authGuard: NavigationGuard = async (to, from, next) => {
   const userStore = useUserStore();
   const authMap = {
-    "Admin": ['/household/info/:id', '/household/search', '/home', '/properties/requests-manage', '/manage/clerks', '/manage/clerks/new'],
-    "SuperAdmin": ['/manage/admins', '/household/info/:id', '/household/search', '/home', '/properties/requests-manage', '/manage/clerks', '/manage/clerks/new'],
+    "Admin": ['/household/info/:id', '/household/search', '/home', '/properties/requests-manage', '/manage/clerks', '/manage/clerks/new', '/ownership/requests'],
+    "SuperAdmin": ['/manage/admins', '/household/info/:id', '/household/search', '/home', '/properties/requests-manage', '/manage/clerks', '/manage/clerks/new', '/ownership/requests'],
     "Clerk": ["/home", "/clerk/schedule"],
-    "Regular": ['/profile', '/home', '/my-property-request', '/property-request']
+    "Regular": ['/profile', '/home', '/my-property-request', '/property-request', '/household/search','/ownership/requests']
   };
   const role = userStore.role;
   let allowedPaths: string[];
