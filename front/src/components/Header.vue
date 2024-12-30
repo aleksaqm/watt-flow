@@ -55,7 +55,7 @@ const menuItems = ref<MenuItem[]>([
     title: 'Schedule', href: '/schedule', roles: ['Clerk', 'Regular'], children: [
       { title: 'Meetings', href: '/clerk/schedule', description: 'Organize meetings', roles: ['Clerk'] },
       { title: 'New Meeting', href: '/regular/meeting', description: 'Crete new meeting', roles: ['Regular'] },
-      { title: 'Meetings', href: '/user/schedule', description: 'Schedule meetings', roles: ['Regular'] },
+      { title: 'Meetings', href: '/regular/schedule', description: 'Schedule meetings', roles: ['Regular'] },
     ],
   },
   {

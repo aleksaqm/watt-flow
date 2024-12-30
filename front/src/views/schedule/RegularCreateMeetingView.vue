@@ -121,7 +121,7 @@ const fetchUsers = async (searchTerm: string) => {
           </FormField>
         </div>
         
-      <DatePicker :user-id="values.user_id" class="w-full max-w-lg mt-10"></DatePicker>
+      <DatePicker :user-id="values.user_id" :username="values.username" class="w-full max-w-lg mt-10"></DatePicker>
     </div>
   </main>
 </template>

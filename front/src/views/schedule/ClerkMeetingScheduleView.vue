@@ -34,7 +34,7 @@ const userStore = useUserStore();
   <main>
     <div class="flex flex-col items-center justify-center ">
       <span class="text-xl m-10">My meetings</span>
-      <DatePicker :user-id="userStore.id" @meeting-id="updateMeeting"></DatePicker>
+      <DatePicker :user-id="userStore.id" :username="null" @meeting-id="updateMeeting"></DatePicker>
       <Meeting v-if="meeting.User" :meeting="meeting"></Meeting>
     </div>
   </main>

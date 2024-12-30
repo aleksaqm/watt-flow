@@ -98,6 +98,24 @@ func (h MeetingHandler) GetMeetingById(c *gin.Context) {
 	c.JSON(200, gin.H{"data": data})
 }
 
+func (h MeetingHandler) GetUsersMeetings(c *gin.Context) {
+	// TODO
+	id := c.Param("userId")
+	userId, err := strconv.ParseUint(id, 10, 64)
+	if err != nil {
+		h.logger.Error(err)
+		c.JSON(400, gin.H{"error": "Invalid meeting ID"})
+		return
+	}
+	data, err := h.service.FindMeetingById(userId)
+	if err != nil {
+		h.logger.Error(err)
+		c.JSON(404, gin.H{"error": "meeting not found"})
+		return
+	}
+	c.JSON(200, gin.H{"data": data})
+}
+
 func (h MeetingHandler) CreateSlot(c *gin.Context) {
 	var timeslotDto dto.TimeSlotDto
 	if err := c.BindJSON(&timeslotDto); err != nil {
