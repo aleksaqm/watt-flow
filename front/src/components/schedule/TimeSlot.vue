@@ -8,6 +8,7 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
+import { any, number } from "zod";
 
 // Props
 const props = defineProps({
@@ -27,6 +28,10 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  hasClerk: {
+    type: Boolean,
+    default: false,
+  }
 });
 
 const formattedTime = computed(() =>
@@ -34,20 +39,24 @@ const formattedTime = computed(() =>
 );
 
 const buttonFormat = () => {
-  if (!props.past) {
-    if (props.isAvailable) {
-      return 'text-gray-800 hover:bg-violet-400 hover:text-white'
+  if(props.hasClerk){
+    if (!props.past) {
+      if (props.isAvailable) {
+        return 'text-gray-800 hover:bg-violet-400 hover:text-white'
+      } else {
+        return 'bg-gray-200 text-gray-500 hover:bg-gray-100'
+      }
     } else {
-      return 'bg-gray-200 text-gray-500 hover:bg-gray-100'
+      if (props.isAvailable) {
+        return 'cursor-not-allowed bg-gray-100 hover:bg-gray-100'
+      } else {
+        return 'bg-gray-200 text-gray-500 hover:bg-violet-100'
+      }
     }
-  } else {
-    if (props.isAvailable) {
-      return 'cursor-not-allowed bg-gray-100 hover:bg-gray-100'
-    } else {
-      return 'bg-gray-200 text-gray-500 hover:bg-violet-100'
-    }
-
+  } else{
+    return 'cursor-not-allowed bg-gray-100 hover:bg-gray-100'
   }
+  
 }
 </script>
 

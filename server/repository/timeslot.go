@@ -43,6 +43,15 @@ func (repository *TimeSlotRepository) FindByDate(date datatypes.Date) (*model.Ti
 	return &timeslot, nil
 }
 
+func (repository *TimeSlotRepository) FindByDateAndClerkId(date datatypes.Date, clerkId uint64) (*model.TimeSlot, error) {
+	var timeslot model.TimeSlot
+	if err := repository.Database.Preload(clause.Associations).Where("date = ? AND clerk_id = ?", date, clerkId).First(&timeslot).Error; err != nil {
+		repository.Logger.Error("Error finding timeslot by ID", err)
+		return nil, err
+	}
+	return &timeslot, nil
+}
+
 func (repository *TimeSlotRepository) FindByDateAndClerkID(date datatypes.Date, clerkId uint64) (*model.TimeSlot, error) {
 	var timeslot model.TimeSlot
 	if err := repository.Database.Preload(clause.Associations).Where("date = ? AND clerk_id = ?", date, clerkId).First(&timeslot).Error; err != nil {

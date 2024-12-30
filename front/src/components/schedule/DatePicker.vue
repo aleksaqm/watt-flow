@@ -98,7 +98,7 @@ const fetchTimeTable = async (date: string, userId: number | null) => {
 }
 
 const openSlot = async (slot: any) => {
-  if (dateValue.value == undefined)
+  if (dateValue.value == undefined || props.userId == 0 || props.userId == null)
     return
   if (slot.meetingId != 0) {
     emit('meeting-id', slot.meetingId)
@@ -172,7 +172,7 @@ const closeDialog = () => {
       <div class="grid grid-cols-3 gap-4 border border-gray-200 p-10 rounded-md">
         <div v-for="(column, colIndex) in availableSlots" :key="colIndex" class="flex flex-col gap-4">
           <TimeSlot v-for="(slot, index) in column" :key="index" :startHour="slot.hour" :startMinute="slot.minute"
-            :isAvailable="slot.meetingId == 0" :past="slot.past" @click.prevent="openSlot(slot)" />
+            :isAvailable="slot.meetingId == 0" :hasClerk="props.userId != 0 && props.userId != null" :past="slot.past" @click.prevent="openSlot(slot)" />
         </div>
       </div>
     </div>

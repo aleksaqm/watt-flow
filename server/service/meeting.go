@@ -137,8 +137,8 @@ func (t *MeetingService) CreateMeeting(meetingDto *dto.MeetingDTO) (*dto.Meeting
 
 }
 func (t *MeetingService) CreateOrUpdate(update *dto.UpdateTimeSlotDto) (*dto.TimeSlotDto, error) {
-	timeslot, err := t.slotRepository.FindByDate(update.Date)
-	if timeslot != nil { //update
+	timeslot, err := t.slotRepository.FindByDateAndClerkId(update.Date, update.ClerkId) //changed
+	if timeslot != nil {                                                                //update
 		var slots [15]uint64
 		err = json.Unmarshal(timeslot.Slots, &slots)
 		if err != nil {
