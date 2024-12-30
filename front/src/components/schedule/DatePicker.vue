@@ -25,6 +25,7 @@ interface TimeSlot {
 }
 
 const emit = defineEmits(['meeting-id'])
+const props = defineProps<{ userId: number | null }>();
 
 const dateValue = ref(today(getLocalTimeZone())) as Ref<DateValue>
 const hourValue = ref(0)
@@ -44,23 +45,29 @@ const isPast = computed(() => {
   return dateValue.value.compare(today(getLocalTimeZone())) < 0
 })
 
+watch(() => props.userId, (newUserId) => {
+  if (newUserId !== null) {
+    console.log('User ID updated:', newUserId)
+    fetchTimeTable(dateValue.value.toString(), newUserId);
+  }
+});
+
 watch(dateValue, (newDate) => {
   if (newDate == undefined)
     newDate = today(getLocalTimeZone())
-  fetchTimeTable(newDate.toString().trim())
+  fetchTimeTable(newDate.toString().trim(), props.userId)
 })
 
 onMounted(() => {
-  fetchTimeTable(today(getLocalTimeZone()).toString())
+  fetchTimeTable(today(getLocalTimeZone()).toString(), props.userId)
 })
 
-const fetchTimeTable = async (date: string) => {
+const fetchTimeTable = async (date: string, userId: number | null) => {
   try {
-    const response = await axios.get("/api/timeslot", { params: { date: date } })
+    const response = await axios.get("/api/timeslot2", { params: { date: date, clerk_id: userId} })
     for (let i = 0; i < 15; i++) {
       slots.value[i] = { ...slots.value[i], meetingId: response.data.data.slots[i], past: isPast.value, id: response.data.data.id }
     }
-
 
   } catch (error: any) {
     if (error.status == 404) {
@@ -145,7 +152,7 @@ const slots = ref(generateSlots());
 const availableSlots = computed(() => splitIntoColumns(slots.value, 3))
 const closeDialog = () => {
   updateDialog(false)
-  fetchTimeTable(dateValue.value.toString())
+  fetchTimeTable(dateValue.value.toString(), props.userId)
   toast({
     title: 'Creation Successful',
     variant: 'default'

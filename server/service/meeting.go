@@ -11,6 +11,7 @@ import (
 
 type IMeetingService interface {
 	FindByDate(id datatypes.Date) (*dto.TimeSlotDto, error)
+	FindByDateAndClerkId(date datatypes.Date, clerkId uint64) (*dto.TimeSlotDto, error)
 	CreateTimeSlot(timeslot *dto.TimeSlotDto) (*dto.TimeSlotDto, error)
 	CreateOrUpdate(timeslot *dto.UpdateTimeSlotDto) (*dto.TimeSlotDto, error)
 	CreateMeeting(meetingDto *dto.MeetingDTO) (*dto.MeetingDTO, error)
@@ -32,6 +33,24 @@ func NewMeetingService(timeslotRepository *repository.TimeSlotRepository, meetin
 
 func (t *MeetingService) FindByDate(date datatypes.Date) (*dto.TimeSlotDto, error) {
 	timeslot, err := t.slotRepository.FindByDate(date)
+	if err != nil {
+		return nil, err
+	}
+	var slots [15]uint64
+	err = json.Unmarshal(timeslot.Slots, &slots)
+	if err != nil {
+		return nil, err
+	}
+	return &dto.TimeSlotDto{
+		Date:    timeslot.Date,
+		Slots:   slots,
+		ClerkId: timeslot.Clerk.Id,
+		Id:      timeslot.Id,
+	}, nil
+}
+
+func (t *MeetingService) FindByDateAndClerkId(date datatypes.Date, clerkId uint64) (*dto.TimeSlotDto, error) {
+	timeslot, err := t.slotRepository.FindByDateAndClerkID(date, clerkId)
 	if err != nil {
 		return nil, err
 	}
