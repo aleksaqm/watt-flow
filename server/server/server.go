@@ -25,6 +25,8 @@ type Server struct {
 	cityService         service.ICityService
 	RestartService      *service.RestartService
 	AuthService         *service.AuthService
+	MeetingService      service.IMeetingService
+	MeetingHandler      *handler.MeetingHandler
 	Db                  db.Database
 }
 
@@ -34,6 +36,7 @@ func NewServer(logger util.Logger, userService service.IUserService, authService
 	ownershipService service.IOwnershipService, ownershipHandler *handler.OwnershipHandler,
 	deviceStatusService service.IDeviceStatusService, deviceStatusHandler *handler.DeviceStatusHandler,
 	addressService service.IAddressService, addressHandler *handler.AddressHandler,
+	meetingService service.IMeetingService, meetingHandler *handler.MeetingHandler,
 	cityService service.ICityService, cityHandler *handler.CityHandler, db db.Database) *Server {
 	return &Server{
 		Logger:              logger,
@@ -53,6 +56,8 @@ func NewServer(logger util.Logger, userService service.IUserService, authService
 		AddressHandler:      addressHandler,
 		cityService:         cityService,
 		CityHandler:         cityHandler,
+		MeetingService:      meetingService,
+		MeetingHandler:      meetingHandler,
 		Db:                  db,
 	}
 }

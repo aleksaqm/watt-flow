@@ -1,9 +1,10 @@
 package route
 
 import (
-	"github.com/gin-gonic/gin"
 	"watt-flow/middleware"
 	"watt-flow/server"
+
+	"github.com/gin-gonic/gin"
 )
 
 type UserRoute struct {
@@ -17,8 +18,12 @@ func (r UserRoute) Register(server *server.Server) {
 	{
 		api.GET("/user/:id", server.UserHandler.GetById)
 		api.POST("/user", server.UserHandler.Create)
+		api.POST("/user/clerk/new", authMid.RoleMiddleware([]string{"SuperAdmin", "Admin"}), server.UserHandler.RegisterClerk)
+		api.POST("/user/query", authMid.RoleMiddleware([]string{"SuperAdmin", "Admin", "Clerk", "Regular"}), server.UserHandler.Query)
 		api.GET("/user/admins", authMid.RoleMiddleware([]string{"SuperAdmin"}), server.UserHandler.FindAdmins)
 		api.POST("/user/admin", authMid.RoleMiddleware([]string{"SuperAdmin"}), server.UserHandler.Create)
+		api.GET("/user/suspend/:id", authMid.RoleMiddleware([]string{"SuperAdmin", "Admin"}), server.UserHandler.Suspend)
+		api.GET("/user/unsuspend/:id", authMid.RoleMiddleware([]string{"SuperAdmin", "Admin"}), server.UserHandler.Unsuspend)
 	}
 }
 
