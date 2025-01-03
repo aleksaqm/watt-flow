@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"encoding/json"
 	"net/http"
 	"strconv"
 	"strings"
@@ -99,21 +100,52 @@ func (h MeetingHandler) GetMeetingById(c *gin.Context) {
 }
 
 func (h MeetingHandler) GetUsersMeetings(c *gin.Context) {
-	// TODO
-	id := c.Param("userId")
+	id := c.Param("id")
 	userId, err := strconv.ParseUint(id, 10, 64)
 	if err != nil {
 		h.logger.Error(err)
-		c.JSON(400, gin.H{"error": "Invalid meeting ID"})
+		c.JSON(400, gin.H{"error": "Invalid user ID"})
 		return
 	}
-	data, err := h.service.FindMeetingById(userId)
+	page := c.DefaultQuery("page", "1")
+	pageSize := c.DefaultQuery("pageSize", "10")
+	sortBy := c.DefaultQuery("sortBy", "city")
+	sortOrder := c.DefaultQuery("sortOrder", "asc")
+	search := c.DefaultQuery("search", "")
+
+	pageInt, err := strconv.Atoi(page)
+	if err != nil {
+		c.JSON(400, gin.H{"error": "Invalid page parameter"})
+		return
+	}
+	pageSizeInt, err := strconv.Atoi(pageSize)
+	if err != nil {
+		c.JSON(400, gin.H{"error": "Invalid pageSize parameter"})
+		return
+	}
+	var searchParams dto.MeetingSearchParams
+	if search != "" {
+		if err := json.Unmarshal([]byte(search), &searchParams); err != nil {
+			c.JSON(400, gin.H{"error": "Invalid search parameter"})
+			return
+		}
+	}
+	params := dto.MeetingQueryParams{
+		Page:      pageInt,
+		PageSize:  pageSizeInt,
+		SortBy:    sortBy,
+		SortOrder: sortOrder,
+		Search:    searchParams,
+	}
+	h.logger.Info(params)
+
+	data, total, err := h.service.GetUsersMeetings(userId, &params)
 	if err != nil {
 		h.logger.Error(err)
-		c.JSON(404, gin.H{"error": "meeting not found"})
+		c.JSON(400, gin.H{"error": "Failed to load meetings"})
 		return
 	}
-	c.JSON(200, gin.H{"data": data})
+	c.JSON(200, gin.H{"meetings": data, "total": total})
 }
 
 func (h MeetingHandler) CreateSlot(c *gin.Context) {

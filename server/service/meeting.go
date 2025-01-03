@@ -17,6 +17,7 @@ type IMeetingService interface {
 	CreateMeeting(meetingDto *dto.MeetingDTO) (*dto.MeetingDTO, error)
 	FindMeetingById(id uint64) (*dto.MeetingDTO, error)
 	FindMeetingBySlotId(slotId uint64) (*dto.MeetingDTO, error)
+	GetUsersMeetings(userID uint64, params *dto.MeetingQueryParams) ([]dto.UsersMeetingDTO, int64, error)
 }
 
 type MeetingService struct {
@@ -193,4 +194,27 @@ func (t *MeetingService) CreateOrUpdate(update *dto.UpdateTimeSlotDto) (*dto.Tim
 		}, nil
 
 	}
+}
+
+func (t *MeetingService) GetUsersMeetings(userID uint64, params *dto.MeetingQueryParams) ([]dto.UsersMeetingDTO, int64, error) {
+	meetings, total, err := t.meetingRepository.FindForUser(userID, params)
+	if err != nil {
+		return nil, 0, err
+	}
+	var results = make([]dto.UsersMeetingDTO, 0)
+	for _, result := range meetings {
+		mappedRequest, _ := t.MapToUsersMeetingDto(&result)
+		results = append(results, mappedRequest)
+	}
+	return results, total, nil
+}
+
+func (t *MeetingService) MapToUsersMeetingDto(meeting *model.Meeting) (dto.UsersMeetingDTO, error) {
+	response := dto.UsersMeetingDTO{
+		ID:        meeting.ID,
+		StartTime: meeting.StartTime,
+		Duration:  meeting.Duration,
+		Clerk:     meeting.Clerk.Username,
+	}
+	return response, nil
 }

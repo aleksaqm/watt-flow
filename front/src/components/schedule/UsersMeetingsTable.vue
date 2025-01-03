@@ -82,10 +82,9 @@ async function fetchMeetings() {
     }
     console.log(params)
 
-    var requestUrl : string
-    requestUrl = "/api/ownership/pending"
     isLoading.value = true
-    const response = await axios.get(requestUrl, { params })
+    const userStore = useUserStore()
+    const response = await axios.get("/api/user/meetings/" + userStore.id, { params })
     isLoading.value = false
     console.log(response)
     if (response.data) {
@@ -109,7 +108,6 @@ function mapToMeeting(data: any): Meeting {
 }
 
 onMounted(()=>{
-    const userStore = useUserStore()
     fetchMeetings()
 })
 
