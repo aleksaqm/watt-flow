@@ -92,19 +92,19 @@ const router = createRouter({
       meta: { requiresAuth: true }
     },
     {
-      path: '/clerk/schedule',
+      path: '/meeting/clerk',
       name: 'clerk-schedule',
       component: ClerkMeetingScheduleView,
       meta: { requiresAuth: true }
     },
     {
-      path: '/regular/schedule',
+      path: '/meeting/schedule',
       name: 'regular-schedule',
       component: RegularMeetingScheduleView,
       meta: { requiresAuth: true }
     },
     {
-      path: '/regular/meeting',
+      path: '/meeting/user',
       name: 'regular-meeting',
       component: RegularCreateMeetingView,
       meta: { requiresAuth: true }

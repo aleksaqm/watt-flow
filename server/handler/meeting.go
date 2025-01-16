@@ -26,31 +26,6 @@ func NewMeetingHandler(service service.IMeetingService, logger util.Logger) *Mee
 	}
 }
 
-func (h MeetingHandler) GetSlotById(c *gin.Context) {
-	id := strings.TrimSpace(c.Query("date"))
-	h.logger.Info("Parsing time: ", id)
-
-	if id == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "not valid id parameter"})
-	}
-
-	timeslotDate, err := time.Parse("2006-01-02", id)
-	if err != nil {
-		h.logger.Error(err)
-		c.JSON(400, gin.H{"error": "Invalid date"})
-		return
-	}
-
-	data, err := h.service.FindByDate(datatypes.Date(timeslotDate))
-	if err != nil {
-		h.logger.Error(err)
-		c.JSON(404, gin.H{"error": " timeslot not found"})
-		return
-	}
-	c.JSON(200, gin.H{"data": data})
-
-}
-
 func (h MeetingHandler) GetSlotByDateAndClerkId(c *gin.Context) {
 	id := c.DefaultQuery("clerk_id", "0")
 	clerkId, err := strconv.ParseUint(id, 0, 64)
@@ -79,7 +54,6 @@ func (h MeetingHandler) GetSlotByDateAndClerkId(c *gin.Context) {
 		return
 	}
 	c.JSON(200, gin.H{"data": data})
-
 }
 
 func (h MeetingHandler) GetMeetingById(c *gin.Context) {

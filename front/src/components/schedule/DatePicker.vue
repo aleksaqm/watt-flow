@@ -26,7 +26,7 @@ interface TimeSlot {
 }
 
 const emit = defineEmits(['meeting-id'])
-const props = defineProps<{ userId: number | null , username: string | null}>();
+const props = defineProps<{ userId: number | null, username: string | null }>();
 
 const dateValue = ref(today(getLocalTimeZone())) as Ref<DateValue>
 const hourValue = ref(0)
@@ -60,7 +60,7 @@ watch(dateValue, (newDate) => {
 })
 
 onMounted(() => {
-  if(userStore.role == "Clerk"){
+  if (userStore.role == "Clerk") {
     isClerk.value = true;
   }
   fetchTimeTable(today(getLocalTimeZone()).toString(), props.userId)
@@ -68,7 +68,7 @@ onMounted(() => {
 
 const fetchTimeTable = async (date: string, userId: number | null) => {
   try {
-    const response = await axios.get("/api/timeslot2", { params: { date: date, clerk_id: userId} })
+    const response = await axios.get("/api/timeslot", { params: { date: date, clerk_id: userId } })
     for (let i = 0; i < 15; i++) {
       slots.value[i] = { ...slots.value[i], meetingId: response.data.data.slots[i], past: isPast.value, id: response.data.data.id }
     }
@@ -221,7 +221,8 @@ const cancelMeeting = () => {
       <div class="grid grid-cols-3 gap-4 border border-gray-200 p-10 rounded-md">
         <div v-for="(column, colIndex) in availableSlots" :key="colIndex" class="flex flex-col gap-4">
           <TimeSlot v-for="(slot, index) in column" :key="index" :startHour="slot.hour" :startMinute="slot.minute"
-            :isAvailable="slot.meetingId == 0" :hasClerk="props.userId != 0 && props.userId != null" :past="slot.past" @click.prevent="openSlot(slot)" />
+            :isAvailable="slot.meetingId == 0" :hasClerk="props.userId != 0 && props.userId != null" :past="slot.past"
+            @click.prevent="openSlot(slot)" />
         </div>
       </div>
     </div>
@@ -232,31 +233,18 @@ const cancelMeeting = () => {
         <DialogTitle>New meeting</DialogTitle>
       </DialogHeader>
       <template v-if="isClerk">
-        <NewMeetingFrom
-          :clerk-id="userStore?.id"
-          :date="dateValue"
-          :hour="hourValue"
-          :minute="minuteValue"
-          :available-duration="availableDuration"
-          :slot-number="slotNumber"
-          @meeting-created="closeDialog"
-        />
+        <NewMeetingFrom :clerk-id="userStore?.id" :date="dateValue" :hour="hourValue" :minute="minuteValue"
+          :available-duration="availableDuration" :slot-number="slotNumber" @meeting-created="closeDialog" />
       </template>
       <template v-else>
         <div class="text-center">
           <p>Are you sure you want to schedule meeting </p>
           <p>with {{ username }} on {{ dateValue }} at {{ hourValue }}:{{ minuteValue }}?</p>
           <div class="mt-4 flex justify-center gap-4">
-            <button
-              class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
-              @click="confirmMeeting"
-            >
+            <button class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600" @click="confirmMeeting">
               Yes
             </button>
-            <button
-              class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
-              @click="cancelMeeting"
-            >
+            <button class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400" @click="cancelMeeting">
               No
             </button>
           </div>
