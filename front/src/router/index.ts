@@ -16,6 +16,8 @@ import { authGuard } from '@/guards/AuthGuard'
 import RegisterClerkView from '@/views/user/RegisterClerkView.vue'
 import ClerkMeetingScheduleView from '@/views/schedule/ClerkMeetingScheduleView.vue'
 import OwnershipRequestsView from '@/views/household/OwnershipRequestsView.vue'
+import RegularCreateMeetingView from '@/views/schedule/RegularCreateMeetingView.vue'
+import RegularMeetingScheduleView from '@/views/schedule/RegularMeetingScheduleView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -90,9 +92,21 @@ const router = createRouter({
       meta: { requiresAuth: true }
     },
     {
-      path: '/clerk/schedule',
+      path: '/meeting/clerk',
       name: 'clerk-schedule',
       component: ClerkMeetingScheduleView,
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/meeting/schedule',
+      name: 'regular-schedule',
+      component: RegularMeetingScheduleView,
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/meeting/user',
+      name: 'regular-meeting',
+      component: RegularCreateMeetingView,
       meta: { requiresAuth: true }
     },
     {

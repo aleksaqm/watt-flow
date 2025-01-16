@@ -19,7 +19,8 @@ func (r MeetingRoute) Register(server *server.Server) {
 	{
 		api.POST("/meeting", authMid.RoleMiddleware([]string{"Clerk", "Regular"}), server.MeetingHandler.CreateNewMeeting)
 		api.GET("/meeting/:id", authMid.RoleMiddleware([]string{"Clerk", "Regular"}), server.MeetingHandler.GetMeetingById)
-		api.GET("/timeslot", authMid.RoleMiddleware([]string{"Clerk", "Regular"}), server.MeetingHandler.GetSlotById)
+		api.GET("/user/meetings/:id", authMid.RoleMiddleware([]string{"Clerk", "Regular"}), server.MeetingHandler.GetUsersMeetings)
+		api.GET("/timeslot", authMid.RoleMiddleware([]string{"Clerk", "Regular"}), server.MeetingHandler.GetSlotByDateAndClerkId)
 	}
 }
 

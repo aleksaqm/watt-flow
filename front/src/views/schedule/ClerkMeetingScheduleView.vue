@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import DatePicker from '@/components/schedule/DatePicker.vue';
 import Meeting from '@/components/schedule/Meeting.vue';
+import { useUserStore } from '@/stores/user';
 import axios from 'axios';
 import { ref } from 'vue';
 
@@ -24,6 +25,7 @@ const updateMeeting = async (meetingId: number) => {
 const formattedTime = (hour: number, minute: number) =>
   `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`
 
+const userStore = useUserStore();
 </script>
 
 
@@ -32,7 +34,7 @@ const formattedTime = (hour: number, minute: number) =>
   <main>
     <div class="flex flex-col items-center justify-center ">
       <span class="text-xl m-10">My meetings</span>
-      <DatePicker @meeting-id="updateMeeting"></DatePicker>
+      <DatePicker :user-id="userStore.id" :username="null" @meeting-id="updateMeeting"></DatePicker>
       <Meeting v-if="meeting.User" :meeting="meeting"></Meeting>
     </div>
   </main>
