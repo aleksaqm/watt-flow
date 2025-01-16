@@ -6,7 +6,7 @@ import (
 )
 
 type TimeSlot struct {
-	Date    datatypes.Date `gorm:"unique;type:date"`
+	Date    datatypes.Date `gorm:"type:date"` //not unique
 	Clerk   User           `gorm:"foreignKey:ClerkID" json:"clerk"`
 	ClerkID uint64         `json:"clerkId"`
 	Slots   datatypes.JSON `gorm:"type:jsonb;not null"`

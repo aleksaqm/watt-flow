@@ -2,7 +2,7 @@ import { defineStore } from 'pinia';
 
 interface UserState {
   role: string | null;
-  id: number | null | undefined;
+  id: number | null;
 }
 
 export const useUserStore = defineStore('user', {
@@ -17,7 +17,7 @@ export const useUserStore = defineStore('user', {
     clearRole() {
       this.role = null;
     },
-    setId(id: number | null| undefined){
+    setId(id: number | null){
       this.id = id;
     },
     clearId(){

@@ -16,6 +16,7 @@ import { useToast } from '@/shad/components/ui/toast';
 import Toaster from '@/shad/components/ui/toast/Toaster.vue';
 
 const userStore = useUserStore()
+const isClerk = ref<boolean>(false)
 
 interface TimeSlot {
   Date: string,
@@ -25,6 +26,7 @@ interface TimeSlot {
 }
 
 const emit = defineEmits(['meeting-id'])
+const props = defineProps<{ userId: number | null, username: string | null }>();
 
 const dateValue = ref(today(getLocalTimeZone())) as Ref<DateValue>
 const hourValue = ref(0)
@@ -44,23 +46,32 @@ const isPast = computed(() => {
   return dateValue.value.compare(today(getLocalTimeZone())) < 0
 })
 
+watch(() => props.userId, (newUserId) => {
+  if (newUserId !== null) {
+    console.log('User ID updated:', newUserId)
+    fetchTimeTable(dateValue.value.toString(), newUserId);
+  }
+});
+
 watch(dateValue, (newDate) => {
   if (newDate == undefined)
     newDate = today(getLocalTimeZone())
-  fetchTimeTable(newDate.toString().trim())
+  fetchTimeTable(newDate.toString().trim(), props.userId)
 })
 
 onMounted(() => {
-  fetchTimeTable(today(getLocalTimeZone()).toString())
+  if (userStore.role == "Clerk") {
+    isClerk.value = true;
+  }
+  fetchTimeTable(today(getLocalTimeZone()).toString(), props.userId)
 })
 
-const fetchTimeTable = async (date: string) => {
+const fetchTimeTable = async (date: string, userId: number | null) => {
   try {
-    const response = await axios.get("/api/timeslot", { params: { date: date } })
+    const response = await axios.get("/api/timeslot", { params: { date: date, clerk_id: userId } })
     for (let i = 0; i < 15; i++) {
       slots.value[i] = { ...slots.value[i], meetingId: response.data.data.slots[i], past: isPast.value, id: response.data.data.id }
     }
-
 
   } catch (error: any) {
     if (error.status == 404) {
@@ -91,7 +102,7 @@ const fetchTimeTable = async (date: string) => {
 }
 
 const openSlot = async (slot: any) => {
-  if (dateValue.value == undefined)
+  if (dateValue.value == undefined || props.userId == 0 || props.userId == null)
     return
   if (slot.meetingId != 0) {
     emit('meeting-id', slot.meetingId)
@@ -145,12 +156,57 @@ const slots = ref(generateSlots());
 const availableSlots = computed(() => splitIntoColumns(slots.value, 3))
 const closeDialog = () => {
   updateDialog(false)
-  fetchTimeTable(dateValue.value.toString())
+  fetchTimeTable(dateValue.value.toString(), props.userId)
   toast({
     title: 'Creation Successful',
     variant: 'default'
   })
 }
+
+const confirmMeeting = async () => {
+  const occupiedIds = []
+  for (let i = slotNumber.value; i < slotNumber.value + 1; i++) {
+    occupiedIds.push(i)
+  }
+  const slot = {
+    Date: dateValue.value.toString() + "T00:00:00Z",
+    ClerkId: props.userId,
+    Occupied: occupiedIds,
+  }
+  const meeting = {
+    user_id: userStore.id,
+    duration: 30,
+    clerk_id: props.userId,
+    start_time: new Date(dateValue.value.year, dateValue.value.month - 1, dateValue.value.day, hourValue.value, minuteValue.value, 0),
+    time_slot_id: slotNumber.value
+  }
+  const data = { timeslot: slot, meeting: meeting }
+  try {
+    const response = await axios.post("api/meeting", data);
+    console.log("Response:", response.data)
+    toast({
+      title: 'Meeting Scheduled',
+      description: 'Your meeting has been successfully scheduled.',
+    });
+    await fetchTimeTable(dateValue.value.toString().trim(), props.userId)
+    updateDialog(false);
+  } catch (error: any) {
+    const errorMessage = error.response?.data?.error || 'Please refresh page and try again.'
+    console.error('Error:', error)
+    toast({
+      title: 'Creation Failed',
+      description: errorMessage,
+      variant: 'destructive'
+    })
+    updateDialog(false);
+  }
+
+};
+
+const cancelMeeting = () => {
+  updateDialog(false);
+};
+
 </script>
 
 <template>
@@ -165,7 +221,8 @@ const closeDialog = () => {
       <div class="grid grid-cols-3 gap-4 border border-gray-200 p-10 rounded-md">
         <div v-for="(column, colIndex) in availableSlots" :key="colIndex" class="flex flex-col gap-4">
           <TimeSlot v-for="(slot, index) in column" :key="index" :startHour="slot.hour" :startMinute="slot.minute"
-            :isAvailable="slot.meetingId == 0" :past="slot.past" @click.prevent="openSlot(slot)" />
+            :isAvailable="slot.meetingId == 0" :hasClerk="props.userId != 0 && props.userId != null" :past="slot.past"
+            @click.prevent="openSlot(slot)" />
         </div>
       </div>
     </div>
@@ -175,9 +232,24 @@ const closeDialog = () => {
       <DialogHeader>
         <DialogTitle>New meeting</DialogTitle>
       </DialogHeader>
-      <NewMeetingFrom :clerk-id="userStore?.id" :date="dateValue" :hour="hourValue" :minute="minuteValue"
-        :available-duration="availableDuration" :slot-number="slotNumber" @meeting-created="closeDialog">
-      </NewMeetingFrom>
+      <template v-if="isClerk">
+        <NewMeetingFrom :clerk-id="userStore?.id" :date="dateValue" :hour="hourValue" :minute="minuteValue"
+          :available-duration="availableDuration" :slot-number="slotNumber" @meeting-created="closeDialog" />
+      </template>
+      <template v-else>
+        <div class="text-center">
+          <p>Are you sure you want to schedule meeting </p>
+          <p>with {{ username }} on {{ dateValue }} at {{ hourValue }}:{{ minuteValue }}?</p>
+          <div class="mt-4 flex justify-center gap-4">
+            <button class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600" @click="confirmMeeting">
+              Yes
+            </button>
+            <button class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400" @click="cancelMeeting">
+              No
+            </button>
+          </div>
+        </div>
+      </template>
     </DialogContent>
   </Dialog>
 
