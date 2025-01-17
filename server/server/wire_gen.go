@@ -46,10 +46,13 @@ func InitDeps(env *config.Environment) *Server {
 	meetingRepository := repository.NewMeetingRepository(database, logger)
 	meetingService := service.NewMeetingService(timeSlotRepository, meetingRepository)
 	meetingHandler := handler.NewMeetingHandler(meetingService, logger)
+	pricelistRepository := repository.NewPricelistRepository(database, logger)
+	pricelistService := service.NewPricelistService(pricelistRepository)
+	pricelistHandler := handler.NewPricelistHandler(pricelistService, logger)
 	cityRepository := repository.NewCityRepository(database, logger)
 	cityService := service.NewCityService(cityRepository)
 	cityHandler := handler.NewCityHandler(cityService, logger)
-	server := NewServer(logger, userService, authService, restartService, userHandler, propertyService, propertyHandler, householdService, householdHandler, ownershipService, ownershipHandler, deviceStatusService, deviceStatusHandler, addressService, addressHandler, meetingService, meetingHandler, cityService, cityHandler, database)
+	server := NewServer(logger, userService, authService, restartService, userHandler, propertyService, propertyHandler, householdService, householdHandler, ownershipService, ownershipHandler, deviceStatusService, deviceStatusHandler, addressService, addressHandler, meetingService, meetingHandler, pricelistService, pricelistHandler, cityService, cityHandler, database)
 	return server
 }
 
@@ -70,3 +73,5 @@ var addressServiceSet = wire.NewSet(service.NewAddressService, wire.Bind(new(ser
 var cityServiceSet = wire.NewSet(service.NewCityService, wire.Bind(new(service.ICityService), new(*service.CityService)))
 
 var meetingServiceSet = wire.NewSet(service.NewMeetingService, wire.Bind(new(service.IMeetingService), new(*service.MeetingService)))
+
+var pricelistServiceSet = wire.NewSet(service.NewPricelistService, wire.Bind(new(service.IPricelistService), new(*service.PricelistService)))
