@@ -17,6 +17,7 @@ func (r PricelistRoute) Register(server *server.Server) {
 	api := r.engine.Group("/api").Use(authMid.Handler())
 	{
 		api.POST("/pricelist", authMid.RoleMiddleware([]string{"Admin", "SuperAdmin"}), server.PricelistHandler.CreatePricelist)
+		api.GET("/pricelist/query", authMid.RoleMiddleware([]string{"Admin", "SuperAdmin"}), server.PricelistHandler.Query)
 	}
 }
 

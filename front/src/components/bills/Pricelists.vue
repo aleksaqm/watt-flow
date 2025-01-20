@@ -31,18 +31,9 @@ import Input from '@/shad/components/ui/input/Input.vue';
 import type { Pricelist } from './pricelist'
 import { useToast } from '@/shad/components/ui/toast/use-toast'
 import Toaster from '@/shad/components/ui/toast/Toaster.vue';
+import NewPricelistForm from './NewPricelistForm.vue'
 
 const { toast } = useToast()
-const props = defineProps({
-  query: {
-    type: Object,
-    default: () => ({})
-  },
-  triggerSearch: {
-    type: Number,
-    default: 0
-  }
-})
 const dialogKey = ref(0)
 
 
@@ -51,7 +42,7 @@ const pricelists = ref<Pricelist[]>([])
 const pagination = ref({ page: 1, total: 0, perPage: 10 })
 
 const sortOrder = ref<{ [key: string]: "asc" | "desc" | "" }>({
-  date: "",
+  valid_from: "",
 })
 const totalPages = computed(() => Math.ceil(pagination.value.total / pagination.value.perPage))
 
@@ -61,11 +52,11 @@ async function fetchPricelists() {
     const params = {
       page: pagination.value.page,
       pageSize: pagination.value.perPage,
-      sortBy: 'date',
-      sortOrder: sortOrder.value['date'],
+      sortBy: 'valid_from',
+      sortOrder: sortOrder.value['valid_from'],
     }
 
-    const response = await axios.post('/api/bills/query', props.query, { params: params })
+    const response = await axios.get('/api/pricelist/query', { params: params })
 
     if (response.data && response.data.pricelists) {
       pricelists.value = response.data.pricelists.map((pricelist: any) => mapToPricelist(pricelist))
@@ -79,13 +70,13 @@ async function fetchPricelists() {
 function mapToPricelist(data: any): Pricelist {
   return {
     id: data.id,
-    date: data.date,
-    red: data.red,
-    blue: data.blue,
-    green: data.green,
+    date: data.valid_from,
+    red: data.red_zone,
+    blue: data.blue_zone,
+    green: data.green_zone,
     tax: data.tax,
-    bill_power: data.bill_power,
-    status: data.status,
+    bill_power: data.billing_power,
+    status: data.is_active,
   }
 }
 
@@ -107,17 +98,26 @@ function getButtonStyle(isSelected: boolean) {
 }
 
 function formatDate(date: string): string {
+  console.log(date)
   const options: Intl.DateTimeFormatOptions = {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
   }
-  const dateObj = new Date(date)
-  return dateObj.toLocaleString('en-US', options)
+  return new Date(date).toLocaleString('sr-RS', options)
 }
+
+const pricelistCreated = () => {
+  toast({
+    title: 'Operation Successful',
+    description: 'You successfully added new pricelist!',
+    variant: 'default'
+  })
+  dialogKey.value++;
+}
+onMounted(() => {
+  fetchPricelists()
+})
 
 </script>
 
@@ -132,7 +132,9 @@ function formatDate(date: string): string {
         <DialogHeader>
           <DialogTitle>New pricelist</DialogTitle>
         </DialogHeader>
+        <NewPricelistForm @pricelist-created="pricelistCreated"></NewPricelistForm>
       </DialogContent>
+
     </Dialog>
     <Table class="gap-5 items-center border rounded-2xl border-gray-300 shadow-gray-500 p-10 mb-10">
       <TableHeader>
@@ -143,12 +145,12 @@ function formatDate(date: string): string {
           <TableHead>Blue</TableHead>
           <TableHead>Green</TableHead>
           <TableHead>Tax</TableHead>
-          <TableHead>Status</TableHead>
+          <TableHead>Active</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         <TableRow v-for="pricelist in pricelists  " :key="pricelist.id">
-          <TableCell>{{ pricelist.date }}</TableCell>
+          <TableCell>{{ formatDate(pricelist.date.toString()) }}</TableCell>
           <TableCell>{{ pricelist.bill_power }}</TableCell>
           <TableCell>{{ pricelist.red }}</TableCell>
           <TableCell>{{ pricelist.blue }}</TableCell>

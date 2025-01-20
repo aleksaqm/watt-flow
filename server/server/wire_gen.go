@@ -7,13 +7,14 @@
 package server
 
 import (
-	"github.com/google/wire"
 	"watt-flow/config"
 	"watt-flow/db"
 	"watt-flow/handler"
 	"watt-flow/repository"
 	"watt-flow/service"
 	"watt-flow/util"
+
+	"github.com/google/wire"
 )
 
 // Injectors from wire.go:
