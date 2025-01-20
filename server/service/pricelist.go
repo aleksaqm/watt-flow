@@ -15,6 +15,7 @@ type IPricelistService interface {
 	FindById(id uint64) (*model.Pricelist, error)
 	FindByDate(date datatypes.Date) (*model.Pricelist, error)
 	Query(params *dto.PricelistQueryParams) ([]model.Pricelist, int64, error)
+	Delete(id uint64) error
 }
 
 type PricelistService struct {
@@ -41,6 +42,10 @@ func (t *PricelistService) FindByDate(date datatypes.Date) (*model.Pricelist, er
 		return nil, err
 	}
 	return pricelist, nil
+}
+
+func (t *PricelistService) Delete(id uint64) error {
+	return t.pricelistRepository.Delete(id)
 }
 
 func (t *PricelistService) CreatePricelist(newPricelist *dto.NewPricelist) (*model.Pricelist, error) {

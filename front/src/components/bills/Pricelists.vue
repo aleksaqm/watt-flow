@@ -27,11 +27,23 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/shad/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/shad/components/ui/alert-dialog'
 import Input from '@/shad/components/ui/input/Input.vue';
 import type { Pricelist } from './pricelist'
 import { useToast } from '@/shad/components/ui/toast/use-toast'
 import Toaster from '@/shad/components/ui/toast/Toaster.vue';
 import NewPricelistForm from './NewPricelistForm.vue'
+import Spinner from '../Spinner.vue'
 
 const { toast } = useToast()
 const dialogKey = ref(0)
@@ -45,6 +57,7 @@ const sortOrder = ref<{ [key: string]: "asc" | "desc" | "" }>({
   valid_from: "",
 })
 const totalPages = computed(() => Math.ceil(pagination.value.total / pagination.value.perPage))
+const loading = ref(false);
 
 async function fetchPricelists() {
 
@@ -114,6 +127,32 @@ const pricelistCreated = () => {
     variant: 'default'
   })
   dialogKey.value++;
+  fetchPricelists()
+}
+
+const deletePricelist = async (id: number) => {
+  try {
+    loading.value = true;
+    const response = await axios.delete('/api/pricelist/' + id)
+    console.log(response)
+    toast({
+      title: 'Operation succeded!',
+      description: "Pricelist deleted successfully!",
+      variant: 'default'
+    })
+    loading.value = false;
+    fetchPricelists()
+  } catch (error: any) {
+    const errorMessage = 'Try again later.'
+    console.error('Error:', error)
+    loading.value = false;
+    toast({
+      title: 'Pricelist deletion failed',
+      description: errorMessage,
+      variant: 'destructive'
+    })
+  }
+
 }
 onMounted(() => {
   fetchPricelists()
@@ -136,7 +175,8 @@ onMounted(() => {
       </DialogContent>
 
     </Dialog>
-    <Table class="gap-5 items-center border rounded-2xl border-gray-300 shadow-gray-500 p-10 mb-10">
+    <Spinner v-if="loading" />
+    <Table v-if="!loading" class=" gap-5 items-center border rounded-2xl border-gray-300 shadow-gray-500 p-10 mb-10">
       <TableHeader>
         <TableRow>
           <TableHead @click="onSortChange('date')" :orientation="sortOrder.date">Valid from</TableHead>
@@ -146,6 +186,7 @@ onMounted(() => {
           <TableHead>Green</TableHead>
           <TableHead>Tax</TableHead>
           <TableHead>Active</TableHead>
+          <TableHead>Actions</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -157,6 +198,22 @@ onMounted(() => {
           <TableCell>{{ pricelist.green }}</TableCell>
           <TableCell>{{ pricelist.tax }}</TableCell>
           <TableCell>{{ pricelist.status }}</TableCell>
+          <TableCell>
+            <AlertDialog>
+              <AlertDialogTrigger><Button class="bg-red-300">Delete</Button></AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction><Button @click="deletePricelist(pricelist.id)">Delete</Button></AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+
+          </TableCell>
+
         </TableRow>
       </TableBody>
     </Table>

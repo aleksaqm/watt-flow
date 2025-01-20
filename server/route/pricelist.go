@@ -18,6 +18,7 @@ func (r PricelistRoute) Register(server *server.Server) {
 	{
 		api.POST("/pricelist", authMid.RoleMiddleware([]string{"Admin", "SuperAdmin"}), server.PricelistHandler.CreatePricelist)
 		api.GET("/pricelist/query", authMid.RoleMiddleware([]string{"Admin", "SuperAdmin"}), server.PricelistHandler.Query)
+		api.DELETE("/pricelist/:id", authMid.RoleMiddleware([]string{"Admin", "SuperAdmin"}), server.PricelistHandler.Delete)
 	}
 }
 

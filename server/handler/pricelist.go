@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"net/http"
 	"strconv"
 	"watt-flow/dto"
 	"watt-flow/service"
@@ -68,4 +69,23 @@ func (h PricelistHandler) CreatePricelist(c *gin.Context) {
 		return
 	}
 	c.JSON(201, gin.H{"data": data})
+}
+
+func (h PricelistHandler) Delete(c *gin.Context) {
+	idParam := c.Param("id")
+	id, err := strconv.ParseUint(idParam, 10, 64)
+	if err != nil {
+		h.logger.Error("Invalid pricelist ID:", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid pricelist ID"})
+		return
+	}
+
+	err = h.service.Delete(id)
+	if err != nil {
+		h.logger.Error("Pricelist not found:", err)
+		c.JSON(http.StatusNotFound, gin.H{"error": "Pricelist not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Pricelist deleted successfully"})
 }

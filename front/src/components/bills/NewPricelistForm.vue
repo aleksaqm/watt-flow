@@ -39,6 +39,16 @@ const emit = defineEmits(['pricelistCreated']);
 
 const submitForm = async (formData: { month: number; year: number; red: number; green: number; blue: number; tax: number; bill_power: number; }) => {
   try {
+    const now = new Date()
+    if (now.getMonth() + 1 >= formData.month || now.getFullYear() > formData.year) {
+      toast({
+        title: 'Pricelist creation failed',
+        description: "Invalid dates. Future dates must be used!",
+        variant: 'destructive'
+      })
+      loading.value = false;
+      return;
+    }
     const response = await axios.post('/api/pricelist', formData)
     console.log(response)
     loading.value = false

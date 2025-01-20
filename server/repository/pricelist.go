@@ -81,3 +81,12 @@ func (repository *PricelistRepository) Query(params *dto.PricelistQueryParams) (
 
 	return pricelists, total, nil
 }
+
+func (repository *PricelistRepository) Delete(id uint64) error {
+	result := repository.Database.Delete(&model.Pricelist{}, id)
+	if result.Error != nil {
+		repository.Logger.Error("Error deleting pricelist", result.Error)
+		return result.Error
+	}
+	return nil
+}
