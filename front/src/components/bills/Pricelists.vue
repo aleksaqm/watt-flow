@@ -32,7 +32,6 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
-  AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
@@ -158,6 +157,10 @@ onMounted(() => {
   fetchPricelists()
 })
 
+const isDeleteDisabled = (date: Date) => {
+  return date <= new Date();
+}
+
 </script>
 
 <template>
@@ -200,7 +203,9 @@ onMounted(() => {
           <TableCell>{{ pricelist.status }}</TableCell>
           <TableCell>
             <AlertDialog>
-              <AlertDialogTrigger><Button class="bg-red-300">Delete</Button></AlertDialogTrigger>
+              <AlertDialogTrigger><Button :disabled="isDeleteDisabled(pricelist.date)"
+                  class="bg-red-300">Delete</Button>
+              </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
                   <AlertDialogTitle>Are you sure?</AlertDialogTitle>

@@ -45,6 +45,14 @@ func (t *PricelistService) FindByDate(date datatypes.Date) (*model.Pricelist, er
 }
 
 func (t *PricelistService) Delete(id uint64) error {
+	pricelist, err := t.pricelistRepository.FindById(id)
+	if err != nil {
+		return err
+	}
+	if time.Time(pricelist.ValidFrom).Before(time.Now().UTC()) {
+		return fmt.Errorf("failed to delete pricelist in the past")
+	}
+
 	return t.pricelistRepository.Delete(id)
 }
 
