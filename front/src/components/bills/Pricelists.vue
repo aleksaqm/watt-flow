@@ -158,7 +158,7 @@ onMounted(() => {
 })
 
 const isDeleteDisabled = (date: Date) => {
-  return date <= new Date();
+  return new Date(date) <= new Date();
 }
 
 </script>
@@ -203,8 +203,8 @@ const isDeleteDisabled = (date: Date) => {
           <TableCell>{{ pricelist.status }}</TableCell>
           <TableCell>
             <AlertDialog>
-              <AlertDialogTrigger><Button :disabled="isDeleteDisabled(pricelist.date)"
-                  class="bg-red-300">Delete</Button>
+              <AlertDialogTrigger :disabled="isDeleteDisabled(pricelist.date)"><Button
+                  :disabled="isDeleteDisabled(pricelist.date)" class="bg-red-300">Delete</Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
