@@ -6,5 +6,4 @@ export interface Pricelist {
   tax: number,
   bill_power: number,
   date: Date,
-  status: string,
 }
