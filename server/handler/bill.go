@@ -1,8 +1,6 @@
 package handler
 
 import (
-	"strconv"
-	"watt-flow/dto"
 	"watt-flow/service"
 	"watt-flow/util"
 
@@ -21,36 +19,46 @@ func NewBillHandler(service service.IBillService, logger util.Logger) *BillHandl
 	}
 }
 
-func (h BillHandler) Query(c *gin.Context) {
-	page := c.DefaultQuery("page", "1")
-	pageSize := c.DefaultQuery("pageSize", "10")
-	sortBy := c.DefaultQuery("sortBy", "city")
-	sortOrder := c.DefaultQuery("sortOrder", "asc")
+// func (h BillHandler) Query(c *gin.Context) {
+// 	page := c.DefaultQuery("page", "1")
+// 	pageSize := c.DefaultQuery("pageSize", "10")
+// 	sortBy := c.DefaultQuery("sortBy", "city")
+// 	sortOrder := c.DefaultQuery("sortOrder", "asc")
+//
+// 	pageInt, err := strconv.Atoi(page)
+// 	if err != nil {
+// 		c.JSON(400, gin.H{"error": "Invalid page parameter"})
+// 		return
+// 	}
+// 	pageSizeInt, err := strconv.Atoi(pageSize)
+// 	if err != nil {
+// 		c.JSON(400, gin.H{"error": "Invalid pageSize parameter"})
+// 		return
+// 	}
+//
+// 	params := dto.BillQueryParams{
+// 		Page:      pageInt,
+// 		PageSize:  pageSizeInt,
+// 		SortBy:    sortBy,
+// 		SortOrder: sortOrder,
+// 	}
+// 	bills, total, err := h.service.Query(&params)
+// 	if err != nil {
+// 		h.logger.Error(err)
+// 		c.JSON(500, gin.H{"error": err.Error()})
+// 		return
+// 	}
+// 	c.JSON(200, gin.H{"bills": bills, "total": total})
+// }
 
-	pageInt, err := strconv.Atoi(page)
+func (h *BillHandler) GetUnsentMonthlyBills(c *gin.Context) {
+	cities, err := h.service.GetUnsentMonthlyBills()
 	if err != nil {
-		c.JSON(400, gin.H{"error": "Invalid page parameter"})
+		h.logger.Error("Error fetching unsent bills", err)
+		c.JSON(500, gin.H{"error": "Failed to retrieve bills"})
 		return
 	}
-	pageSizeInt, err := strconv.Atoi(pageSize)
-	if err != nil {
-		c.JSON(400, gin.H{"error": "Invalid pageSize parameter"})
-		return
-	}
-
-	params := dto.BillQueryParams{
-		Page:      pageInt,
-		PageSize:  pageSizeInt,
-		SortBy:    sortBy,
-		SortOrder: sortOrder,
-	}
-	bills, total, err := h.service.Query(&params)
-	if err != nil {
-		h.logger.Error(err)
-		c.JSON(500, gin.H{"error": err.Error()})
-		return
-	}
-	c.JSON(200, gin.H{"bills": bills, "total": total})
+	c.JSON(200, gin.H{"data": cities})
 }
 
 // func (h BillHandler) CreateBill(c *gin.Context) {

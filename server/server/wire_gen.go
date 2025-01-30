@@ -7,14 +7,13 @@
 package server
 
 import (
+	"github.com/google/wire"
 	"watt-flow/config"
 	"watt-flow/db"
 	"watt-flow/handler"
 	"watt-flow/repository"
 	"watt-flow/service"
 	"watt-flow/util"
-
-	"github.com/google/wire"
 )
 
 // Injectors from wire.go:
@@ -50,10 +49,14 @@ func InitDeps(env *config.Environment) *Server {
 	pricelistRepository := repository.NewPricelistRepository(database, logger)
 	pricelistService := service.NewPricelistService(pricelistRepository)
 	pricelistHandler := handler.NewPricelistHandler(pricelistService, logger)
+	billRepository := repository.NewBillRepository(database, logger)
+	monthlyBillRepository := repository.NewMonthlyBillRepository(database, logger)
+	billService := service.NewBillService(billRepository, monthlyBillRepository)
+	billHandler := handler.NewBillHandler(billService, logger)
 	cityRepository := repository.NewCityRepository(database, logger)
 	cityService := service.NewCityService(cityRepository)
 	cityHandler := handler.NewCityHandler(cityService, logger)
-	server := NewServer(logger, userService, authService, restartService, userHandler, propertyService, propertyHandler, householdService, householdHandler, ownershipService, ownershipHandler, deviceStatusService, deviceStatusHandler, addressService, addressHandler, meetingService, meetingHandler, pricelistService, pricelistHandler, cityService, cityHandler, database)
+	server := NewServer(logger, userService, authService, restartService, userHandler, propertyService, propertyHandler, householdService, householdHandler, ownershipService, ownershipHandler, deviceStatusService, deviceStatusHandler, addressService, addressHandler, meetingService, meetingHandler, pricelistService, pricelistHandler, billService, billHandler, cityService, cityHandler, database)
 	return server
 }
 
@@ -76,3 +79,5 @@ var cityServiceSet = wire.NewSet(service.NewCityService, wire.Bind(new(service.I
 var meetingServiceSet = wire.NewSet(service.NewMeetingService, wire.Bind(new(service.IMeetingService), new(*service.MeetingService)))
 
 var pricelistServiceSet = wire.NewSet(service.NewPricelistService, wire.Bind(new(service.IPricelistService), new(*service.PricelistService)))
+
+var billServiceSet = wire.NewSet(service.NewBillService, wire.Bind(new(service.IBillService), new(*service.BillService)))

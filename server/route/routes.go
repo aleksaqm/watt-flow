@@ -29,4 +29,5 @@ func RegisterRoutes(
 	NewCityRoute(engine).Register(server)
 	NewMeetingRoute(engine).Register(server)
 	NewPricelistRoute(engine).Register(server)
+	NewBillRoute(engine).Register(server)
 }
