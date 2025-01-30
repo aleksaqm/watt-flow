@@ -7,3 +7,10 @@ export interface Pricelist {
   bill_power: number,
   date: Date,
 }
+
+export interface Bill {
+  id: number,
+  date: string,
+  issue_date: Date,
+  status: string
+}

@@ -20,88 +20,65 @@ import {
   PaginationNext,
   PaginationPrev,
 } from '@/shad/components/ui/pagination'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/shad/components/ui/dialog'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/shad/components/ui/alert-dialog'
 import Input from '@/shad/components/ui/input/Input.vue';
-import type { Pricelist } from './pricelist'
-import { useToast } from '@/shad/components/ui/toast/use-toast'
+import type { Bill } from './models.ts'
 import Toaster from '@/shad/components/ui/toast/Toaster.vue';
-import NewPricelistForm from './NewPricelistForm.vue'
 import Spinner from '../Spinner.vue'
 
-const { toast } = useToast()
-const dialogKey = ref(0)
-
-
-const pricelists = ref<Pricelist[]>([])
+const bills = ref<Bill[]>([])
 
 const pagination = ref({ page: 1, total: 0, perPage: 10 })
 
 const sortOrder = ref<{ [key: string]: "asc" | "desc" | "" }>({
-  valid_from: "",
+  month: "",
 })
 const totalPages = computed(() => Math.ceil(pagination.value.total / pagination.value.perPage))
 const loading = ref(false);
 
-async function fetchPricelists() {
+async function fetchBills() {
 
   try {
     const params = {
       page: pagination.value.page,
       pageSize: pagination.value.perPage,
-      sortBy: 'valid_from',
-      sortOrder: sortOrder.value['valid_from'],
+      sortBy: 'date',
+      sortOrder: sortOrder.value['date'],
     }
+    loading.value = true;
 
-    const response = await axios.get('/api/pricelist/query', { params: params })
+    const response = await axios.get('/api/bills/sent', { params: params })
 
-    if (response.data && response.data.pricelists) {
-      pricelists.value = response.data.pricelists.map((pricelist: any) => mapToPricelist(pricelist))
+    if (response.data && response.data.bills) {
+      bills.value = response.data.bills.map((bill: any) => mapToBill(bill))
       pagination.value.total = response.data.total
     }
+    loading.value = false;
   } catch (error) {
-    console.error('Failed to fetch pricelist:', error)
+    console.error('Failed to fetch bills:', error)
+    loading.value = false;
   }
 }
 
-function mapToPricelist(data: any): Pricelist {
+function mapToBill(data: any): Bill {
   return {
     id: data.id,
-    date: data.valid_from,
-    red: data.red_zone,
-    blue: data.blue_zone,
-    green: data.green_zone,
-    tax: data.tax,
-    bill_power: data.billing_power,
+    date: data.date,
+    issue_date: data.issue_date,
+    status: data.status
   }
 }
 
 
 function onPageChange(page: number) {
   pagination.value.page = page
-  fetchPricelists()
+  fetchBills()
 }
 
 function onSortChange(field: string) {
   let temp = sortOrder.value[field]
   sortOrder.value.date = ""
   sortOrder.value[field] = temp === "asc" ? "desc" : "asc"
-  fetchPricelists()
+  fetchBills()
 }
 
 function getButtonStyle(isSelected: boolean) {
@@ -117,105 +94,30 @@ function formatDate(date: string): string {
   }
   return new Date(date).toLocaleString('sr-RS', options)
 }
-
-const pricelistCreated = () => {
-  toast({
-    title: 'Operation Successful',
-    description: 'You successfully added new pricelist!',
-    variant: 'default'
-  })
-  dialogKey.value++;
-  fetchPricelists()
-}
-
-const deletePricelist = async (id: number) => {
-  try {
-    loading.value = true;
-    const response = await axios.delete('/api/pricelist/' + id)
-    console.log(response)
-    toast({
-      title: 'Operation succeded!',
-      description: "Pricelist deleted successfully!",
-      variant: 'default'
-    })
-    loading.value = false;
-    fetchPricelists()
-  } catch (error: any) {
-    const errorMessage = 'Try again later.'
-    console.error('Error:', error)
-    loading.value = false;
-    toast({
-      title: 'Pricelist deletion failed',
-      description: errorMessage,
-      variant: 'destructive'
-    })
-  }
-
-}
 onMounted(() => {
-  fetchPricelists()
+  fetchBills()
 })
 
-const isDeleteDisabled = (date: Date) => {
-  return new Date(date) <= new Date();
-}
 
 </script>
 
 <template>
 
   <div class="p-7 flex flex-col bg-white shadow-lg gap-10 mt-10">
-    <Dialog :key="dialogKey">
-      <DialogTrigger>
-        <Button variant="outline">Add new pricelist</Button>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>New pricelist</DialogTitle>
-        </DialogHeader>
-        <NewPricelistForm @pricelist-created="pricelistCreated"></NewPricelistForm>
-      </DialogContent>
-
-    </Dialog>
     <Spinner v-if="loading" />
     <Table v-if="!loading" class=" gap-5 items-center border rounded-2xl border-gray-300 shadow-gray-500 p-10 mb-10">
       <TableHeader>
         <TableRow>
-          <TableHead @click="onSortChange('date')" :orientation="sortOrder.date">Valid from</TableHead>
-          <TableHead>Bill. power</TableHead>
-          <TableHead>Red</TableHead>
-          <TableHead>Blue</TableHead>
-          <TableHead>Green</TableHead>
-          <TableHead>Tax</TableHead>
-          <TableHead>Actions</TableHead>
+          <TableHead @click="onSortChange('date')" :orientation="sortOrder.date">Month</TableHead>
+          <TableHead>Issue date</TableHead>
+          <TableHead>Status</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
-        <TableRow v-for="pricelist in pricelists  " :key="pricelist.id">
-          <TableCell>{{ formatDate(pricelist.date.toString()) }}</TableCell>
-          <TableCell>{{ pricelist.bill_power }}</TableCell>
-          <TableCell>{{ pricelist.red }}</TableCell>
-          <TableCell>{{ pricelist.blue }}</TableCell>
-          <TableCell>{{ pricelist.green }}</TableCell>
-          <TableCell>{{ pricelist.tax }}</TableCell>
-          <TableCell>
-            <AlertDialog>
-              <AlertDialogTrigger :disabled="isDeleteDisabled(pricelist.date)"><Button
-                  :disabled="isDeleteDisabled(pricelist.date)" class="bg-red-300">Delete</Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction><Button @click="deletePricelist(pricelist.id)">Delete</Button></AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-
-          </TableCell>
-
+        <TableRow v-for="bill in bills  " :key="bill.id">
+          <TableCell>{{ bill.date }}</TableCell>
+          <TableCell>{{ formatDate(bill.issue_date.toString()) }}</TableCell>
+          <TableCell>{{ bill.status }}</TableCell>
         </TableRow>
       </TableBody>
     </Table>

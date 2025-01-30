@@ -38,7 +38,7 @@ import {
   AlertDialogTrigger,
 } from '@/shad/components/ui/alert-dialog'
 import Input from '@/shad/components/ui/input/Input.vue';
-import type { Pricelist } from './pricelist'
+import type { Pricelist } from './models'
 import { useToast } from '@/shad/components/ui/toast/use-toast'
 import Toaster from '@/shad/components/ui/toast/Toaster.vue';
 import NewPricelistForm from './NewPricelistForm.vue'
