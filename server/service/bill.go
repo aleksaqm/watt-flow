@@ -3,13 +3,15 @@ package service
 import (
 	"fmt"
 	"time"
+	"watt-flow/dto"
 	"watt-flow/model"
 	"watt-flow/repository"
 )
 
 type IBillService interface {
 	FindById(id uint64) (*model.Bill, error)
-	// Query(params *dto.BillQueryParams) ([]model.Bill, int64, error)
+	SendBill(year int, month int) (*model.MonthlyBill, error)
+	QueryMonthly(params *dto.MonthlyBillQueryParams) ([]model.MonthlyBill, int64, error)
 	GetUnsentMonthlyBills() ([]string, error)
 }
 
@@ -79,6 +81,40 @@ func (s *BillService) GetUnsentMonthlyBills() ([]string, error) {
 	}
 
 	return missingMonths, nil
+}
+
+func (service *BillService) QueryMonthly(queryParams *dto.MonthlyBillQueryParams) ([]model.MonthlyBill, int64, error) {
+	var bills []model.MonthlyBill
+	bills, total, err := service.monthlyBillRepository.Query(queryParams)
+	if err != nil {
+		return nil, 0, err
+	}
+	return bills, total, nil
+}
+
+func (s *BillService) SendBill(year int, month int) (*model.MonthlyBill, error) {
+	now := time.Now()
+
+	billingDate, err := time.Parse("2006-01", fmt.Sprintf("%d-%02d", year, month))
+	if err != nil {
+		return nil, fmt.Errorf("invalid year or month format")
+	}
+
+	// Check if the billing date is in the future
+	if billingDate.After(time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)) {
+		return nil, fmt.Errorf("cannot issue a bill for a future month")
+	}
+
+	monthlyBill := model.MonthlyBill{
+		IssueDate:   time.Now(),
+		BillingDate: fmt.Sprintf("%d-%02d", year, month),
+		Status:      "In Progress",
+	}
+	bill, err := s.monthlyBillRepository.Create(&monthlyBill)
+	if err != nil {
+		return nil, err
+	}
+	return &bill, nil
 }
 
 // func (t *BillService) CreatePricelist(newPricelist *dto.NewPricelist) (*model.Pricelist, error) {

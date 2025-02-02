@@ -1,7 +1,6 @@
 package dto
 
 type BillSearchParams struct {
-	// Clerk string `json:"clerk"`
 }
 
 type BillQueryParams struct {

@@ -1,7 +1,13 @@
 <script setup lang="ts">
 import UnsentBills from '@/components/bills/UnsentBills.vue';
 import Bills from '@/components/bills/Bills.vue';
+import { ref } from 'vue';
 
+
+const triggerQuery = ref(0)
+const onSent = () => {
+  triggerQuery.value++
+}
 </script>
 <template>
   <main>
@@ -9,11 +15,11 @@ import Bills from '@/components/bills/Bills.vue';
       <div class="w-full text-center my-10 text-xl">
         Unsent bills
       </div>
-      <UnsentBills></UnsentBills>
+      <UnsentBills @bill-sent="onSent"></UnsentBills>
       <div class="w-full text-center my-10 text-xl">
         Sent bills
       </div>
-      <Bills></Bills>
+      <Bills :trigger-query="triggerQuery"></Bills>
     </div>
   </main>
 </template>

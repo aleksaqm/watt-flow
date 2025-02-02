@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 	"watt-flow/db"
+	"watt-flow/dto"
 	"watt-flow/model"
 	"watt-flow/util"
 
@@ -56,38 +57,31 @@ func (repository *MonthlyBillRepository) FindBillsBetweenDates(date1 time.Time, 
 	return bills, nil
 }
 
-// func (repository *BillRepository) FindForUser(userID uint64, params *dto.BillSearchParams) ([]model.Bill, int64, error) {
-// 	var bills []model.Bill
-// 	var total int64
-//
-// 	baseQuery := repository.Database.Model(&model.Bill{}).
-// 		Joins("JOIN users ON users.id = meetings.clerk_id").
-// 		Where("meetings.user_id = ?", userID)
-//
-// 	if params.Search.Clerk != "" {
-// 		baseQuery = baseQuery.Where("users.username ILIKE ?", "%"+params.Search.Clerk+"%")
-// 	}
-//
-// 	if err := baseQuery.Count(&total).Error; err != nil {
-// 		repository.Logger.Error("Error querying meetings count", err)
-// 		return nil, 0, err
-// 	}
-//
-// 	sortOrder := params.SortOrder
-// 	if sortOrder != "asc" && sortOrder != "desc" {
-// 		sortOrder = "asc"
-// 	}
-//
-// 	query := baseQuery.Order(fmt.Sprintf("%s %s", params.SortBy, sortOrder))
-// 	offset := (params.Page - 1) * params.PageSize
-// 	query = query.Offset(offset).Limit(params.PageSize)
-//
-// 	if err := query.
-// 		Preload("Clerk").
-// 		Find(&meetings).Error; err != nil {
-// 		repository.Logger.Error("Error querying meetings", err)
-// 		return nil, 0, err
-// 	}
-//
-// 	return meetings, total, nil
-// }
+func (repository *MonthlyBillRepository) Query(params *dto.MonthlyBillQueryParams) ([]model.MonthlyBill, int64, error) {
+	var bills []model.MonthlyBill
+	var total int64
+
+	baseQuery := repository.Database.Model(&model.MonthlyBill{})
+
+	if err := baseQuery.Count(&total).Error; err != nil {
+		repository.Logger.Error("Error querying bills count", err)
+		return nil, 0, err
+	}
+
+	sortOrder := params.SortOrder
+	if sortOrder != "asc" && sortOrder != "desc" {
+		sortOrder = "asc"
+	}
+
+	query := baseQuery.Order(fmt.Sprintf("%s %s", params.SortBy, sortOrder))
+	offset := (params.Page - 1) * params.PageSize
+	query = query.Offset(offset).Limit(params.PageSize)
+
+	if err := query.
+		Find(&bills).Error; err != nil {
+		repository.Logger.Error("Error querying bills", err)
+		return nil, 0, err
+	}
+
+	return bills, total, nil
+}

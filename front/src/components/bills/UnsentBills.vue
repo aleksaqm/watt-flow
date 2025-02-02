@@ -31,6 +31,8 @@ const unsentBills = ref<string[]>([])
 
 const loading = ref(false);
 
+const emit = defineEmits(['billSent']);
+
 async function fetchUnsentBills() {
 
   try {
@@ -51,7 +53,24 @@ onMounted(() => {
   fetchUnsentBills()
 })
 
-const sendBill = (month: string) => {
+const sendBill = async (month: string) => {
+
+  try {
+    loading.value = true;
+    const response = await axios.post('/api/bills/send', { month: month })
+    console.log(response)
+    loading.value = false
+    fetchUnsentBills();
+    emit("billSent");
+  } catch (error: any) {
+    loading.value = false
+    console.error('Error:', error)
+    toast({
+      title: 'Sending bill failed',
+      description: "Error happened while sending bill for selected month",
+      variant: 'destructive'
+    })
+  }
 
 }
 

@@ -21,7 +21,7 @@ import {
   PaginationPrev,
 } from '@/shad/components/ui/pagination'
 import Input from '@/shad/components/ui/input/Input.vue';
-import type { Bill } from './models.ts'
+import type { Bill } from './models'
 import Toaster from '@/shad/components/ui/toast/Toaster.vue';
 import Spinner from '../Spinner.vue'
 
@@ -35,18 +35,33 @@ const sortOrder = ref<{ [key: string]: "asc" | "desc" | "" }>({
 const totalPages = computed(() => Math.ceil(pagination.value.total / pagination.value.perPage))
 const loading = ref(false);
 
+const props = defineProps({
+  triggerQuery: {
+    type: Number,
+    default: 0
+  }
+})
+const dialogKey = ref(0)
+
+
+// Watch for changes in triggerSearch to run fetch
+watch(() => props.triggerQuery, () => {
+  pagination.value.page = 1
+  fetchBills()
+})
+
 async function fetchBills() {
 
   try {
     const params = {
       page: pagination.value.page,
       pageSize: pagination.value.perPage,
-      sortBy: 'date',
-      sortOrder: sortOrder.value['date'],
+      sortBy: 'billing_date',
+      sortOrder: sortOrder.value['billing_date'],
     }
     loading.value = true;
 
-    const response = await axios.get('/api/bills/sent', { params: params })
+    const response = await axios.get('/api/bills/query', { params: params })
 
     if (response.data && response.data.bills) {
       bills.value = response.data.bills.map((bill: any) => mapToBill(bill))
@@ -62,7 +77,7 @@ async function fetchBills() {
 function mapToBill(data: any): Bill {
   return {
     id: data.id,
-    date: data.date,
+    date: data.billing_date,
     issue_date: data.issue_date,
     status: data.status
   }
@@ -108,7 +123,7 @@ onMounted(() => {
     <Table v-if="!loading" class=" gap-5 items-center border rounded-2xl border-gray-300 shadow-gray-500 p-10 mb-10">
       <TableHeader>
         <TableRow>
-          <TableHead @click="onSortChange('date')" :orientation="sortOrder.date">Month</TableHead>
+          <TableHead @click="onSortChange('billing_date')" :orientation="sortOrder.billing_date">Month</TableHead>
           <TableHead>Issue date</TableHead>
           <TableHead>Status</TableHead>
         </TableRow>
