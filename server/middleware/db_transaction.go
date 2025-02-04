@@ -1,10 +1,13 @@
 package middleware
 
 import (
-	"github.com/gin-gonic/gin"
 	"net/http"
+	"runtime/debug"
 	"watt-flow/db"
 	"watt-flow/util"
+
+	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
 type DatabaseTrx struct {
@@ -40,6 +43,8 @@ func (m DatabaseTrx) Register() {
 	m.engine.Use(func(c *gin.Context) {
 		txHandle := m.db.DB.Begin()
 		m.logger.Info("Transaction BEGIN")
+		m.logger.Info("Transaction BEGIN", zap.String("path", c.Request.URL.Path))
+		m.logger.Debug("Stack Trace:\n" + string(debug.Stack()))
 
 		defer func() {
 			if r := recover(); r != nil {

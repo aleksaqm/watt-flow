@@ -79,10 +79,34 @@ func (h *BillHandler) SendBill(c *gin.Context) {
 		return
 	}
 
-	data, err := h.service.SendBill(year, month)
+	data, err := h.service.GenerateMonthlyBill(year, month)
 	if err != nil {
 		h.logger.Error(err)
 		c.JSON(500, gin.H{"error": "Failed to send bill for specified month!"})
+		return
+	}
+	c.JSON(201, gin.H{"data": data})
+}
+
+func (h *BillHandler) InitiateBilling(c *gin.Context) {
+	var bill dto.SendBillDto
+	if err := c.BindJSON(&bill); err != nil {
+		h.logger.Error(err)
+		c.JSON(400, gin.H{"error": "Invalid bill month"})
+		return
+	}
+	var year, month int
+	_, err := fmt.Sscanf(bill.Month, "%d-%02d", &year, &month)
+	if err != nil {
+		h.logger.Error(err)
+		c.JSON(500, gin.H{"error": "Failed to send bill for specified month!"})
+		return
+	}
+
+	data, err := h.service.InitiateBilling(year, month)
+	if err != nil {
+		h.logger.Error(err)
+		c.JSON(500, gin.H{"error": "Failed to send bills for specified month!"})
 		return
 	}
 	c.JSON(201, gin.H{"data": data})

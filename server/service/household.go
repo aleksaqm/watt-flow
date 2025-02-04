@@ -2,11 +2,12 @@ package service
 
 import (
 	"fmt"
-	"gorm.io/gorm"
 	"log"
 	"watt-flow/dto"
 	"watt-flow/model"
 	"watt-flow/repository"
+
+	"gorm.io/gorm"
 )
 
 type IHouseholdService interface {
@@ -15,6 +16,7 @@ type IHouseholdService interface {
 	Update(household *model.Household) (*model.Household, error)
 	Delete(id uint64) error
 	FindByStatus(status model.HouseholdStatus) ([]model.Household, error)
+	GetOwnedHouseholds() ([]model.Household, error)
 	FindByCadastralNumber(id string) (*model.Household, error)
 	Query(queryParams *dto.HouseholdQueryParams) ([]dto.HouseholdResultDto, int64, error)
 	AcceptHouseholds(tx *gorm.DB, propertyID uint64) error
@@ -114,6 +116,14 @@ func (service *HouseholdService) FindByCadastralNumber(id string) (*model.Househ
 
 func (service *HouseholdService) FindByStatus(status model.HouseholdStatus) ([]model.Household, error) {
 	households, err := service.repository.FindByStatus(status)
+	if err != nil {
+		return nil, err
+	}
+	return households, nil
+}
+
+func (service *HouseholdService) GetOwnedHouseholds() ([]model.Household, error) {
+	households, err := service.repository.GetOwnedHouseholds()
 	if err != nil {
 		return nil, err
 	}

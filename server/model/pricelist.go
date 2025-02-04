@@ -12,5 +12,4 @@ type Pricelist struct {
 	GreenZone    float64        `json:"green_zone"`
 	BillingPower float64        `json:"billing_power"`
 	Tax          float64        `json:"tax"`
-	IsActive     bool           `json:"is_active"`
 }

@@ -2,6 +2,7 @@ package repository
 
 import (
 	"fmt"
+	"time"
 	"watt-flow/db"
 	"watt-flow/dto"
 	"watt-flow/model"
@@ -34,6 +35,17 @@ func (repository *PricelistRepository) Create(pricelist *model.Pricelist) (model
 		return *pricelist, result.Error
 	}
 	return *pricelist, nil
+}
+
+func (repository *PricelistRepository) GetActivePricelist() (*model.Pricelist, error) {
+	var currentPricelist model.Pricelist
+	err := repository.Database.Where("valid_from <= ?", time.Now()).
+		Order("valid_from DESC").
+		First(&currentPricelist).Error
+	if err != nil {
+		return nil, fmt.Errorf("error fetching the current pricelist: %v", err)
+	}
+	return &currentPricelist, nil
 }
 
 func (repository *PricelistRepository) FindById(id uint64) (*model.Pricelist, error) {

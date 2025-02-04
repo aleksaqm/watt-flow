@@ -15,6 +15,7 @@ type IPricelistService interface {
 	FindById(id uint64) (*model.Pricelist, error)
 	FindByDate(date datatypes.Date) (*model.Pricelist, error)
 	Query(params *dto.PricelistQueryParams) ([]model.Pricelist, int64, error)
+	GetActivePricelist() (*model.Pricelist, error)
 	Delete(id uint64) error
 }
 
@@ -81,4 +82,12 @@ func (t *PricelistService) Query(params *dto.PricelistQueryParams) ([]model.Pric
 	var pricelists []model.Pricelist
 	pricelists, total, err := t.pricelistRepository.Query(params)
 	return pricelists, total, err
+}
+
+func (s *PricelistService) GetActivePricelist() (*model.Pricelist, error) {
+	pricelist, err := s.pricelistRepository.GetActivePricelist()
+	if err != nil {
+		return nil, err
+	}
+	return pricelist, nil
 }

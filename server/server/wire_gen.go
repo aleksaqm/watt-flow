@@ -7,13 +7,14 @@
 package server
 
 import (
-	"github.com/google/wire"
 	"watt-flow/config"
 	"watt-flow/db"
 	"watt-flow/handler"
 	"watt-flow/repository"
 	"watt-flow/service"
 	"watt-flow/util"
+
+	"github.com/google/wire"
 )
 
 // Injectors from wire.go:
@@ -51,7 +52,7 @@ func InitDeps(env *config.Environment) *Server {
 	pricelistHandler := handler.NewPricelistHandler(pricelistService, logger)
 	billRepository := repository.NewBillRepository(database, logger)
 	monthlyBillRepository := repository.NewMonthlyBillRepository(database, logger)
-	billService := service.NewBillService(billRepository, monthlyBillRepository)
+	billService := service.NewBillService(billRepository, monthlyBillRepository, householdService, pricelistService, influxQueryHelper)
 	billHandler := handler.NewBillHandler(billService, logger)
 	cityRepository := repository.NewCityRepository(database, logger)
 	cityService := service.NewCityService(cityRepository)

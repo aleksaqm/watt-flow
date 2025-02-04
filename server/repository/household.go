@@ -57,6 +57,16 @@ func (repository *HouseholdRepository) FindByStatus(status model.HouseholdStatus
 	return households, nil
 }
 
+func (repository *HouseholdRepository) GetOwnedHouseholds() ([]model.Household, error) {
+	var households []model.Household
+	result := repository.Database.Where("status = 1").Find(&households).Preload("Owner")
+	if result.Error != nil {
+		repository.Logger.Error("Error finding households by status", result.Error)
+		return nil, result.Error
+	}
+	return households, nil
+}
+
 func (repository *HouseholdRepository) Query(params *dto.HouseholdQueryParams) ([]model.Household, int64, error) {
 	var households []model.Household
 	var total int64

@@ -6,24 +6,32 @@ import (
 	"watt-flow/dto"
 	"watt-flow/model"
 	"watt-flow/repository"
+	"watt-flow/util"
 )
 
 type IBillService interface {
 	FindById(id uint64) (*model.Bill, error)
-	SendBill(year int, month int) (*model.MonthlyBill, error)
+	GenerateMonthlyBill(year int, month int) (*model.MonthlyBill, error)
 	QueryMonthly(params *dto.MonthlyBillQueryParams) ([]model.MonthlyBill, int64, error)
 	GetUnsentMonthlyBills() ([]string, error)
+	InitiateBilling(year int, month int) (*model.MonthlyBill, error)
 }
 
 type BillService struct {
 	billRepository        *repository.BillRepository
 	monthlyBillRepository *repository.MonthlyBillRepository
+	householdService      IHouseholdService
+	pricelistService      IPricelistService
+	influxQueryHelper     *util.InfluxQueryHelper
 }
 
-func NewBillService(billRepository *repository.BillRepository, monthlyBillRepository *repository.MonthlyBillRepository) *BillService {
+func NewBillService(billRepository *repository.BillRepository, monthlyBillRepository *repository.MonthlyBillRepository, householdService IHouseholdService, pricelistService IPricelistService, influxQueryHelper *util.InfluxQueryHelper) *BillService {
 	return &BillService{
 		billRepository:        billRepository,
 		monthlyBillRepository: monthlyBillRepository,
+		householdService:      householdService,
+		pricelistService:      pricelistService,
+		influxQueryHelper:     influxQueryHelper,
 	}
 }
 
@@ -92,7 +100,60 @@ func (service *BillService) QueryMonthly(queryParams *dto.MonthlyBillQueryParams
 	return bills, total, nil
 }
 
-func (s *BillService) SendBill(year int, month int) (*model.MonthlyBill, error) {
+func (service *BillService) InitiateBilling(year int, month int) (*model.MonthlyBill, error) {
+	monthlyBill, err := service.GenerateMonthlyBill(year, month)
+	if err != nil {
+		return nil, err
+	}
+	households, err := service.householdService.GetOwnedHouseholds()
+	if err != nil {
+		return nil, err
+	}
+	activePricelist, err := service.pricelistService.GetActivePricelist()
+	if err != nil {
+		return nil, err
+	}
+	for _, household := range households {
+		spentPower, err := service.influxQueryHelper.GetTotalConsumptionForMonth(household.DeviceStatusID, year, month)
+		if err != nil {
+			return nil, err
+		}
+		calculatedPrice := calculatePrice(spentPower, *activePricelist)
+		bill := &model.Bill{
+			BillingDate: fmt.Sprintf("%d-%02d", year, month),
+			IssueDate:   time.Now(),
+			Pricelist:   *activePricelist,
+			Owner:       *household.Owner,
+			SpentPower:  spentPower,
+			Price:       calculatedPrice,
+		}
+		_, err = service.billRepository.Create(bill)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return monthlyBill, nil
+}
+
+func calculatePrice(spentPower float64, pricelist model.Pricelist) float64 {
+	const billingPowerConstant = 7.0
+
+	greenConsumption := min(spentPower, 350)
+	blueConsumption := min(max(spentPower-350, 0), 1250)
+	redConsumption := max(spentPower-1600, 0)
+
+	basePrice := (greenConsumption * pricelist.GreenZone) +
+		(blueConsumption * pricelist.BlueZone) +
+		(redConsumption * pricelist.RedZone) +
+		(billingPowerConstant * pricelist.BillingPower)
+
+	// Apply tax
+	finalPrice := basePrice + (basePrice * pricelist.Tax / 100)
+
+	return finalPrice
+}
+
+func (s *BillService) GenerateMonthlyBill(year int, month int) (*model.MonthlyBill, error) {
 	now := time.Now()
 
 	billingDate, err := time.Parse("2006-01", fmt.Sprintf("%d-%02d", year, month))
@@ -116,30 +177,3 @@ func (s *BillService) SendBill(year int, month int) (*model.MonthlyBill, error) 
 	}
 	return &bill, nil
 }
-
-// func (t *BillService) CreatePricelist(newPricelist *dto.NewPricelist) (*model.Pricelist, error) {
-// 	date := datatypes.Date(time.Date(newPricelist.Year, time.Month(newPricelist.Month), 1, 0, 0, 0, 0, time.UTC))
-// 	found, _ := t.FindByDate(date)
-// 	if found != nil {
-// 		return nil, fmt.Errorf("pricelist already exists for given time")
-// 	}
-// 	pricelist := model.Pricelist{
-// 		ValidFrom:    date,
-// 		RedZone:      newPricelist.RedZone,
-// 		BlueZone:     newPricelist.BlueZone,
-// 		GreenZone:    newPricelist.GreenZone,
-// 		BillingPower: newPricelist.BillingPower,
-// 		Tax:          newPricelist.Tax,
-// 	}
-// 	createdPricelist, err := t.pricelistRepository.Create(&pricelist)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	return &createdPricelist, nil
-// }
-
-// func (t *BillService) Query(params *dto.BillQueryParams) ([]model.Bill, int64, error) {
-// 	var bills []model.Bill
-// 	bills, total, err := t.billRepository.Query(params)
-// 	return bills, total, err
-// }
