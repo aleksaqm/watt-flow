@@ -121,13 +121,6 @@ func (service *BillService) InitiateBilling(year int, month int) (*model.Monthly
 			return nil, err
 		}
 		calculatedPrice := calculatePrice(spentPower, *activePricelist)
-		if household.Owner == nil {
-			fmt.Println("Error owner")
-		}
-
-		if activePricelist == nil {
-			fmt.Println("Error pricelist")
-		}
 		billingDate := fmt.Sprintf("%d-%02d", year, month)
 
 		bill := &model.Bill{
@@ -140,14 +133,15 @@ func (service *BillService) InitiateBilling(year int, month int) (*model.Monthly
 			PricelistID: activePricelist.ID,
 			OwnerID:     household.Owner.Id,
 		}
-		fmt.Println(bill)
-		emailBody := util.GenerateMonthlyBillEmail(bill)
-		err = service.emailSender.SendEmail(household.Owner.Email, "Electricity bill for "+billingDate, emailBody)
+		emailBody, qrCode, err := util.GenerateMonthlyBillEmail(bill)
+		if err != nil {
+			return nil, err
+		}
+		err = service.emailSender.SendEmailWithQRCode(household.Owner.Email, "Electricity bill for "+billingDate, emailBody, qrCode)
 		if err != nil {
 			return nil, err
 		}
 		_, err = service.billRepository.Create(bill)
-		fmt.Println("saved bill")
 		if err != nil {
 			return nil, err
 		}

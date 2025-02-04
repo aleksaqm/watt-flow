@@ -1,11 +1,15 @@
 package util
 
 import (
+	"bytes"
 	"fmt"
+	"io"
+	"strconv"
 	"time"
 	"watt-flow/config"
 	"watt-flow/model"
 
+	"github.com/skip2/go-qrcode"
 	gomail "gopkg.in/mail.v2"
 )
 
@@ -35,8 +39,52 @@ func (sender *EmailSender) SendEmail(receiver string, subject string, body strin
 	}
 }
 
-func GenerateMonthlyBillEmail(bill *model.Bill) string {
+func (sender *EmailSender) SendEmailWithQRCode(receiver, subject, body string, qrCodeBytes []byte) error {
+	message := gomail.NewMessage()
+	message.SetHeader("From", "wattflow12@gmail.com")
+	message.SetHeader("To", receiver)
+	message.SetHeader("Subject", subject)
+
+	cid := "qr-code"
+	message.Embed("qr-code.png", gomail.SetCopyFunc(func(w io.Writer) error {
+		_, err := w.Write(qrCodeBytes)
+		return err
+	}), gomail.SetHeader(map[string][]string{
+		"Content-ID": {fmt.Sprintf("<%s>", cid)},
+	}))
+
+	message.SetBody("text/html", body)
+
+	dialer := gomail.NewDialer("smtp.gmail.com", 587, "wattflow12@gmail.com", sender.emailSecret)
+
+	if err := dialer.DialAndSend(message); err != nil {
+		return err
+	}
+	return nil
+}
+
+func GenerateQRCode(link string) ([]byte, error) {
+	qr, err := qrcode.New(link, qrcode.Medium)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate QR code: %w", err)
+	}
+
+	buf := new(bytes.Buffer)
+	err = qr.Write(256, buf)
+	if err != nil {
+		return nil, fmt.Errorf("failed to write QR code: %w", err)
+	}
+
+	return buf.Bytes(), nil
+}
+
+func GenerateMonthlyBillEmail(bill *model.Bill) (string, []byte, error) {
 	date := time.Time(bill.Pricelist.ValidFrom).Format("2006-01")
+	paymentLink := fmt.Sprintf("http://localhost:80/api/pay/%s", strconv.FormatUint(bill.ID, 10))
+	qrCodeBytes, err := GenerateQRCode(paymentLink)
+	if err != nil {
+		return "", nil, fmt.Errorf("error generating QR code: %w", err)
+	}
 	return fmt.Sprintf(`
 	<html>
 		<body style="font-family: Arial, sans-serif; background: #f4f4f4; color: #333; padding: 40px; text-align: center;">
@@ -81,12 +129,15 @@ func GenerateMonthlyBillEmail(bill *model.Bill) string {
 				<div style="text-align: center; margin-top: 30px;">
 					<a href="%s" style="display: inline-block; padding: 12px 24px; background-color: #1d1e26; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">Pay Now</a>
 				</div>
-
+        <h3 style="color: #1d1e26; text-align: center; margin-top: 20px;">Scan QR Code to Pay</h3>
+            <div style="text-align: center;">
+                <img src="cid:qr-code" alt="QR Code for Payment" style="width: 200px; height: 200px; margin-top: 10px;">
+            </div>
 				<p style="font-size: 14px; color: #888; margin-top: 20px; text-align: center;">If you have already paid, please ignore this message.</p>
 			</div>
 		</body>
 	</html>
-	`, date, bill.ID, bill.BillingDate, bill.Owner.Username, bill.SpentPower, date, bill.Pricelist.GreenZone, bill.Pricelist.BlueZone, bill.Pricelist.RedZone, bill.Pricelist.BillingPower, bill.Pricelist.Tax, bill.Price, "fdf")
+	`, date, bill.ID, bill.BillingDate, bill.Owner.Username, bill.SpentPower, date, bill.Pricelist.GreenZone, bill.Pricelist.BlueZone, bill.Pricelist.RedZone, bill.Pricelist.BillingPower, bill.Pricelist.Tax, bill.Price, paymentLink), qrCodeBytes, nil
 }
 
 func GenerateActivationEmailBody(activationLink string) string {
