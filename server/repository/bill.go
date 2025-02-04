@@ -24,13 +24,13 @@ func NewBillRepository(db db.Database, logger util.Logger) *BillRepository {
 	}
 }
 
-func (repository *BillRepository) Create(bill *model.Bill) (model.Bill, error) {
+func (repository *BillRepository) Create(bill *model.Bill) (*model.Bill, error) {
 	result := repository.Database.Preload(clause.Associations).Create(bill)
 	if result.Error != nil {
 		repository.Logger.Error("Error creating bill", result.Error)
-		return *bill, result.Error
+		return bill, result.Error
 	}
-	return *bill, nil
+	return bill, nil
 }
 
 func (repository *BillRepository) FindById(id uint64) (*model.Bill, error) {

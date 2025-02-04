@@ -2,7 +2,9 @@ package util
 
 import (
 	"fmt"
+	"time"
 	"watt-flow/config"
+	"watt-flow/model"
 
 	gomail "gopkg.in/mail.v2"
 )
@@ -33,11 +35,8 @@ func (sender *EmailSender) SendEmail(receiver string, subject string, body strin
 	}
 }
 
-func GenerateMonthlyBillEmail(
-	billID uint64, billDate string, spentPower float64, price float64,
-	ownerName string, validFrom string, blueZone, redZone, greenZone, billingPower, tax float64,
-	paymentLink string,
-) string {
+func GenerateMonthlyBillEmail(bill *model.Bill) string {
+	date := time.Time(bill.Pricelist.ValidFrom).Format("2006-01")
 	return fmt.Sprintf(`
 	<html>
 		<body style="font-family: Arial, sans-serif; background: #f4f4f4; color: #333; padding: 40px; text-align: center;">
@@ -63,9 +62,9 @@ func GenerateMonthlyBillEmail(
 						<th style="text-align: right; padding: 10px; background: #4d596a; color: white;"></th>
 					</tr>
 					<tr><td style="padding: 10px;">Pricelist Valid From:</td><td style="padding: 10px; text-align: right;">%s</td></tr>
-					<tr><td style="padding: 10px;">Green Zone Rate:</td><td style="padding: 10px; text-align: right;">$%.4f/kWh</td></tr>
-					<tr><td style="padding: 10px;">Blue Zone Rate:</td><td style="padding: 10px; text-align: right;">$%.4f/kWh</td></tr>
-					<tr><td style="padding: 10px;">Red Zone Rate:</td><td style="padding: 10px; text-align: right;">$%.4f/kWh</td></tr>
+					<tr><td style="padding: 10px;">Green Zone Rate:</td><td style="padding: 10px; text-align: right;">$%.3f/kWh</td></tr>
+					<tr><td style="padding: 10px;">Blue Zone Rate:</td><td style="padding: 10px; text-align: right;">$%.3f/kWh</td></tr>
+					<tr><td style="padding: 10px;">Red Zone Rate:</td><td style="padding: 10px; text-align: right;">$%.3f/kWh</td></tr>
 					<tr><td style="padding: 10px;">Billing Power Cost:</td><td style="padding: 10px; text-align: right;">$%.4f</td></tr>
 					<tr><td style="padding: 10px;">Tax Rate:</td><td style="padding: 10px; text-align: right;">%.2f%%</td></tr>
 				</table>
@@ -87,7 +86,7 @@ func GenerateMonthlyBillEmail(
 			</div>
 		</body>
 	</html>
-	`, billDate, billID, billDate, ownerName, spentPower, validFrom, greenZone, blueZone, redZone, billingPower, tax, price, paymentLink)
+	`, date, bill.ID, bill.BillingDate, bill.Owner.Username, bill.SpentPower, date, bill.Pricelist.GreenZone, bill.Pricelist.BlueZone, bill.Pricelist.RedZone, bill.Pricelist.BillingPower, bill.Pricelist.Tax, bill.Price, "fdf")
 }
 
 func GenerateActivationEmailBody(activationLink string) string {

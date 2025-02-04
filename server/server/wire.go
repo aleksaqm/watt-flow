@@ -55,7 +55,7 @@ var billServiceSet = wire.NewSet(
 	wire.Bind(new(service.IBillService), new(*service.BillService)))
 
 func InitDeps(env *config.Environment) *Server {
-	wire.Build(db.NewDatabase, util.NewLogger, util.NewInfluxQueryHelper, repository.NewUserRepository, service.NewAuthService, userServiceSet, service.NewRestartService, handler.NewUserHandler,
+	wire.Build(db.NewDatabase, util.NewLogger, util.NewEmailSender, util.NewInfluxQueryHelper, repository.NewUserRepository, service.NewAuthService, userServiceSet, service.NewRestartService, handler.NewUserHandler,
 		repository.NewPropertyRepository, propertyServiceSet, handler.NewPropertyHandler,
 		repository.NewHouseholdRepository, householdServiceSet, handler.NewHouseholdHandler,
 		repository.NewOwnershipRepository, ownershipServiceSet, handler.NewOwnershipHandler,

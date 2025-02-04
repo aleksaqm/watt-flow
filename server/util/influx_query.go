@@ -31,17 +31,18 @@ func NewInfluxQueryHelper(env *config.Environment) *InfluxQueryHelper {
 
 func (inf *InfluxQueryHelper) GetTotalConsumptionForMonth(deviceID string, year int, month int) (float64, error) {
 	queryAPI := inf.client.QueryAPI(inf.organization)
-
-	startTime := time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.UTC)
+	startTime := time.Date(year-1, time.Month(month), 1, 0, 0, 0, 0, time.UTC)
 	endTime := startTime.AddDate(0, 1, 0) // First day of the next month
 
 	fluxQuery := generateMonthConsumptionQueryString(deviceID, startTime.Format(time.RFC3339), endTime.Format(time.RFC3339))
+
 	result, err := queryAPI.Query(context.Background(), fluxQuery)
 	if err != nil {
 		return -1.0, err
 	}
 	defer result.Close()
 	var totalConsuption float64
+
 	for result.Next() {
 		if value, ok := result.Record().Value().(float64); ok {
 			totalConsuption = value
@@ -51,6 +52,7 @@ func (inf *InfluxQueryHelper) GetTotalConsumptionForMonth(deviceID string, year 
 	if result.Err() != nil {
 		return 0, result.Err()
 	}
+
 	return totalConsuption, nil
 }
 

@@ -7,14 +7,13 @@
 package server
 
 import (
+	"github.com/google/wire"
 	"watt-flow/config"
 	"watt-flow/db"
 	"watt-flow/handler"
 	"watt-flow/repository"
 	"watt-flow/service"
 	"watt-flow/util"
-
-	"github.com/google/wire"
 )
 
 // Injectors from wire.go:
@@ -23,18 +22,19 @@ func InitDeps(env *config.Environment) *Server {
 	logger := util.NewLogger(env)
 	database := db.NewDatabase(env, logger)
 	userRepository := repository.NewUserRepository(database, logger)
-	authService := service.NewAuthService(logger)
-	userService := service.NewUserService(userRepository, authService)
+	authService := service.NewAuthService(logger, env)
+	emailSender := util.NewEmailSender(env)
+	userService := service.NewUserService(userRepository, authService, emailSender)
 	restartService := service.NewRestartService(database, userService)
 	userHandler := handler.NewUserHandler(userService, logger)
 	propertyRepository := repository.NewPropertyRepository(database, logger)
 	householdRepository := repository.NewHouseholdRepository(database, logger)
 	ownershipRepository := repository.NewOwnershipRepository(database, logger)
 	householdService := service.NewHouseholdService(householdRepository, ownershipRepository)
-	propertyService := service.NewPropertyService(propertyRepository, householdService)
+	propertyService := service.NewPropertyService(propertyRepository, householdService, emailSender)
 	propertyHandler := handler.NewPropertyHandler(propertyService, logger)
 	householdHandler := handler.NewHouseholdHandler(householdService, logger)
-	ownershipService := service.NewOwnershipService(householdRepository, ownershipRepository)
+	ownershipService := service.NewOwnershipService(householdRepository, ownershipRepository, emailSender)
 	ownershipHandler := handler.NewOwnershipHandler(ownershipService, logger)
 	deviceStatusRepository := repository.NewDeviceStatusRepository(database, logger)
 	influxQueryHelper := util.NewInfluxQueryHelper(env)
@@ -52,7 +52,7 @@ func InitDeps(env *config.Environment) *Server {
 	pricelistHandler := handler.NewPricelistHandler(pricelistService, logger)
 	billRepository := repository.NewBillRepository(database, logger)
 	monthlyBillRepository := repository.NewMonthlyBillRepository(database, logger)
-	billService := service.NewBillService(billRepository, monthlyBillRepository, householdService, pricelistService, influxQueryHelper)
+	billService := service.NewBillService(billRepository, monthlyBillRepository, householdService, pricelistService, influxQueryHelper, emailSender)
 	billHandler := handler.NewBillHandler(billService, logger)
 	cityRepository := repository.NewCityRepository(database, logger)
 	cityService := service.NewCityService(cityRepository)
