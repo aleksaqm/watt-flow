@@ -3,7 +3,6 @@ package service
 import (
 	"errors"
 	"fmt"
-	"github.com/google/uuid"
 	"os"
 	"strconv"
 	"strings"
@@ -12,6 +11,8 @@ import (
 	"watt-flow/model"
 	"watt-flow/repository"
 	"watt-flow/util"
+
+	"github.com/google/uuid"
 )
 
 type IOwnershipService interface {
@@ -25,12 +26,14 @@ type IOwnershipService interface {
 type OwnershipService struct {
 	householdRepository *repository.HouseholdRepository
 	ownershipRepository *repository.OwnershipRepository
+	emailSender         *util.EmailSender
 }
 
-func NewOwnershipService(householdRepository *repository.HouseholdRepository, ownershipRepository *repository.OwnershipRepository) *OwnershipService {
+func NewOwnershipService(householdRepository *repository.HouseholdRepository, ownershipRepository *repository.OwnershipRepository, emailSender *util.EmailSender) *OwnershipService {
 	return &OwnershipService{
 		householdRepository: householdRepository,
 		ownershipRepository: ownershipRepository,
+		emailSender:         emailSender,
 	}
 }
 
@@ -94,7 +97,7 @@ func (service *OwnershipService) GetOwnersRequests(ownerId uint64, params *dto.O
 	if err != nil {
 		return nil, 0, err
 	}
-	var results = make([]dto.OwnershipResponseDto, 0)
+	results := make([]dto.OwnershipResponseDto, 0)
 	for _, result := range requests {
 		mappedRequest, _ := service.MapToOwnershipDto(&result)
 		results = append(results, mappedRequest)
@@ -107,7 +110,7 @@ func (service *OwnershipService) GetPendingRequests(params *dto.OwnershipQueryPa
 	if err != nil {
 		return nil, 0, err
 	}
-	var results = make([]dto.OwnershipResponseDto, 0)
+	results := make([]dto.OwnershipResponseDto, 0)
 	for _, result := range requests {
 		mappedRequest, _ := service.MapToOwnershipDto(&result)
 		results = append(results, mappedRequest)
@@ -158,12 +161,12 @@ func (service *OwnershipService) AcceptOwnershipRequest(id uint64) error {
 	emailBody := util.GenerateOwnershipApprovalEmailBody(request.Household.Property.Address.City+", "+request.Household.Property.Address.Street+" "+request.Household.Property.Address.Number+" suite: "+request.Household.Suite,
 		"http://localhost:5173/")
 
-	err = util.SendEmail(request.Owner.Email, "Ownership approved", emailBody)
+	err = service.emailSender.SendEmail(request.Owner.Email, "Ownership approved", emailBody)
 
 	for _, s := range emailForDenial {
 		emailBody := util.GenerateOwnershipDenialEmailBody(request.Household.Property.Address.City+", "+request.Household.Property.Address.Street+" "+request.Household.Property.Address.Number+" suite: "+request.Household.Suite, "We accepted someone else's request.",
 			"http://localhost:5173/")
-		err = util.SendEmail(s, "Ownership declined", emailBody)
+		err = service.emailSender.SendEmail(s, "Ownership declined", emailBody)
 	}
 
 	return nil
@@ -196,7 +199,7 @@ func (service *OwnershipService) DeclineOwnershipRequest(id uint64, reason strin
 	tx.Commit()
 	emailBody := util.GenerateOwnershipDenialEmailBody(request.Household.Property.Address.City+", "+request.Household.Property.Address.Street+" "+request.Household.Property.Address.Number+" suite: "+request.Household.Suite, reason,
 		"http://localhost:5173/")
-	err = util.SendEmail(request.Owner.Email, "Ownership declined", emailBody)
+	err = service.emailSender.SendEmail(request.Owner.Email, "Ownership declined", emailBody)
 
 	return nil
 }
@@ -218,7 +221,7 @@ func (service *OwnershipService) MapToOwnershipDto(ownership *model.OwnershipReq
 		OwnerID:     ownership.OwnerID,
 		HouseholdID: ownership.HouseholdID,
 		CreatedAt:   ownership.CreatedAt.String(),
-		ClosedAt:    ownership.ClosedAt.String(), //mozda pukne null pointer exception
+		ClosedAt:    ownership.ClosedAt.String(), // mozda pukne null pointer exception
 		City:        ownership.Household.Property.Address.City,
 		Street:      ownership.Household.Property.Address.Street,
 		Number:      ownership.Household.Property.Address.Number,
