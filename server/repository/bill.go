@@ -52,6 +52,15 @@ func (r BillRepository) WithTrx(trxHandle *gorm.DB) BillRepository {
 	return r
 }
 
+func (repository *BillRepository) Update(bill *model.Bill) (model.Bill, error) {
+	result := repository.Database.Save(bill)
+	if result.Error != nil {
+		repository.Logger.Error("Error updating Bill", result.Error)
+		return *bill, result.Error
+	}
+	return *bill, nil
+}
+
 // func (repository *BillRepository) FindForUser(userID uint64, params *dto.BillSearchParams) ([]model.Bill, int64, error) {
 // 	var bills []model.Bill
 // 	var total int64

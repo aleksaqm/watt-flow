@@ -95,3 +95,12 @@ func (repository *MonthlyBillRepository) Query(params *dto.MonthlyBillQueryParam
 
 	return bills, total, nil
 }
+
+func (repository *MonthlyBillRepository) Update(bill *model.MonthlyBill) (model.MonthlyBill, error) {
+	result := repository.Database.Save(bill)
+	if result.Error != nil {
+		repository.Logger.Error("Error updating MonthlyBill", result.Error)
+		return *bill, result.Error
+	}
+	return *bill, nil
+}

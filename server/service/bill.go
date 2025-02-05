@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"strconv"
 	"time"
 	"watt-flow/dto"
 	"watt-flow/model"
@@ -130,24 +131,37 @@ func (service *BillService) InitiateBilling(year int, month int) (*model.Monthly
 		tx.Rollback()
 		return nil, fmt.Errorf("failed to generate monthly bill: %w", err)
 	}
+
 	households, err := householdServ.GetOwnedHouseholds()
 	if err != nil {
 		tx.Rollback()
+		monthlyBill.Status = "Failed"
+		service.monthlyBillRepository.Update(monthlyBill)
 		return nil, fmt.Errorf("failed to fetch households: %w", err)
 	}
 	activePricelist, err := pricelistServ.GetActivePricelist()
 	if err != nil {
 		tx.Rollback()
+		monthlyBill.Status = "Failed"
+		service.monthlyBillRepository.Update(monthlyBill)
 		return nil, fmt.Errorf("failed to fetch active pricelist: %w", err)
 	}
+	monthlyBillStatus := "Completed"
 	for _, household := range households {
 		billingDate := fmt.Sprintf("%d-%02d", year, month)
 		spentPower, err := service.influxQueryHelper.GetTotalConsumptionForMonth(household.DeviceStatusID, year, month)
 		if err != nil {
-			fmt.Printf("failed querying consumption for %s - %s, %w", billingDate, household.DeviceStatusID, err)
+			fmt.Printf("failed querying consumption for %s - %s, %s", billingDate, household.DeviceStatusID, err.Error())
+			monthlyBillStatus = "Partial"
 			continue
 		}
 		calculatedPrice := calculatePrice(spentPower, *activePricelist)
+
+		if household.Owner == nil || activePricelist == nil {
+			fmt.Printf("failed querying household owner metadata for %s - %s", billingDate, household.DeviceStatusID)
+			monthlyBillStatus = "Partial"
+			continue
+		}
 
 		bill := &model.Bill{
 			BillingDate: billingDate,
@@ -158,24 +172,38 @@ func (service *BillService) InitiateBilling(year int, month int) (*model.Monthly
 			Price:       calculatedPrice,
 			PricelistID: activePricelist.ID,
 			OwnerID:     household.Owner.Id,
+			Status:      "Not delivered",
+		}
+		bill, err = service.billRepository.Create(bill)
+		if err != nil {
+			fmt.Printf("failed saving bill to database for %s - %s, %s", billingDate, household.DeviceStatusID, err.Error())
+			monthlyBillStatus = "Partial"
+			continue
 		}
 		emailBody, qrCode, err := util.GenerateMonthlyBillEmail(bill)
 		if err != nil {
-			fmt.Printf("failed generating email template for %s - %s, %w", billingDate, household.DeviceStatusID, err)
+			fmt.Printf("failed generating email template for %s - %s, %s", billingDate, household.DeviceStatusID, err.Error())
+			monthlyBillStatus = "Partial"
 			continue
 		}
 		err = service.emailSender.SendEmailWithQRCode(household.Owner.Email, "Electricity bill for "+billingDate, emailBody, qrCode)
 		if err != nil {
-			fmt.Printf("failed sending email for %s - %s, %w", billingDate, household.DeviceStatusID, err)
+			fmt.Printf("failed sending email for %s - %s, %s", billingDate, household.DeviceStatusID, err.Error())
+			monthlyBillStatus = "Partial"
 			continue
 		}
-		_, err = service.billRepository.Create(bill)
+		bill.Status = "Delivered"
+		updatedBill, err := service.billRepository.Update(bill)
 		if err != nil {
-			fmt.Printf("failed saving bill to database for %s - %s, %w", billingDate, household.DeviceStatusID, err)
-			continue
+			fmt.Printf("failed updating bill status for bill %s", strconv.FormatUint(updatedBill.ID, 10))
+			monthlyBillStatus = "Partial"
 		}
-		tx.Commit()
 	}
+	if err := tx.Commit().Error; err != nil {
+		return nil, fmt.Errorf("transaction commit failed: %w", err)
+	}
+	monthlyBill.Status = monthlyBillStatus
+	service.monthlyBillRepository.Update(monthlyBill)
 	return monthlyBill, nil
 }
 

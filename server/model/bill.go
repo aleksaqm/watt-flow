@@ -12,4 +12,5 @@ type Bill struct {
 	Price       float64   `json:"price"`
 	Owner       User      `gorm:"foreignKey:OwnerID" json:"owner"`
 	OwnerID     uint64    `json:"owner_id"`
+	Status      string    `json:"status"`
 }
