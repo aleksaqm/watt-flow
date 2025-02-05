@@ -8,6 +8,7 @@ import (
 	"watt-flow/repository"
 
 	"gorm.io/datatypes"
+	"gorm.io/gorm"
 )
 
 type IPricelistService interface {
@@ -17,16 +18,22 @@ type IPricelistService interface {
 	Query(params *dto.PricelistQueryParams) ([]model.Pricelist, int64, error)
 	GetActivePricelist() (*model.Pricelist, error)
 	Delete(id uint64) error
+	WithTrx(trxHandle *gorm.DB) IPricelistService
 }
 
 type PricelistService struct {
-	pricelistRepository *repository.PricelistRepository
+	pricelistRepository repository.PricelistRepository
 }
 
-func NewPricelistService(pricelistRepository *repository.PricelistRepository) *PricelistService {
+func NewPricelistService(pricelistRepository repository.PricelistRepository) *PricelistService {
 	return &PricelistService{
 		pricelistRepository: pricelistRepository,
 	}
+}
+
+func (s PricelistService) WithTrx(trxHandle *gorm.DB) IPricelistService {
+	s.pricelistRepository = s.pricelistRepository.WithTrx(trxHandle)
+	return &s
 }
 
 func (t *PricelistService) FindById(id uint64) (*model.Pricelist, error) {

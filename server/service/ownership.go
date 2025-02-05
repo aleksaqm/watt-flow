@@ -24,12 +24,12 @@ type IOwnershipService interface {
 }
 
 type OwnershipService struct {
-	householdRepository *repository.HouseholdRepository
-	ownershipRepository *repository.OwnershipRepository
+	householdRepository repository.HouseholdRepository
+	ownershipRepository repository.OwnershipRepository
 	emailSender         *util.EmailSender
 }
 
-func NewOwnershipService(householdRepository *repository.HouseholdRepository, ownershipRepository *repository.OwnershipRepository, emailSender *util.EmailSender) *OwnershipService {
+func NewOwnershipService(householdRepository repository.HouseholdRepository, ownershipRepository repository.OwnershipRepository, emailSender *util.EmailSender) *OwnershipService {
 	return &OwnershipService{
 		householdRepository: householdRepository,
 		ownershipRepository: ownershipRepository,

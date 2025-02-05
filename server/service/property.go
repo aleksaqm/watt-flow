@@ -25,12 +25,12 @@ type IPropertyService interface {
 }
 
 type PropertyService struct {
-	propertyRepository *repository.PropertyRepository
+	propertyRepository repository.PropertyRepository
 	householdService   IHouseholdService
 	emailSender        *util.EmailSender
 }
 
-func NewPropertyService(propertyRepository *repository.PropertyRepository, householdService IHouseholdService, emailSender *util.EmailSender) *PropertyService {
+func NewPropertyService(propertyRepository repository.PropertyRepository, householdService IHouseholdService, emailSender *util.EmailSender) *PropertyService {
 	return &PropertyService{
 		propertyRepository: propertyRepository,
 		householdService:   householdService,

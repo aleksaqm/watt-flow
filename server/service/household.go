@@ -20,18 +20,24 @@ type IHouseholdService interface {
 	FindByCadastralNumber(id string) (*model.Household, error)
 	Query(queryParams *dto.HouseholdQueryParams) ([]dto.HouseholdResultDto, int64, error)
 	AcceptHouseholds(tx *gorm.DB, propertyID uint64) error
+	WithTrx(trxHandle *gorm.DB) IHouseholdService
 }
 
 type HouseholdService struct {
-	repository          *repository.HouseholdRepository
-	ownershipRepository *repository.OwnershipRepository
+	repository          repository.HouseholdRepository
+	ownershipRepository repository.OwnershipRepository
 }
 
-func NewHouseholdService(repository *repository.HouseholdRepository, ownershipRepository *repository.OwnershipRepository) *HouseholdService {
+func NewHouseholdService(repository repository.HouseholdRepository, ownershipRepository repository.OwnershipRepository) *HouseholdService {
 	return &HouseholdService{
 		repository:          repository,
 		ownershipRepository: ownershipRepository,
 	}
+}
+
+func (s HouseholdService) WithTrx(trxHandle *gorm.DB) IHouseholdService {
+	s.repository = s.repository.WithTrx(trxHandle)
+	return &s
 }
 
 func (service *HouseholdService) FindById(id uint64) (*dto.HouseholdResultDto, error) {

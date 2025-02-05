@@ -18,15 +18,24 @@ type HouseholdRepository struct {
 	Logger   util.Logger
 }
 
-func NewHouseholdRepository(db db.Database, logger util.Logger) *HouseholdRepository {
+func NewHouseholdRepository(db db.Database, logger util.Logger) HouseholdRepository {
 	err := db.AutoMigrate(&model.Household{})
 	if err != nil {
 		logger.Error("Error migrating household", err)
 	}
-	return &HouseholdRepository{
+	return HouseholdRepository{
 		Database: db,
 		Logger:   logger,
 	}
+}
+
+func (r HouseholdRepository) WithTrx(trxHandle *gorm.DB) HouseholdRepository {
+	if trxHandle == nil {
+		r.Logger.Error("Transaction Database not found in gin context. ")
+		return r
+	}
+	r.Database.DB = trxHandle
+	return r
 }
 
 func (repository *HouseholdRepository) Create(household *model.Household) (model.Household, error) {

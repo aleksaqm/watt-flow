@@ -29,7 +29,7 @@ type IUserService interface {
 }
 
 type UserService struct {
-	repository  *repository.UserRepository
+	repository  repository.UserRepository
 	emailSender *util.EmailSender
 	authService *AuthService
 }
@@ -346,7 +346,7 @@ func MapToDto(user *model.User) (dto.UserDto, error) {
 	return response, nil
 }
 
-func NewUserService(repository *repository.UserRepository, authService *AuthService, emailSender *util.EmailSender) *UserService {
+func NewUserService(repository repository.UserRepository, authService *AuthService, emailSender *util.EmailSender) *UserService {
 	return &UserService{
 		repository:  repository,
 		authService: authService,

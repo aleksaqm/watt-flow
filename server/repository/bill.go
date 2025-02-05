@@ -5,6 +5,7 @@ import (
 	"watt-flow/model"
 	"watt-flow/util"
 
+	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
@@ -13,12 +14,12 @@ type BillRepository struct {
 	Logger   util.Logger
 }
 
-func NewBillRepository(db db.Database, logger util.Logger) *BillRepository {
+func NewBillRepository(db db.Database, logger util.Logger) BillRepository {
 	err := db.AutoMigrate(&model.Bill{})
 	if err != nil {
 		logger.Error("Error migrating bill repo", err)
 	}
-	return &BillRepository{
+	return BillRepository{
 		Database: db,
 		Logger:   logger,
 	}
@@ -40,6 +41,15 @@ func (repository *BillRepository) FindById(id uint64) (*model.Bill, error) {
 		return nil, err
 	}
 	return &bill, nil
+}
+
+func (r BillRepository) WithTrx(trxHandle *gorm.DB) BillRepository {
+	if trxHandle == nil {
+		r.Logger.Error("Transaction Database not found in gin context. ")
+		return r
+	}
+	r.Database.DB = trxHandle
+	return r
 }
 
 // func (repository *BillRepository) FindForUser(userID uint64, params *dto.BillSearchParams) ([]model.Bill, int64, error) {

@@ -11,12 +11,12 @@ type DeviceStatusRepository struct {
 	logger   util.Logger
 }
 
-func NewDeviceStatusRepository(db db.Database, logger util.Logger) *DeviceStatusRepository {
+func NewDeviceStatusRepository(db db.Database, logger util.Logger) DeviceStatusRepository {
 	err := db.AutoMigrate(&model.DeviceStatus{})
 	if err != nil {
 		logger.Error("Error migrating device status", err)
 	}
-	return &DeviceStatusRepository{
+	return DeviceStatusRepository{
 		database: db,
 		logger:   logger,
 	}

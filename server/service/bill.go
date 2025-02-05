@@ -7,6 +7,8 @@ import (
 	"watt-flow/model"
 	"watt-flow/repository"
 	"watt-flow/util"
+
+	"gorm.io/gorm"
 )
 
 type IBillService interface {
@@ -15,18 +17,19 @@ type IBillService interface {
 	QueryMonthly(params *dto.MonthlyBillQueryParams) ([]model.MonthlyBill, int64, error)
 	GetUnsentMonthlyBills() ([]string, error)
 	InitiateBilling(year int, month int) (*model.MonthlyBill, error)
+	WithTrx(trx *gorm.DB) IBillService
 }
 
 type BillService struct {
-	billRepository        *repository.BillRepository
-	monthlyBillRepository *repository.MonthlyBillRepository
+	billRepository        repository.BillRepository
+	monthlyBillRepository repository.MonthlyBillRepository
 	householdService      IHouseholdService
 	pricelistService      IPricelistService
 	influxQueryHelper     *util.InfluxQueryHelper
 	emailSender           *util.EmailSender
 }
 
-func NewBillService(billRepository *repository.BillRepository, monthlyBillRepository *repository.MonthlyBillRepository, householdService IHouseholdService, pricelistService IPricelistService, influxQueryHelper *util.InfluxQueryHelper, emailSender *util.EmailSender) *BillService {
+func NewBillService(billRepository repository.BillRepository, monthlyBillRepository repository.MonthlyBillRepository, householdService IHouseholdService, pricelistService IPricelistService, influxQueryHelper *util.InfluxQueryHelper, emailSender *util.EmailSender) *BillService {
 	return &BillService{
 		billRepository:        billRepository,
 		monthlyBillRepository: monthlyBillRepository,
@@ -35,6 +38,12 @@ func NewBillService(billRepository *repository.BillRepository, monthlyBillReposi
 		influxQueryHelper:     influxQueryHelper,
 		emailSender:           emailSender,
 	}
+}
+
+func (s BillService) WithTrx(trxHandle *gorm.DB) IBillService {
+	s.billRepository = s.billRepository.WithTrx(trxHandle)
+	s.monthlyBillRepository = s.monthlyBillRepository.WithTrx(trxHandle)
+	return &s
 }
 
 func (t *BillService) FindById(id uint64) (*model.Bill, error) {
@@ -103,25 +112,42 @@ func (service *BillService) QueryMonthly(queryParams *dto.MonthlyBillQueryParams
 }
 
 func (service *BillService) InitiateBilling(year int, month int) (*model.MonthlyBill, error) {
-	monthlyBill, err := service.GenerateMonthlyBill(year, month)
+	// Setup transaction
+	tx := service.billRepository.Database.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
+	// add all queries to the same transaction
+	billServ := service.WithTrx(tx)
+	householdServ := service.householdService.WithTrx(tx)
+	pricelistServ := service.pricelistService.WithTrx(tx)
+
+	monthlyBill, err := billServ.GenerateMonthlyBill(year, month)
 	if err != nil {
-		return nil, err
+		tx.Rollback()
+		return nil, fmt.Errorf("failed to generate monthly bill: %w", err)
 	}
-	households, err := service.householdService.GetOwnedHouseholds()
+	households, err := householdServ.GetOwnedHouseholds()
 	if err != nil {
-		return nil, err
+		tx.Rollback()
+		return nil, fmt.Errorf("failed to fetch households: %w", err)
 	}
-	activePricelist, err := service.pricelistService.GetActivePricelist()
+	activePricelist, err := pricelistServ.GetActivePricelist()
 	if err != nil {
-		return nil, err
+		tx.Rollback()
+		return nil, fmt.Errorf("failed to fetch active pricelist: %w", err)
 	}
 	for _, household := range households {
+		billingDate := fmt.Sprintf("%d-%02d", year, month)
 		spentPower, err := service.influxQueryHelper.GetTotalConsumptionForMonth(household.DeviceStatusID, year, month)
 		if err != nil {
-			return nil, err
+			fmt.Printf("failed querying consumption for %s - %s, %w", billingDate, household.DeviceStatusID, err)
+			continue
 		}
 		calculatedPrice := calculatePrice(spentPower, *activePricelist)
-		billingDate := fmt.Sprintf("%d-%02d", year, month)
 
 		bill := &model.Bill{
 			BillingDate: billingDate,
@@ -135,16 +161,20 @@ func (service *BillService) InitiateBilling(year int, month int) (*model.Monthly
 		}
 		emailBody, qrCode, err := util.GenerateMonthlyBillEmail(bill)
 		if err != nil {
-			return nil, err
+			fmt.Printf("failed generating email template for %s - %s, %w", billingDate, household.DeviceStatusID, err)
+			continue
 		}
 		err = service.emailSender.SendEmailWithQRCode(household.Owner.Email, "Electricity bill for "+billingDate, emailBody, qrCode)
 		if err != nil {
-			return nil, err
+			fmt.Printf("failed sending email for %s - %s, %w", billingDate, household.DeviceStatusID, err)
+			continue
 		}
 		_, err = service.billRepository.Create(bill)
 		if err != nil {
-			return nil, err
+			fmt.Printf("failed saving bill to database for %s - %s, %w", billingDate, household.DeviceStatusID, err)
+			continue
 		}
+		tx.Commit()
 	}
 	return monthlyBill, nil
 }

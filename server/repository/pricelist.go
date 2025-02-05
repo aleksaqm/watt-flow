@@ -9,6 +9,7 @@ import (
 	"watt-flow/util"
 
 	"gorm.io/datatypes"
+	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
@@ -17,15 +18,24 @@ type PricelistRepository struct {
 	Logger   util.Logger
 }
 
-func NewPricelistRepository(db db.Database, logger util.Logger) *PricelistRepository {
+func NewPricelistRepository(db db.Database, logger util.Logger) PricelistRepository {
 	err := db.AutoMigrate(&model.Pricelist{})
 	if err != nil {
 		logger.Error("Error migrating pricelist repo", err)
 	}
-	return &PricelistRepository{
+	return PricelistRepository{
 		Database: db,
 		Logger:   logger,
 	}
+}
+
+func (r PricelistRepository) WithTrx(trxHandle *gorm.DB) PricelistRepository {
+	if trxHandle == nil {
+		r.Logger.Error("Transaction Database not found in gin context. ")
+		return r
+	}
+	r.Database.DB = trxHandle
+	return r
 }
 
 func (repository *PricelistRepository) Create(pricelist *model.Pricelist) (model.Pricelist, error) {

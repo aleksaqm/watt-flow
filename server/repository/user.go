@@ -13,12 +13,12 @@ type UserRepository struct {
 	logger   util.Logger
 }
 
-func NewUserRepository(db db.Database, logger util.Logger) *UserRepository {
+func NewUserRepository(db db.Database, logger util.Logger) UserRepository {
 	err := db.AutoMigrate(&model.User{})
 	if err != nil {
 		logger.Error("Error migrating user", err)
 	}
-	return &UserRepository{
+	return UserRepository{
 		database: db,
 		logger:   logger,
 	}
