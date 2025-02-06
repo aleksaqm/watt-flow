@@ -103,7 +103,7 @@ func (h *BillHandler) InitiateBilling(c *gin.Context) {
 		return
 	}
 
-	data, err := h.service.InitiateBilling(year, month)
+	data, err := h.service.InitiateBillingOffload(year, month)
 	if err != nil {
 		h.logger.Error(err)
 		c.JSON(500, gin.H{"error": "Failed to send bills for specified month!"})

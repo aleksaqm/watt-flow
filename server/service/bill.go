@@ -1,6 +1,7 @@
 package service
 
 import (
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"time"
@@ -18,6 +19,7 @@ type IBillService interface {
 	QueryMonthly(params *dto.MonthlyBillQueryParams) ([]model.MonthlyBill, int64, error)
 	GetUnsentMonthlyBills() ([]string, error)
 	InitiateBilling(year int, month int) (*model.MonthlyBill, error)
+	InitiateBillingOffload(year int, month int) (*model.MonthlyBill, error)
 	WithTrx(trx *gorm.DB) IBillService
 }
 
@@ -110,6 +112,76 @@ func (service *BillService) QueryMonthly(queryParams *dto.MonthlyBillQueryParams
 		return nil, 0, err
 	}
 	return bills, total, nil
+}
+
+func (service *BillService) InitiateBillingOffload(year int, month int) (*model.MonthlyBill, error) {
+	// Setup transaction
+	tx := service.billRepository.Database.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
+	mq, err := util.NewMessageQueue("billing_queue")
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize RabbitMQ: %w", err)
+	}
+	defer mq.Close()
+
+	// add all queries to the same transaction
+	billServ := service.WithTrx(tx)
+	householdServ := service.householdService.WithTrx(tx)
+	pricelistServ := service.pricelistService.WithTrx(tx)
+
+	monthlyBill, err := billServ.GenerateMonthlyBill(year, month)
+	if err != nil {
+		tx.Rollback()
+		return nil, fmt.Errorf("failed to generate monthly bill: %w", err)
+	}
+
+	households, err := householdServ.GetOwnedHouseholds()
+	if err != nil {
+		tx.Rollback()
+		monthlyBill.Status = "Failed"
+		service.monthlyBillRepository.Update(monthlyBill)
+		return nil, fmt.Errorf("failed to fetch households: %w", err)
+	}
+	activePricelist, err := pricelistServ.GetActivePricelist()
+	if err != nil {
+		tx.Rollback()
+		monthlyBill.Status = "Failed"
+		service.monthlyBillRepository.Update(monthlyBill)
+		return nil, fmt.Errorf("failed to fetch active pricelist: %w", err)
+	}
+	for _, household := range households {
+		billingDate := fmt.Sprintf("%d-%02d", year, month)
+		if household.Owner == nil || activePricelist == nil {
+			fmt.Printf("failed querying household owner metadata for %s - %s", billingDate, household.DeviceStatusID)
+			continue
+		}
+
+		billTask := dto.BillTaskDto{
+			BillingDate:   billingDate,
+			IssueDate:     time.Now(),
+			Pricelist:     *activePricelist,
+			OwnerID:       household.Owner.Id,
+			OwnerEmail:    household.Owner.Email,
+			OwnerUsername: household.Owner.Username,
+			PowerMeterID:  household.DeviceStatusID,
+		}
+		taskJSON, _ := json.Marshal(billTask)
+		err = mq.Publish("billing_queue", taskJSON)
+		if err != nil {
+			fmt.Printf("failed publishing bill task for %s - %s, %s\n", billingDate, household.DeviceStatusID, err.Error())
+			monthlyBill.Status = "Partial"
+			continue
+		}
+	}
+	if err := tx.Commit().Error; err != nil {
+		return nil, fmt.Errorf("transaction commit failed: %w", err)
+	}
+	return monthlyBill, nil
 }
 
 func (service *BillService) InitiateBilling(year int, month int) (*model.MonthlyBill, error) {
