@@ -133,5 +133,5 @@ func GenerateMonthlyBillEmail(bill Bill, pricelist Pricelist, user string) (stri
 			</div>
 		</body>
 	</html>
-	`, date, bill.BillingDate, user, bill.SpentPower, date, pricelist.GreenZone, pricelist.BlueZone, pricelist.RedZone, pricelist.BillingPower, pricelist.Tax, bill.Price, paymentLink), qrCodeBytes, nil
+	`, bill.BillingDate, bill.BillingDate, user, bill.SpentPower, date, pricelist.GreenZone, pricelist.BlueZone, pricelist.RedZone, pricelist.BillingPower, pricelist.Tax, bill.Price, paymentLink), qrCodeBytes, nil
 }

@@ -157,6 +157,9 @@ func (c *Worker) processBills(ctx context.Context, msgs <-chan amqp.Delivery) {
 				fmt.Printf("Failed querying consumption for %s - %s, %s\n", billTask.BillingDate, billTask.PowerMeterID, err.Error())
 				continue
 			}
+			fmt.Println(spentPower)
+			fmt.Println(string(msg.Body))
+			fmt.Println(billTask)
 
 			// Calculate Price
 			calculatedPrice := calculatePrice(spentPower, billTask.Pricelist)
