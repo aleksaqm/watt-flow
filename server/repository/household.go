@@ -18,15 +18,24 @@ type HouseholdRepository struct {
 	Logger   util.Logger
 }
 
-func NewHouseholdRepository(db db.Database, logger util.Logger) *HouseholdRepository {
+func NewHouseholdRepository(db db.Database, logger util.Logger) HouseholdRepository {
 	err := db.AutoMigrate(&model.Household{})
 	if err != nil {
 		logger.Error("Error migrating household", err)
 	}
-	return &HouseholdRepository{
+	return HouseholdRepository{
 		Database: db,
 		Logger:   logger,
 	}
+}
+
+func (r HouseholdRepository) WithTrx(trxHandle *gorm.DB) HouseholdRepository {
+	if trxHandle == nil {
+		r.Logger.Error("Transaction Database not found in gin context. ")
+		return r
+	}
+	r.Database.DB = trxHandle
+	return r
 }
 
 func (repository *HouseholdRepository) Create(household *model.Household) (model.Household, error) {
@@ -50,6 +59,16 @@ func (repository *HouseholdRepository) FindById(id uint64) (*model.Household, er
 func (repository *HouseholdRepository) FindByStatus(status model.HouseholdStatus) ([]model.Household, error) {
 	var households []model.Household
 	result := repository.Database.Where("status = ?", status).Find(&households)
+	if result.Error != nil {
+		repository.Logger.Error("Error finding households by status", result.Error)
+		return nil, result.Error
+	}
+	return households, nil
+}
+
+func (repository *HouseholdRepository) GetOwnedHouseholds() ([]model.Household, error) {
+	var households []model.Household
+	result := repository.Database.Where("status = 1").Preload("Owner").Find(&households)
 	if result.Error != nil {
 		repository.Logger.Error("Error finding households by status", result.Error)
 		return nil, result.Error

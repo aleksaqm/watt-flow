@@ -18,6 +18,8 @@ import ClerkMeetingScheduleView from '@/views/schedule/ClerkMeetingScheduleView.
 import OwnershipRequestsView from '@/views/household/OwnershipRequestsView.vue'
 import RegularCreateMeetingView from '@/views/schedule/RegularCreateMeetingView.vue'
 import RegularMeetingScheduleView from '@/views/schedule/RegularMeetingScheduleView.vue'
+import PricelistManagement from '@/views/bills/PricelistManagement.vue'
+import IssueBills from '@/views/bills/IssueBills.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -107,6 +109,18 @@ const router = createRouter({
       path: '/meeting/user',
       name: 'regular-meeting',
       component: RegularCreateMeetingView,
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/bills/prices',
+      name: 'manage-prices',
+      component: PricelistManagement,
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/bills/send',
+      name: 'send-bills',
+      component: IssueBills,
       meta: { requiresAuth: true }
     },
     {

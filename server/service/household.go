@@ -2,11 +2,12 @@ package service
 
 import (
 	"fmt"
-	"gorm.io/gorm"
 	"log"
 	"watt-flow/dto"
 	"watt-flow/model"
 	"watt-flow/repository"
+
+	"gorm.io/gorm"
 )
 
 type IHouseholdService interface {
@@ -15,21 +16,28 @@ type IHouseholdService interface {
 	Update(household *model.Household) (*model.Household, error)
 	Delete(id uint64) error
 	FindByStatus(status model.HouseholdStatus) ([]model.Household, error)
+	GetOwnedHouseholds() ([]model.Household, error)
 	FindByCadastralNumber(id string) (*model.Household, error)
 	Query(queryParams *dto.HouseholdQueryParams) ([]dto.HouseholdResultDto, int64, error)
 	AcceptHouseholds(tx *gorm.DB, propertyID uint64) error
+	WithTrx(trxHandle *gorm.DB) IHouseholdService
 }
 
 type HouseholdService struct {
-	repository          *repository.HouseholdRepository
-	ownershipRepository *repository.OwnershipRepository
+	repository          repository.HouseholdRepository
+	ownershipRepository repository.OwnershipRepository
 }
 
-func NewHouseholdService(repository *repository.HouseholdRepository, ownershipRepository *repository.OwnershipRepository) *HouseholdService {
+func NewHouseholdService(repository repository.HouseholdRepository, ownershipRepository repository.OwnershipRepository) *HouseholdService {
 	return &HouseholdService{
 		repository:          repository,
 		ownershipRepository: ownershipRepository,
 	}
+}
+
+func (s HouseholdService) WithTrx(trxHandle *gorm.DB) IHouseholdService {
+	s.repository = s.repository.WithTrx(trxHandle)
+	return &s
 }
 
 func (service *HouseholdService) FindById(id uint64) (*dto.HouseholdResultDto, error) {
@@ -114,6 +122,14 @@ func (service *HouseholdService) FindByCadastralNumber(id string) (*model.Househ
 
 func (service *HouseholdService) FindByStatus(status model.HouseholdStatus) ([]model.Household, error) {
 	households, err := service.repository.FindByStatus(status)
+	if err != nil {
+		return nil, err
+	}
+	return households, nil
+}
+
+func (service *HouseholdService) GetOwnedHouseholds() ([]model.Household, error) {
+	households, err := service.repository.GetOwnedHouseholds()
 	if err != nil {
 		return nil, err
 	}

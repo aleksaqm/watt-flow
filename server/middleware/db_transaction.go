@@ -1,10 +1,12 @@
 package middleware
 
 import (
-	"github.com/gin-gonic/gin"
 	"net/http"
 	"watt-flow/db"
 	"watt-flow/util"
+
+	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
 type DatabaseTrx struct {
@@ -39,7 +41,7 @@ func (m DatabaseTrx) Register() {
 
 	m.engine.Use(func(c *gin.Context) {
 		txHandle := m.db.DB.Begin()
-		m.logger.Info("Transaction BEGIN")
+		m.logger.Info("Transaction BEGIN", zap.String("path", c.Request.URL.Path))
 
 		defer func() {
 			if r := recover(); r != nil {
@@ -52,7 +54,7 @@ func (m DatabaseTrx) Register() {
 
 		// commit transaction on success status
 		if statusInList(c.Writer.Status(), []int{http.StatusOK, http.StatusCreated, http.StatusNoContent}) {
-			m.logger.Info("Transaction COMMIT")
+			m.logger.Info("Transaction COMMIT", zap.String("path", c.Request.URL.Path))
 			if err := txHandle.Commit().Error; err != nil {
 				m.logger.Error("trx commit error: ", err)
 			}

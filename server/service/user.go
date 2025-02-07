@@ -29,7 +29,8 @@ type IUserService interface {
 }
 
 type UserService struct {
-	repository  *repository.UserRepository
+	repository  repository.UserRepository
+	emailSender *util.EmailSender
 	authService *AuthService
 }
 
@@ -231,7 +232,7 @@ func (service *UserService) SendActivationEmail(user *model.User) error {
 	activationToken := service.authService.CreateActivationToken(user)
 	activationLink := fmt.Sprintf("http://localhost:5000/api/activate/%s", activationToken)
 	emailBody := util.GenerateActivationEmailBody(activationLink)
-	err := util.SendEmail(user.Email, "Activate your account", emailBody)
+	err := service.emailSender.SendEmail(user.Email, "Activate your account", emailBody)
 	return err
 }
 
@@ -345,9 +346,10 @@ func MapToDto(user *model.User) (dto.UserDto, error) {
 	return response, nil
 }
 
-func NewUserService(repository *repository.UserRepository, authService *AuthService) *UserService {
+func NewUserService(repository repository.UserRepository, authService *AuthService, emailSender *util.EmailSender) *UserService {
 	return &UserService{
 		repository:  repository,
 		authService: authService,
+		emailSender: emailSender,
 	}
 }

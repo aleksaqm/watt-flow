@@ -2,28 +2,30 @@ package service
 
 import (
 	"errors"
-	"github.com/dgrijalva/jwt-go"
 	"log"
 	"time"
 	"watt-flow/config"
 	"watt-flow/model"
 	"watt-flow/util"
+
+	"github.com/dgrijalva/jwt-go"
 )
 
 type AuthService struct {
 	logger util.Logger
+	env    *config.Environment
 }
 
-func NewAuthService(logger util.Logger) *AuthService {
+func NewAuthService(logger util.Logger, env *config.Environment) *AuthService {
 	return &AuthService{
 		logger: logger,
+		env:    env,
 	}
 }
 
 func (s *AuthService) Authorize(tokenString string) (bool, jwt.MapClaims, error) {
-	env := config.Init()
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		return []byte(env.JWTSecret), nil
+		return []byte(s.env.JWTSecret), nil
 	})
 	if token.Valid {
 		claims := token.Claims.(jwt.MapClaims)
@@ -43,7 +45,6 @@ func (s *AuthService) Authorize(tokenString string) (bool, jwt.MapClaims, error)
 }
 
 func (s *AuthService) CreateToken(user *model.User) string {
-	env := config.Init()
 	expirationTime := time.Now().Add(24 * time.Hour).Unix()
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"id":       user.Id,
@@ -52,7 +53,7 @@ func (s *AuthService) CreateToken(user *model.User) string {
 		"role":     user.Role.RoleToString(),
 		"exp":      expirationTime,
 	})
-	tokenString, err := token.SignedString([]byte(env.JWTSecret))
+	tokenString, err := token.SignedString([]byte(s.env.JWTSecret))
 	if err != nil {
 		s.logger.Error(err)
 	}
@@ -60,18 +61,17 @@ func (s *AuthService) CreateToken(user *model.User) string {
 }
 
 func (s *AuthService) CreateActivationToken(user *model.User) string {
-	env := config.Init()
 	expirationTime := time.Now().Add(time.Hour).Unix()
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"email":    user.Email,
 		"username": user.Username,
 		"exp":      expirationTime,
 	})
-	tokenString, err := token.SignedString([]byte(env.JWTSecret))
+	tokenString, err := token.SignedString([]byte(s.env.JWTSecret))
 	if err != nil {
 		s.logger.Error(err)
 	}
 	return tokenString
 }
 
-//jwt.MapClaims, error
+// jwt.MapClaims, error
