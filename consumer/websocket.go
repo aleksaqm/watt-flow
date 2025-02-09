@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -30,6 +31,7 @@ var upgrader = websocket.Upgrader{
 		return true
 	},
 	EnableCompression: true,
+	Subprotocols:      []string{"token"},
 }
 
 type WebsocketClient struct {
@@ -123,6 +125,7 @@ func NewWsServer() *WsServer {
 }
 
 func ValidateUser(token string) (bool, error) {
+	token = strings.Split(token, ",")[0]
 	req, err := http.NewRequest(http.MethodGet, "http://server:5000/api/validate/admin", nil)
 	if err != nil {
 		return false, err
