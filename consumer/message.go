@@ -24,3 +24,9 @@ type Status struct {
 	DeviceId string
 	IsActive bool
 }
+
+type MeasurementValue struct {
+	Value     float64
+	Timestamp time.Time
+	City      string
+}

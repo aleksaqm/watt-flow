@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -242,6 +243,13 @@ func (c *Consumer) processMeasurements(ctx context.Context, msgs <-chan amqp.Del
 			} else {
 				// log.Printf("Successfully written measurement to InfluxDB")
 			}
+
+			cityKey := "city:" + measurement.Address.City
+			err := c.redisClient.HIncrByFloat(ctx, cityKey, "value", measurement.Value).Err()
+			if err != nil {
+				log.Printf("Failed to update Redis: %v", err)
+			}
+
 		case <-c.channel.NotifyClose(make(chan *amqp.Error)):
 			log.Println("Connection to RabbitMQ lost. Reconnecting...")
 			if err := c.reconnectBroker(); err != nil {
@@ -459,6 +467,43 @@ func (c *Consumer) Shutdown(ctx context.Context) error {
 	return nil
 }
 
+func (c *Consumer) SendAggregatedMeasurements(ctx context.Context) {
+	keys, err := c.redisClient.Keys(ctx, "city:*").Result()
+	if err != nil {
+		log.Printf("Failed to fetch keys from Redis: %v", err)
+		return
+	}
+
+	for _, key := range keys {
+		data, err := c.redisClient.HGetAll(ctx, key).Result()
+		if err != nil {
+			log.Printf("Failed to fetch data for %s: %v", key, err)
+			continue
+		}
+
+		city := strings.TrimPrefix(key, "city:")
+		value, _ := strconv.ParseFloat(data["value"], 64)
+
+		if value == 0 {
+			continue
+		}
+
+		wsmsg, err := json.Marshal(MeasurementValue{
+			Value:     value,
+			Timestamp: time.Now(),
+			City:      city,
+		})
+		if err != nil {
+			log.Printf("Failed to marshal JSON: %v", err)
+			continue
+		}
+		c.wsServer.SendMessage(city, wsmsg, "csm")
+
+		// reset accumulated value
+		c.redisClient.HSet(ctx, key, "value", 0)
+	}
+}
+
 func main() {
 	amqpURI := os.Getenv("AMQP_URI")
 	influxURI := os.Getenv("INFLUX_URI")
@@ -506,6 +551,21 @@ func main() {
 	if err := consumer.Start(ctx); err != nil {
 		log.Fatal(err)
 	}
+
+	//5-min timer for city consumption aggregation
+	go func() {
+		ticker := time.NewTicker(5 * time.Minute)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				consumer.SendAggregatedMeasurements(ctx)
+			}
+		}
+	}()
 
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
