@@ -127,6 +127,30 @@ services:
       redis:
         condition: service_started
 
+  bill-worker:
+    build: ./bill-worker/
+    restart: always
+    stop_grace_period: 20s
+    networks:
+      - watt-flow-network
+    environment:
+      DB_USER: ${DB_USER}
+      DB_PASS: ${DB_PASS}
+      EMAIL_SECRET: "qcwb rfyi hiyi ehxo"
+      DB_HOST: postgres
+      DB_TABLE: ${DB_NAME}
+      DB_PORT: ${DB_PORT}
+      AMQP_URI: "amqp://guest:guest@rabbitmq:5672/"
+      INFLUX_URI: "http://influxdb2:8086"
+      INFLUX_TOKEN: ${INFLUX_TOKEN}
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      influxdb2:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+
   simulator-1:
     build: ./simulator/
     restart: always

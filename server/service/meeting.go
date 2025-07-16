@@ -21,11 +21,11 @@ type IMeetingService interface {
 }
 
 type MeetingService struct {
-	slotRepository    *repository.TimeSlotRepository
-	meetingRepository *repository.MeetingRepository
+	slotRepository    repository.TimeSlotRepository
+	meetingRepository repository.MeetingRepository
 }
 
-func NewMeetingService(timeslotRepository *repository.TimeSlotRepository, meetingRepository *repository.MeetingRepository) *MeetingService {
+func NewMeetingService(timeslotRepository repository.TimeSlotRepository, meetingRepository repository.MeetingRepository) *MeetingService {
 	return &MeetingService{
 		slotRepository:    timeslotRepository,
 		meetingRepository: meetingRepository,
@@ -81,8 +81,8 @@ func (t *MeetingService) FindMeetingById(id uint64) (*dto.MeetingDTO, error) {
 		UserID:    meeting.UserID,
 		Username:  meeting.User.Username,
 	}, nil
-
 }
+
 func (t *MeetingService) FindMeetingBySlotId(slotId uint64) (*dto.MeetingDTO, error) {
 	meeting, err := t.meetingRepository.FindBySlotId(slotId)
 	if err != nil {
@@ -96,7 +96,6 @@ func (t *MeetingService) FindMeetingBySlotId(slotId uint64) (*dto.MeetingDTO, er
 		UserID:    meeting.UserID,
 		Username:  meeting.User.Username,
 	}, nil
-
 }
 
 func (t *MeetingService) CreateTimeSlot(timeslot *dto.TimeSlotDto) (*dto.TimeSlotDto, error) {
@@ -135,11 +134,11 @@ func (t *MeetingService) CreateMeeting(meetingDto *dto.MeetingDTO) (*dto.Meeting
 		UserID:    meeting.UserID,
 		Username:  meeting.User.Username,
 	}, nil
-
 }
+
 func (t *MeetingService) CreateOrUpdate(update *dto.UpdateTimeSlotDto) (*dto.TimeSlotDto, error) {
-	timeslot, err := t.slotRepository.FindByDateAndClerkId(update.Date, update.ClerkId) //changed
-	if timeslot != nil {                                                                //update
+	timeslot, err := t.slotRepository.FindByDateAndClerkId(update.Date, update.ClerkId) // changed
+	if timeslot != nil {                                                                // update
 		var slots [15]uint64
 		err = json.Unmarshal(timeslot.Slots, &slots)
 		if err != nil {
@@ -164,7 +163,7 @@ func (t *MeetingService) CreateOrUpdate(update *dto.UpdateTimeSlotDto) (*dto.Tim
 			Id:      newSlot.Id,
 		}, nil
 
-	} else { //create new
+	} else { // create new
 		emptySlot := make([]uint64, 15)
 
 		for i := range emptySlot {
@@ -201,7 +200,7 @@ func (t *MeetingService) GetUsersMeetings(userID uint64, params *dto.MeetingQuer
 	if err != nil {
 		return nil, 0, err
 	}
-	var results = make([]dto.UsersMeetingDTO, 0)
+	results := make([]dto.UsersMeetingDTO, 0)
 	for _, result := range meetings {
 		mappedRequest, _ := t.MapToUsersMeetingDto(&result)
 		results = append(results, mappedRequest)

@@ -9,10 +9,10 @@ type ICityService interface {
 }
 
 type CityService struct {
-	repository *repository.CityRepository
+	repository repository.CityRepository
 }
 
-func NewCityService(repository *repository.CityRepository) *CityService {
+func NewCityService(repository repository.CityRepository) *CityService {
 	return &CityService{
 		repository: repository,
 	}

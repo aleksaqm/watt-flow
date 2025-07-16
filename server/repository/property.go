@@ -2,11 +2,12 @@ package repository
 
 import (
 	"fmt"
-	"gorm.io/gorm"
 	"watt-flow/db"
 	"watt-flow/dto"
 	"watt-flow/model"
 	"watt-flow/util"
+
+	"gorm.io/gorm"
 
 	"gorm.io/gorm/clause"
 )
@@ -16,12 +17,12 @@ type PropertyRepository struct {
 	Logger   util.Logger
 }
 
-func NewPropertyRepository(db db.Database, logger util.Logger) *PropertyRepository {
+func NewPropertyRepository(db db.Database, logger util.Logger) PropertyRepository {
 	err := db.AutoMigrate(&model.Property{})
 	if err != nil {
 		logger.Error("Error migrating property", err)
 	}
-	return &PropertyRepository{
+	return PropertyRepository{
 		Database: db,
 		Logger:   logger,
 	}

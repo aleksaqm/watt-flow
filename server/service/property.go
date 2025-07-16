@@ -2,7 +2,6 @@ package service
 
 import (
 	"fmt"
-	"github.com/google/uuid"
 	"os"
 	"strconv"
 	"strings"
@@ -10,6 +9,8 @@ import (
 	"watt-flow/model"
 	"watt-flow/repository"
 	"watt-flow/util"
+
+	"github.com/google/uuid"
 )
 
 type IPropertyService interface {
@@ -24,14 +25,16 @@ type IPropertyService interface {
 }
 
 type PropertyService struct {
-	propertyRepository *repository.PropertyRepository
+	propertyRepository repository.PropertyRepository
 	householdService   IHouseholdService
+	emailSender        *util.EmailSender
 }
 
-func NewPropertyService(propertyRepository *repository.PropertyRepository, householdService IHouseholdService) *PropertyService {
+func NewPropertyService(propertyRepository repository.PropertyRepository, householdService IHouseholdService, emailSender *util.EmailSender) *PropertyService {
 	return &PropertyService{
 		propertyRepository: propertyRepository,
 		householdService:   householdService,
+		emailSender:        emailSender,
 	}
 }
 
@@ -52,7 +55,6 @@ func (service *PropertyService) FindByStatus(status model.PropertyStatus) ([]mod
 }
 
 func (service *PropertyService) Create(property *model.Property) (*model.Property, error) {
-
 	UUID := uuid.New()
 	var savedFilePaths []string
 
@@ -96,7 +98,6 @@ func (service *PropertyService) Create(property *model.Property) (*model.Propert
 
 	return &createdProperty, nil
 }
-
 
 func (service *PropertyService) cleanupFiles(paths []string) {
 	for _, path := range paths {
@@ -166,12 +167,11 @@ func (service *PropertyService) AcceptProperty(id uint64) error {
 	emailBody := util.GeneratePropertyApprovalEmailBody(property.Address.City+", "+property.Address.Street+" "+property.Address.Number,
 		"http://localhost:5173/")
 
-	err = util.SendEmail(property.Owner.Email, "Property approved", emailBody)
+	err = service.emailSender.SendEmail(property.Owner.Email, "Property approved", emailBody)
 	return err
 }
 
 func (service *PropertyService) DeclineProperty(id uint64, message string) error {
-
 	err := service.propertyRepository.DeclineProperty(id)
 	if err != nil {
 		service.propertyRepository.Logger.Error("Error updating property status", err)
@@ -187,6 +187,6 @@ func (service *PropertyService) DeclineProperty(id uint64, message string) error
 	emailBody := util.GeneratePropertyDeclineEmailBody(property.Address.City+", "+property.Address.Street+" "+property.Address.Number,
 		message, "http://localhost:5173/")
 
-	err = util.SendEmail(property.Owner.Email, "Property declined", emailBody)
+	err = service.emailSender.SendEmail(property.Owner.Email, "Property declined", emailBody)
 	return err
 }

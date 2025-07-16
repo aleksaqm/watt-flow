@@ -17,11 +17,11 @@ type IDeviceStatusService interface {
 }
 
 type DeviceStatusService struct {
-	repository        *repository.DeviceStatusRepository
+	repository        repository.DeviceStatusRepository
 	influxQueryHelper *util.InfluxQueryHelper
 }
 
-func NewDeviceStatusService(repository *repository.DeviceStatusRepository, influx *util.InfluxQueryHelper) *DeviceStatusService {
+func NewDeviceStatusService(repository repository.DeviceStatusRepository, influx *util.InfluxQueryHelper) *DeviceStatusService {
 	return &DeviceStatusService{
 		repository:        repository,
 		influxQueryHelper: influx,

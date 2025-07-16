@@ -13,29 +13,51 @@ import (
 )
 
 type InfluxQueryHelper struct {
-	influxURL         string
-	influxToken       string
+	client            influxdb2.Client
 	organization      string
 	statusBucket      string
 	measurementBucket string
 }
 
 func NewInfluxQueryHelper(env *config.Environment) *InfluxQueryHelper {
+	client := influxdb2.NewClient(env.InfluxURL, env.InfluxToken)
 	return &InfluxQueryHelper{
-		influxURL:         env.InfluxURL,
-		influxToken:       env.InfluxToken,
+		client:            client,
 		organization:      env.InlfuxOrg,
 		statusBucket:      env.InfluxStatusBucket,
 		measurementBucket: env.InfluxMeasurementBucket,
 	}
 }
 
-func (inf *InfluxQueryHelper) SendStatusQuery(queryParams dto.FluxQueryStatusDto) (*dto.StatusQueryResult, error) {
-	client := influxdb2.NewClient(inf.influxURL, inf.influxToken)
-	defer client.Close()
+func (inf *InfluxQueryHelper) GetTotalConsumptionForMonth(deviceID string, year int, month int) (float64, error) {
+	queryAPI := inf.client.QueryAPI(inf.organization)
+	startTime := time.Date(year-1, time.Month(month), 1, 0, 0, 0, 0, time.UTC)
+	endTime := startTime.AddDate(0, 1, 0) // First day of the next month
 
-	// CreateTimeSlot a query API client
-	queryAPI := client.QueryAPI(inf.organization)
+	fluxQuery := generateMonthConsumptionQueryString(deviceID, startTime.Format(time.RFC3339), endTime.Format(time.RFC3339))
+
+	result, err := queryAPI.Query(context.Background(), fluxQuery)
+	if err != nil {
+		return -1.0, err
+	}
+	defer result.Close()
+	var totalConsuption float64
+
+	for result.Next() {
+		if value, ok := result.Record().Value().(float64); ok {
+			totalConsuption = value
+		}
+	}
+
+	if result.Err() != nil {
+		return 0, result.Err()
+	}
+
+	return totalConsuption, nil
+}
+
+func (inf *InfluxQueryHelper) SendStatusQuery(queryParams dto.FluxQueryStatusDto) (*dto.StatusQueryResult, error) {
+	queryAPI := inf.client.QueryAPI(inf.organization)
 	fluxQuery := ""
 
 	if queryParams.Realtime {
@@ -100,6 +122,17 @@ func (inf *InfluxQueryHelper) SendStatusQuery(queryParams dto.FluxQueryStatusDto
 		return nil, err
 	}
 	return &results, nil
+}
+
+func generateMonthConsumptionQueryString(deviceID string, startMonth string, endMonth string) string {
+	fluxQuery := fmt.Sprintf(`
+  from(bucket: "power_measurements")
+    |> range(start: %s, stop: %s)
+    |> filter(fn: (r) => r["_measurement"] == "power_consumption" and r.device_id == "%s")
+    |> sum(column: "_value")
+    `, startMonth, endMonth, deviceID)
+
+	return fluxQuery
 }
 
 func generateQueryString(params dto.FluxQueryStatusDto) string {

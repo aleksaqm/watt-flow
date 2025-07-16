@@ -14,10 +14,10 @@ type IAddressService interface {
 }
 
 type AddressService struct {
-	repository *repository.AddressRepository
+	repository repository.AddressRepository
 }
 
-func NewAddressService(repository *repository.AddressRepository) *AddressService {
+func NewAddressService(repository repository.AddressRepository) *AddressService {
 	return &AddressService{
 		repository: repository,
 	}

@@ -23,6 +23,10 @@ type Server struct {
 	addressService      service.IAddressService
 	CityHandler         *handler.CityHandler
 	cityService         service.ICityService
+	pricelistService    service.IPricelistService
+	PricelistHandler    *handler.PricelistHandler
+	billService         service.IBillService
+	BillHandler         *handler.BillHandler
 	RestartService      *service.RestartService
 	AuthService         *service.AuthService
 	MeetingService      service.IMeetingService
@@ -37,7 +41,10 @@ func NewServer(logger util.Logger, userService service.IUserService, authService
 	deviceStatusService service.IDeviceStatusService, deviceStatusHandler *handler.DeviceStatusHandler,
 	addressService service.IAddressService, addressHandler *handler.AddressHandler,
 	meetingService service.IMeetingService, meetingHandler *handler.MeetingHandler,
-	cityService service.ICityService, cityHandler *handler.CityHandler, db db.Database) *Server {
+	pricelistService service.IPricelistService, PricelistHandler *handler.PricelistHandler,
+	billService service.IBillService, BillHandler *handler.BillHandler,
+	cityService service.ICityService, cityHandler *handler.CityHandler, db db.Database,
+) *Server {
 	return &Server{
 		Logger:              logger,
 		UserHandler:         userHandler,
@@ -58,6 +65,10 @@ func NewServer(logger util.Logger, userService service.IUserService, authService
 		CityHandler:         cityHandler,
 		MeetingService:      meetingService,
 		MeetingHandler:      meetingHandler,
+		pricelistService:    pricelistService,
+		PricelistHandler:    PricelistHandler,
+		billService:         billService,
+		BillHandler:         BillHandler,
 		Db:                  db,
 	}
 }

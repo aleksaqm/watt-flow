@@ -2,12 +2,13 @@ package repository
 
 import (
 	"fmt"
-	"gorm.io/gorm"
 	"time"
 	"watt-flow/db"
 	"watt-flow/dto"
 	"watt-flow/model"
 	"watt-flow/util"
+
+	"gorm.io/gorm"
 )
 
 type OwnershipRepository struct {
@@ -15,12 +16,12 @@ type OwnershipRepository struct {
 	Logger   util.Logger
 }
 
-func NewOwnershipRepository(db db.Database, logger util.Logger) *OwnershipRepository {
+func NewOwnershipRepository(db db.Database, logger util.Logger) OwnershipRepository {
 	err := db.AutoMigrate(&model.OwnershipRequest{})
 	if err != nil {
 		logger.Error("Error migrating Ownership Repository", err)
 	}
-	return &OwnershipRepository{
+	return OwnershipRepository{
 		Database: db,
 		Logger:   logger,
 	}
