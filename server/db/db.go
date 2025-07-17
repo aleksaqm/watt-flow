@@ -46,14 +46,20 @@ func (db Database) TruncateAllTables() error {
 		}
 
 		// List of all tables in order considering foreign key dependencies
+		// Delete child tables first (those with foreign keys) before parent tables
 		tables := []interface{}{
-			//&model.OwnershipRequest{},
-			&model.Household{},
-			&model.DeviceStatus{},
-			&model.Property{},
-			&model.User{},
-			&model.Address{},
-			&model.City{},
+			&model.Bill{},             // References Pricelist and User
+			&model.OwnershipRequest{}, // References User and Household
+			&model.Meeting{},          // References User (ClerkID and UserID)
+			&model.TimeSlot{},         // References User (ClerkID)
+			&model.Household{},        // References User, DeviceStatus, and Property
+			&model.Property{},         // References User (OwnerID) and Address
+			&model.MonthlyBill{},      // No foreign keys
+			&model.DeviceStatus{},     // No foreign keys
+			&model.Pricelist{},        // No foreign keys
+			&model.User{},             // Referenced by many tables
+			&model.Address{},          // Embedded in Property
+			&model.City{},             // No foreign keys
 		}
 
 		// Truncate each table
