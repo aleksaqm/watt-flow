@@ -20,6 +20,7 @@ INSERT INTO cities (city_name) VALUES
                                    ('Bela Crkva'),
                                    ('Bela Palanka'),
                                    ('Beočin'),
+                                   ('Beograd'),
                                    ('Bečej'),
                                    ('Blace'),
                                    ('Bogatić'),
