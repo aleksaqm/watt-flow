@@ -217,7 +217,7 @@ const handleFetch = () => {
   if (isRealtimeSelected.value) {
     if (ws?.readyState !== WebSocket.OPEN) {
       connectToWebSocket()
-      refreshJob = setInterval(updateRealtimeChart, 60000) // Update every minute
+      //refreshJob = setInterval(updateRealtimeChart, 300000) // Update every 5 minutes
       console.log(refreshJob)
     } else {
       return
@@ -295,6 +295,7 @@ const handleFetch = () => {
   axios.post('/api/device-status/query-consumption', query).then(
     (result) => {
       if (isRealtimeSelected.value) {
+        console.log(result)
         formatRealtimeData(result.data.data.Rows)
       } else {
         console.log(result.data)

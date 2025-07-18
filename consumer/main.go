@@ -259,6 +259,25 @@ func (c *Consumer) processMeasurements(ctx context.Context, msgs <-chan amqp.Del
 	}
 }
 
+func debugRedisData(ctx context.Context, redisClient *redis.Client) {
+	keys, err := redisClient.Keys(ctx, "city:*").Result()
+	if err != nil {
+		log.Printf("Failed to fetch Redis keys: %v", err)
+		return
+	}
+
+	for _, key := range keys {
+		value, err := redisClient.HGetAll(ctx, key).Result()
+		if err != nil {
+			log.Printf("Failed to fetch Redis value for key %s: %v", key, err)
+			continue
+		}
+
+		// Log the key and its value
+		log.Printf("Redis Key: %s, Value: %v", key, value)
+	}
+}
+
 func (c *Consumer) processHeartbeats(ctx context.Context, msgs <-chan amqp.Delivery) {
 	defer c.wg.Done()
 
@@ -487,7 +506,7 @@ func (c *Consumer) SendAggregatedMeasurements(ctx context.Context) {
 		if value == 0 {
 			continue
 		}
-
+		debugRedisData(ctx, c.redisClient)
 		wsmsg, err := json.Marshal(MeasurementValue{
 			Value:     value,
 			Timestamp: time.Now(),

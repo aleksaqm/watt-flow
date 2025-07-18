@@ -307,26 +307,34 @@ func generatePowerConsumptionQuery(params dto.FluxQueryConsumptionDto) string {
   import "array"
   import "experimental"
 
+  startTime = experimental.subDuration(from: now(), d: %s)
+
   data = from(bucket: "power_measurements")
-    |> range(start: -%s)
+    |> range(start: startTime)
     |> filter(fn: (r) => r._measurement == "power_consumption" and r._field == "value" and r.city == "%s")
 
   bounds = array.from(rows: [
-    { _time: experimental.subDuration(from: now(), d: %s), _value: 0.0, _field: "value", _measurement: "power_consumption", city: "%s", _stop: now(), _start: now()}
+    { 
+      _time: startTime, 
+      _value: 0.0, // Vrednost 0 da ne utiče na sumu
+      _field: "value", 
+      _measurement: "power_consumption", 
+      city: "%s", 
+      _start: startTime, // Dodajemo _start i _stop da se poklopi shema
+      _stop: now()
+    }
   ])
 
-  all_data = data
+  union(tables: [data, bounds])
     |> group(columns: ["city"])
-    |> sort(columns: ["_time"])
-    |> range(start: -%s)
-    |> aggregateWindow(every: %s, fn: sum, column: "_value")
+    |> aggregateWindow(every: %s, fn: sum) // createEmpty: true više nije neophodno
     |> map(fn: (r) => ({
       _time: r._time,
       _value: float(v: r._value),
       city: r.city
     }))
     |> yield(name: "power_consumption_summary")
-`, params.TimePeriod, params.City, params.TimePeriod, params.City, params.TimePeriod, params.GroupPeriod)
+`, params.TimePeriod, params.City, params.City, params.GroupPeriod)
 	return fluxQuery
 }
 
@@ -335,21 +343,27 @@ func generatePowerConsumptionRangeQueryString(params dto.FluxQueryConsumptionDto
 	endDate := params.EndDate.Format(time.RFC3339)
 	fluxQuery := fmt.Sprintf(`
   import "array"
-  import "experimental"
 
   data = from(bucket: "power_measurements")
     |> range(start: %s, stop: %s)
     |> filter(fn: (r) => r._measurement == "power_consumption" and r._field == "value" and r.city == "%s")
     
   bounds = array.from(rows: [
-    { _time: %s, _value: 0.0, _field: "value", _measurement: "power_consumption", city: "%s", _stop: now(), _start: now() }
+    { 
+      _time: %s, 
+      _value: 0.0, 
+      _field: "value", 
+      _measurement: "power_consumption", 
+      city: "%s", 
+      _start: %s, 
+      _stop: %s 
+    }
   ])
 
-  all_data = data
+  union(tables: [data, bounds])
     |> group(columns: ["city"])
-    |> sort(columns: ["_time"])
-    |> range(start: %s, stop: %s)
-    |> aggregateWindow(every: %s, fn: sum, column: "_value")
+    |> sort(columns: ["_time"]) 
+    |> aggregateWindow(every: %s, fn: sum)
     |> map(fn: (r) => ({
       _time: r._time,
       _value: float(v: r._value),
@@ -362,31 +376,30 @@ func generatePowerConsumptionRangeQueryString(params dto.FluxQueryConsumptionDto
 
 func generateRealtimePowerConsumptionQuery(params dto.FluxQueryConsumptionDto) string {
 	fluxQuery := fmt.Sprintf(`
-
   import "array"
   import "experimental"
 
+  startTime = experimental.subDuration(from: now(), d: 1h)
+
   data = from(bucket: "power_measurements")
-    |> range(start: -1h)
-    |> filter(fn: (r) => r._measurement == "power_consumption" and r._field == "value" and r.city == "%s")
-    |> sort(columns: ["_time"])
-
-  first_from_data = data |> first() |> findRecord(fn: (key) => true, idx: 0)
-
-  first = array.from(rows: [
-    { _time: experimental.subDuration(from: now(), d: 1h), _value: if exists first_from_data._value then first_from_data._value else 0.0, _field: "value", _measurement: "power_consumption", city: "%s", _stop: now(), _start: now() },
+      |> range(start: startTime)
+      |> filter(fn: (r) => r._measurement == "power_consumption" and r._field == "value" and r.city == "%s")
+  
+  bounds = array.from(rows: [
+    { 
+      _time: startTime, 
+      _value: 0.0, 
+      _field: "value", 
+      _measurement: "power_consumption", 
+      city: "%s", 
+      _start: startTime,
+      _stop: now()
+    }
   ])
 
-  all_data = union(tables: [data, first])
-
-  all_data
-    |> aggregateWindow(createEmpty: true, every: 5m, fn: last)
-    
-    |> map(fn: (r) => ({
-      _time: r._time,
-      _value: r._value,
-      city: r.city
-    }))
+  union(tables: [data, bounds])
+    |> group(columns: ["city"])
+    |> aggregateWindow(every: 5m, fn: sum)
     |> yield(name: "realtime_power_consumption")
   `, params.City, params.City)
 	return fluxQuery
