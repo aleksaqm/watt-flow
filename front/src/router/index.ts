@@ -20,6 +20,7 @@ import RegularCreateMeetingView from '@/views/schedule/RegularCreateMeetingView.
 import RegularMeetingScheduleView from '@/views/schedule/RegularMeetingScheduleView.vue'
 import PricelistManagement from '@/views/bills/PricelistManagement.vue'
 import IssueBills from '@/views/bills/IssueBills.vue'
+import CityConsumption from '@/views/household/CityConsumption.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -134,6 +135,12 @@ const router = createRouter({
       name: 'ownership-requests',
       component: OwnershipRequestsView,
       meta: { requiresAuth: true }
+    },
+    {
+      path: '/consumption',
+      name: 'city-consumption',
+      component: CityConsumption,
+      meta : { requiresAuth: true }
     },
     {
       path: '/:catchAll(.*)',
