@@ -57,7 +57,10 @@ func InitDeps(env *config.Environment) *Server {
 	cityRepository := repository.NewCityRepository(database, logger)
 	cityService := service.NewCityService(cityRepository)
 	cityHandler := handler.NewCityHandler(cityService, logger)
-	server := NewServer(logger, userService, authService, restartService, userHandler, propertyService, propertyHandler, householdService, householdHandler, ownershipService, ownershipHandler, deviceStatusService, deviceStatusHandler, addressService, addressHandler, meetingService, meetingHandler, pricelistService, pricelistHandler, billService, billHandler, cityService, cityHandler, database)
+	householdAccessRepository := repository.NewHouseholdAccessRepository(database, logger)
+	householdAccessService := service.NewHouseholdAccessService(householdAccessRepository, householdRepository, userRepository)
+	householdAccessHandler := handler.NewHouseholdAccessHandler(householdAccessService, logger)
+	server := NewServer(logger, userService, authService, restartService, userHandler, propertyService, propertyHandler, householdService, householdHandler, ownershipService, ownershipHandler, deviceStatusService, deviceStatusHandler, addressService, addressHandler, meetingService, meetingHandler, pricelistService, pricelistHandler, billService, billHandler, cityService, cityHandler, database, householdAccessService, householdAccessHandler)
 	return server
 }
 
@@ -82,3 +85,5 @@ var meetingServiceSet = wire.NewSet(service.NewMeetingService, wire.Bind(new(ser
 var pricelistServiceSet = wire.NewSet(service.NewPricelistService, wire.Bind(new(service.IPricelistService), new(*service.PricelistService)))
 
 var billServiceSet = wire.NewSet(service.NewBillService, wire.Bind(new(service.IBillService), new(*service.BillService)))
+
+var householdAccessServiceSet = wire.NewSet(service.NewHouseholdAccessService, wire.Bind(new(service.IHouseholdAccessService), new(*service.HouseholdAccessService)))

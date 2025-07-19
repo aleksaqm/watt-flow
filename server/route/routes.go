@@ -30,4 +30,5 @@ func RegisterRoutes(
 	NewMeetingRoute(engine).Register(server)
 	NewPricelistRoute(engine).Register(server)
 	NewBillRoute(engine).Register(server)
+	NewHouseholdAccessRoute(engine).Register(server)
 }
