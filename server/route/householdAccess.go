@@ -18,7 +18,7 @@ func (r HouseholdAccessRoute) Register(server *server.Server) {
 	{
 		api.POST("/household/:id/access", authMid.RoleMiddleware([]string{"Admin", "Clerk", "Regular", "SuperAdmin"}), server.HouseholdAccessHandler.GrantAccess)
 		api.DELETE("/household/:householdId/access/revoke/:userId", authMid.RoleMiddleware([]string{"Admin", "Clerk", "Regular", "SuperAdmin"}), server.HouseholdAccessHandler.RevokeAccess)
-
+		api.GET("/household/access/:householdId", authMid.RoleMiddleware([]string{"Admin", "Clerk", "Regular", "SuperAdmin"}), server.HouseholdAccessHandler.ListAccess)
 	}
 }
 

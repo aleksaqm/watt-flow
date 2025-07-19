@@ -2,6 +2,7 @@ package repository
 
 import (
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 	"watt-flow/db"
 	"watt-flow/model"
 	"watt-flow/util"
@@ -38,15 +39,18 @@ func (r HouseholdAccessRepository) FindByHouseholdIDAndUserID(householdID, userI
 	if result.Error != nil {
 		return nil, result.Error
 	}
+	r.Logger.Info("Existing household access: ", &access)
 	return &access, nil
 }
 
 func (r HouseholdAccessRepository) FindByHouseholdID(householdID uint64) ([]model.HouseholdAccess, error) {
 	var access []model.HouseholdAccess
-	result := r.Database.Where("household_id = ?", householdID).Find(&access)
+	result := r.Database.Preload(clause.Associations).Where("household_id = ?", householdID).Find(&access)
 	if result.Error != nil {
 		return nil, result.Error
 	}
+	r.Logger.Info("Existing user with access: ", access[0].User.Id, access[0].User.Username)
+	r.Logger.Info("Existing household access: ", &access)
 	return access, nil
 }
 
