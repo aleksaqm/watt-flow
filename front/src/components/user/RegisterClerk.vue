@@ -20,6 +20,8 @@ import { ref } from 'vue'
 
 const formSchema = toTypedSchema(z.object({
   username: z.string().min(2, { message: "Username must be at least 2 characters" }).max(50, { message: "Username cannot exceed 50 characters" }),
+  firstName: z.string().min(2, { message: "First name must be at least 2 characters" }).max(50, { message: "First name cannot exceed 50 characters" }),
+  lastName: z.string().min(2, { message: "Last name must be at least 2 characters" }).max(50, { message: "Last name cannot exceed 50 characters" }),
   jmbg: z.string().length(13, "JMBG must have exactly 13 digits.")
     .regex(/^\d{13}$/, "JMBG can have only digits."),
   email: z.string().email(),
@@ -90,6 +92,8 @@ const submitForm = async (formData: { username: string; jmbg: string; email: str
 
     const data = {
       username: formData.username,
+      first_name: formData.firstName,
+      last_name: formData.lastName,
       jmbg: formData.jmbg,
       email: formData.email,
       profile_image: profileImageBase64,
@@ -129,6 +133,27 @@ const onSubmit = handleSubmit((values) => {
     <div class="flex flex-col justify-center items-center gap-5 w-full" v-if="!loading">
       <span class="text-gray-800 text-2xl">New Clerk</span>
       <form class="w-full space-y-6" @submit="onSubmit">
+
+        <FormField name="firstName" v-slot="{ field }">
+          <FormItem class="relative pb-2">
+            <FormLabel>First Name</FormLabel>
+            <FormControl>
+              <Input type="text" v-bind="field" placeholder="Enter clerk first name" />
+            </FormControl>
+            <FormMessage class="absolute -bottom-2 left-0 text-xs" v-if="errors.firstName">{{ errors.firstName }}
+            </FormMessage>
+          </FormItem>
+        </FormField>
+        <FormField name="lastName" v-slot="{ field }">
+          <FormItem class="relative pb-2">
+            <FormLabel>Last Name</FormLabel>
+            <FormControl>
+              <Input type="text" v-bind="field" placeholder="Enter clerk last name" />
+            </FormControl>
+            <FormMessage class="absolute -bottom-2 left-0 text-xs" v-if="errors.lastName">{{ errors.lastName }}
+            </FormMessage>
+          </FormItem>
+        </FormField>
         <FormField name="username" v-slot="{ field }">
           <FormItem class="relative pb-2">
             <FormLabel>Username</FormLabel>

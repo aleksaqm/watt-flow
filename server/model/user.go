@@ -39,6 +39,8 @@ func ParseAccountStatus(status string) (Role, error) {
 type User struct {
 	Id           uint64        `gorm:"primary_key" json:"id"`
 	Username     string        `gorm:"unique" json:"username"`
+	FirstName    string        `json:"first_name"`
+	LastName     string        `json:"last_name"`
 	Password     string        `json:"password,omitempty"`
 	Email        string        `json:"email"`
 	ProfileImage string        `json:"profile_image,omitempty"`
