@@ -298,7 +298,7 @@ func (c *Consumer) processHeartbeats(ctx context.Context, msgs <-chan amqp.Deliv
 			if err != nil {
 				log.Printf("Failed writing to redis!: %v", err)
 			}
-			c.redisClient.Expire(ctx, heartbeat.DeviceID, redisTTL)
+			c.redisClient.Expire(ctx, "heartbeat:"+heartbeat.DeviceID, redisTTL)
 
 		case <-c.channel.NotifyClose(make(chan *amqp.Error)):
 			log.Println("Connection to RabbitMQ lost. Reconnecting...")
