@@ -112,6 +112,9 @@ func (service *UserService) Login(loginCredentials dto.LoginDto) (string, error)
 	if user.Status == model.Inactive {
 		return "", errors.New("user is inactive")
 	}
+	if user.Status == model.Suspended {
+		return "", errors.New("user is suspended")
+	}
 	if !util.ComparePasswords(user.Password, loginCredentials.Password) {
 		return "", errors.New("invalid credentials")
 	} else {
