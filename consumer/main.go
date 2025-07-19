@@ -292,7 +292,7 @@ func (c *Consumer) processHeartbeats(ctx context.Context, msgs <-chan amqp.Deliv
 				continue
 			}
 			// err := c.redisClient.Set(ctx, heartbeat.DeviceID, heartbeat.Timestamp, redisTTL).Err()
-			err := c.redisClient.HSet(ctx, heartbeat.DeviceID, map[string]interface{}{
+			err := c.redisClient.HSet(ctx, "heartbeat:"+heartbeat.DeviceID, map[string]interface{}{
 				"lastSeen": heartbeat.Timestamp,
 			}).Err()
 			if err != nil {
@@ -330,7 +330,7 @@ func (c *Consumer) updateDeviceStatus(ctx context.Context) {
 			return
 
 		case <-ticker.C:
-			keys, err := c.redisClient.Keys(ctx, "*").Result()
+			keys, err := c.redisClient.Keys(ctx, "heartbeat:*").Result()
 			if err != nil {
 				log.Printf("Failed to get device IDs from Redis: %v", err)
 				continue
@@ -357,12 +357,12 @@ func (c *Consumer) updateDeviceStatus(ctx context.Context) {
 
 				// If was not previously processed (new device)
 				if !exists {
-					c.updateStatusInDB(key, is_alive, &ctx, writeAPI)
+					c.updateStatusInDB(strings.TrimPrefix(key, "heartbeat:"), is_alive, &ctx, writeAPI)
 					log.Printf("Updated value in postgres on new entry!")
 				} else {
 					// only update postgres on status change
 					if is_alive != was_alive {
-						c.updateStatusInDB(key, is_alive, &ctx, writeAPI)
+						c.updateStatusInDB(strings.TrimPrefix(key, "heartbeat:"), is_alive, &ctx, writeAPI)
 						log.Printf("Updated value in postgres on status change!")
 					}
 				}
