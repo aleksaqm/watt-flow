@@ -118,7 +118,7 @@ function getButtonStyle(isSelected: boolean) {
 }
 
 function viewClerk(id: number) {
-  router.push({ name: "clerk", params: { id: id } });
+  router.push({ name: "clerk-profile", params: { id: id } });
 }
 
 const changeAccountStatus = async (id: number, status: string) => {
@@ -183,6 +183,7 @@ const changeAccountStatus = async (id: number, status: string) => {
           v-for="clerk in clerks"
           :key="clerk.id"
           @click="viewClerk(clerk.id)"
+          class="cursor-pointer hover:bg-gray-100 transition duration-200"
         >
           <TableCell>{{ clerk.firstName }}</TableCell>
           <TableCell>{{ clerk.lastName }}</TableCell>
