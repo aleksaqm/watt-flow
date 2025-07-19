@@ -1,32 +1,34 @@
 <script setup lang="ts">
-import UserProfileCard from '@/components/user/UserProfileCard.vue';
-import { getUsernameFromToken } from '@/utils/jwtDecoder';
-import { getEmailFromToken } from '@/utils/jwtDecoder';
-import { getRoleFromToken } from '@/utils/jwtDecoder';
-import { onMounted, ref } from 'vue';
+import UserProfileCard from "@/components/user/UserProfileCard.vue";
+import { getUserIdFromToken } from "@/utils/jwtDecoder";
+import axios from "axios";
+import { onMounted, ref } from "vue";
+interface UserProfile {
+  first_name: string;
+  last_name: string;
+  username: string;
+  email: string;
+  role: string;
+  status: string;
+}
 
-const username = ref<string>("")
-const email = ref<string>("")
-const role = ref<string>("")
+const user = ref<UserProfile | null>(null);
 
-onMounted(() => {
-  const user = getUsernameFromToken();
-  const userEmail = getEmailFromToken();
-  const userRole = getRoleFromToken();
 
-  if (user) {
-    username.value = user;
+onMounted(async () => {
+  const userId = getUserIdFromToken();
+
+  if (userId) {
+    const response = await axios.get(`/api/user/${userId}`);
+    if (response.status === 200) {
+      user.value = response.data.data;
+    } else {
+      console.error("Failed to fetch user data");
+    }
   }
-  if (userEmail) {
-    email.value = userEmail;
-  }
-  if (userRole) {
-    role.value = userRole;
-  }
-})
-
+});
 </script>
 
 <template>
-  <UserProfileCard :username="username" :email="email" :role="role" />
+  <UserProfileCard v-if="user" :username="user?.username" :email="user?.email" :role="user?.role" :first-name="user?.first_name" :last-name="user?.last_name" />
 </template>
