@@ -1,11 +1,14 @@
 package repository
 
 import (
+	"fmt"
+
 	"watt-flow/db"
 	"watt-flow/model"
 	"watt-flow/util"
 
 	"gorm.io/datatypes"
+	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
@@ -23,6 +26,27 @@ func NewTimeSlotRepository(db db.Database, logger util.Logger) TimeSlotRepositor
 		Database: db,
 		Logger:   logger,
 	}
+}
+
+func (r TimeSlotRepository) WithTrx(trxHandle *gorm.DB) TimeSlotRepository {
+	if trxHandle == nil {
+		r.Logger.Error("Transaction Database not found in gin context. ")
+		return r
+	}
+	r.Database.DB = trxHandle
+	return r
+}
+
+func (repository *TimeSlotRepository) DeleteSlotsForClerk(clerkId uint64) error {
+	result := repository.Database.Where("clerk_id = ?", clerkId).Delete(&model.TimeSlot{})
+	if result.Error != nil {
+		repository.Logger.Error("Error deleting time slots for clerk", result.Error)
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return fmt.Errorf("no slots found for clerk with ID %d", clerkId)
+	}
+	return nil
 }
 
 func (repository *TimeSlotRepository) Create(timeslot *model.TimeSlot) (model.TimeSlot, error) {
