@@ -193,6 +193,16 @@ func (c *Worker) processBills(ctx context.Context, msgs <-chan amqp.Delivery) {
 				continue
 			}
 			fmt.Printf("Successfully processed bill for %s\n", billTask.OwnerEmail)
+
+			if billTask.Last {
+				fmt.Printf("Received last email task, updating status")
+				err = c.UpdateStatus(ctx, billTask.MonthlyBillID, "Completed")
+				if err != nil {
+					fmt.Printf("Failed updating monthly bill status for %d: %s\n", billTask.MonthlyBillID, err.Error())
+				} else {
+					fmt.Printf("Successfully updated monthly bill status for %d\n", billTask.MonthlyBillID)
+				}
+			}
 		}
 	}
 }
@@ -216,6 +226,22 @@ func (c *Worker) InsertBill(ctx context.Context, bill *Bill) error {
 	}
 
 	log.Println("Bill inserted successfully")
+	return nil
+}
+
+func (c *Worker) UpdateStatus(ctx context.Context, billID uint64, status string) error {
+	query := `UPDATE monthly_bills SET status = $1 WHERE id = $2`
+
+	_, err := c.pgDB.ExecContext(ctx, query,
+		status,
+		billID,
+	)
+	if err != nil {
+		log.Printf("Failed to update monthly bill: %v", err)
+		return err
+	}
+
+	log.Println("Bill status updated successfully")
 	return nil
 }
 

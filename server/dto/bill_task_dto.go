@@ -13,4 +13,6 @@ type BillTaskDto struct {
 	OwnerEmail    string
 	OwnerUsername string
 	PowerMeterID  string
+	Last					bool
+	MonthlyBillID uint64
 }
