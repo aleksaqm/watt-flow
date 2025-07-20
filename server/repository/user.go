@@ -2,15 +2,18 @@ package repository
 
 import (
 	"fmt"
+
 	"watt-flow/db"
 	"watt-flow/dto"
 	"watt-flow/model"
 	"watt-flow/util"
+
+	"gorm.io/gorm"
 )
 
 type UserRepository struct {
-	database db.Database
-	logger   util.Logger
+	Database db.Database
+	Logger   util.Logger
 }
 
 func NewUserRepository(db db.Database, logger util.Logger) UserRepository {
@@ -19,15 +22,24 @@ func NewUserRepository(db db.Database, logger util.Logger) UserRepository {
 		logger.Error("Error migrating user", err)
 	}
 	return UserRepository{
-		database: db,
-		logger:   logger,
+		Database: db,
+		Logger:   logger,
 	}
 }
 
+func (r UserRepository) WithTrx(trxHandle *gorm.DB) UserRepository {
+	if trxHandle == nil {
+		r.Logger.Error("Transaction Database not found in gin context. ")
+		return r
+	}
+	r.Database.DB = trxHandle
+	return r
+}
+
 func (repository *UserRepository) Create(user *model.User) (model.User, error) {
-	result := repository.database.Create(user)
+	result := repository.Database.Create(user)
 	if result.Error != nil {
-		repository.logger.Error("Error creating user", result.Error)
+		repository.Logger.Error("Error creating user", result.Error)
 		return *user, result.Error
 	}
 	return *user, nil
@@ -35,9 +47,9 @@ func (repository *UserRepository) Create(user *model.User) (model.User, error) {
 
 func (repository *UserRepository) FindActiveByEmail(email string) (*model.User, error) {
 	var user model.User
-	result := repository.database.Where("email = ? AND status = ?", email, 0).First(&user)
+	result := repository.Database.Where("email = ? AND status = ?", email, 0).First(&user)
 	if result.Error != nil {
-		repository.logger.Error("Error finding user by email", result.Error)
+		repository.Logger.Error("Error finding user by email", result.Error)
 		return nil, result.Error
 	}
 	return &user, nil
@@ -45,7 +57,7 @@ func (repository *UserRepository) FindActiveByEmail(email string) (*model.User, 
 
 func (repository *UserRepository) FindById(id uint64) (*model.User, error) {
 	var user model.User
-	if err := repository.database.First(&user, id).Error; err != nil {
+	if err := repository.Database.First(&user, id).Error; err != nil {
 		return nil, err
 	}
 	return &user, nil
@@ -53,9 +65,9 @@ func (repository *UserRepository) FindById(id uint64) (*model.User, error) {
 
 func (repository *UserRepository) FindByUsername(username string) (*model.User, error) {
 	var user model.User
-	result := repository.database.Where("username = ?", username).First(&user)
+	result := repository.Database.Where("username = ?", username).First(&user)
 	if result.Error != nil {
-		repository.logger.Error("Error finding user by username", result.Error)
+		repository.Logger.Error("Error finding user by username", result.Error)
 		return nil, result.Error
 	}
 	return &user, nil
@@ -63,7 +75,7 @@ func (repository *UserRepository) FindByUsername(username string) (*model.User, 
 
 func (repository *UserRepository) FindByUsernameOrActiveEmail(username string, email string) (*model.User, error) {
 	var user model.User
-	result := repository.database.Where("username = ? OR (email = ? AND status = ?)", username, email, 0).First(&user)
+	result := repository.Database.Where("username = ? OR (email = ? AND status = ?)", username, email, 0).First(&user)
 	if result.Error != nil {
 		return nil, result.Error
 	}
@@ -72,7 +84,7 @@ func (repository *UserRepository) FindByUsernameOrActiveEmail(username string, e
 
 func (repository *UserRepository) FindByEmailAndUsername(email string, username string) (*model.User, error) {
 	var user model.User
-	result := repository.database.Where("email = ? AND username = ?", email, username).First(&user)
+	result := repository.Database.Where("email = ? AND username = ?", email, username).First(&user)
 	if result.Error != nil {
 		return nil, result.Error
 	}
@@ -83,7 +95,7 @@ func (repository *UserRepository) Query(params *dto.UserQueryParams) ([]model.Us
 	var users []model.User
 	var total int64
 
-	baseQuery := repository.database.Model(&model.User{})
+	baseQuery := repository.Database.Model(&model.User{})
 	role, _ := model.ParseRole(params.Search.Role)
 
 	if params.Search.Role != "" {
@@ -96,7 +108,7 @@ func (repository *UserRepository) Query(params *dto.UserQueryParams) ([]model.Us
 	// 	baseQuery = baseQuery.Where("number ILIKE ?", "%"+params.Search.Number+"%")
 	// }
 	if err := baseQuery.Count(&total).Error; err != nil {
-		repository.logger.Error("Error querying user count", err)
+		repository.Logger.Error("Error querying user count", err)
 		return nil, 0, err
 	}
 
@@ -110,7 +122,7 @@ func (repository *UserRepository) Query(params *dto.UserQueryParams) ([]model.Us
 
 	if err := query.
 		Find(&users).Error; err != nil {
-		repository.logger.Error("Error querying users", err)
+		repository.Logger.Error("Error querying users", err)
 		return nil, 0, err
 	}
 
@@ -118,9 +130,9 @@ func (repository *UserRepository) Query(params *dto.UserQueryParams) ([]model.Us
 }
 
 func (repository *UserRepository) Update(user *model.User) (model.User, error) {
-	result := repository.database.Save(user)
+	result := repository.Database.Save(user)
 	if result.Error != nil {
-		repository.logger.Error("Error updating user", result.Error)
+		repository.Logger.Error("Error updating user", result.Error)
 		return *user, result.Error
 	}
 	return *user, nil
@@ -128,22 +140,22 @@ func (repository *UserRepository) Update(user *model.User) (model.User, error) {
 
 func (repository *UserRepository) FindAllByRole(role model.Role) (*[]model.User, error) {
 	var users []model.User
-	repository.logger.Info("FindAllByRole", role)
-	result := repository.database.Where("role = ?", role).Find(&users)
+	repository.Logger.Info("FindAllByRole", role)
+	result := repository.Database.Where("role = ?", role).Find(&users)
 	if result.Error != nil {
-		repository.logger.Error("Error finding users by role", result.Error)
+		repository.Logger.Error("Error finding users by role", result.Error)
 		return nil, result.Error
 	}
 	return &users, nil
 }
 
 func (repository *UserRepository) ChangeStatus(userId uint64, status int) error {
-	err := repository.database.Model(&model.User{}).
+	err := repository.Database.Model(&model.User{}).
 		Where("id = ?", userId).
 		Update("status", status).
 		Error
 	if err != nil {
-		repository.logger.Error("Error updating account status", err)
+		repository.Logger.Error("Error updating account status", err)
 		return err
 	}
 	return nil

@@ -50,15 +50,6 @@ func (repository *MeetingRepository) CancelMeetingsForClerk(clerkId uint64) erro
 
 }
 
-func (repository *PricelistRepository) Delete(id uint64) error {
-	result := repository.Database.Delete(&model.Pricelist{}, id)
-	if result.Error != nil {
-		repository.Logger.Error("Error deleting pricelist", result.Error)
-		return result.Error
-	}
-	return nil
-}
-
 func (repository *MeetingRepository) Create(meeting *model.Meeting) (model.Meeting, error) {
 	result := repository.Database.Preload(clause.Associations).Create(meeting)
 	if result.Error != nil {
