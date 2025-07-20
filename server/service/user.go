@@ -86,7 +86,7 @@ func (service *UserService) SuspendClerk(id uint64) error {
 }
 
 func (service *UserService) Suspend(id uint64) error {
-	err := service.repository.ChangeStatus(id, 0)
+	err := service.repository.ChangeStatus(id, 2)
 	if err != nil {
 		return err
 	}
