@@ -56,8 +56,8 @@ watch(searchInput, (newValue) => {
 });
 
 const fetchUsers = async (searchTerm: string) => {
-  const searchQuery = { Role: "Clerk", Username: searchTerm };
-  const params = { sortBy: "username" };
+  const searchQuery = { Role: "Clerk", Username: searchTerm, Status: "Active" };
+  const params = { sortBy: "username", page: 1, pageSize: 20  };
   try {
     const result = await axios.post("/api/user/query", searchQuery, { params });
     users.value = result.data.users;
@@ -120,7 +120,7 @@ const fetchUsers = async (searchTerm: string) => {
             </FormItem>
           </FormField>
         </div>
-        
+
       <DatePicker :user-id="values.user_id" :username="values.username" class="w-full max-w-lg mt-10"></DatePicker>
     </div>
   </main>

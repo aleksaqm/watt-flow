@@ -6,6 +6,7 @@ type UserSearchParams struct {
 	FirstName string `json:"firstName"`
 	LastName  string `json:"lastName"`
 	Role      string `json:"role"`
+	Status		string `json:"status"`
 }
 
 type UserQueryParams struct {

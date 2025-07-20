@@ -101,6 +101,14 @@ func (repository *UserRepository) Query(params *dto.UserQueryParams) ([]model.Us
 	if params.Search.Role != "" {
 		baseQuery = baseQuery.Where("role = ?", role)
 	}
+	if params.Search.Status != "" {
+		status, err := model.ParseAccountStatus(params.Search.Status)
+		if err != nil {
+			repository.Logger.Error("Error parsing account status", err)
+			return nil, 0, err
+		}
+		baseQuery = baseQuery.Where("status = ?", status)
+	}
 	if params.Search.Username != "" {
 		baseQuery = baseQuery.Where("username ILIKE ?", "%"+params.Search.Username+"%")
 	}
