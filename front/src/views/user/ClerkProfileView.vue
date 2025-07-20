@@ -3,6 +3,7 @@ import UserProfileCard from "@/components/user/UserProfileCard.vue";
 import { getUserIdFromToken } from "@/utils/jwtDecoder";
 import axios from "axios";
 import { onMounted, ref } from "vue";
+import { useRoute } from "vue-router";
 interface UserProfile {
   first_name: string;
   last_name: string;
@@ -13,13 +14,13 @@ interface UserProfile {
 }
 
 const user = ref<UserProfile | null>(null);
+// get id from route path
+const id = useRoute().params.id as string;
 
 
 onMounted(async () => {
-  const userId = getUserIdFromToken();
-
-  if (userId) {
-    const response = await axios.get(`/api/user/${userId}`);
+  if (id) {
+    const response = await axios.get(`/api/user/${id}`);
     if (response.status === 200) {
       user.value = response.data.data;
     } else {
