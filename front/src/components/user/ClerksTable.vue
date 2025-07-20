@@ -123,14 +123,14 @@ function viewClerk(id: number) {
 
 const changeAccountStatus = async (id: number, status: string) => {
   try {
-    const action = status === "Active" ? "suspend" : "unsuspend";
+    const action = status === "Active" ? "suspend-clerk" : "unsuspend";
     const response = await axios.get("/api/user/" + action + "/" + id);
     if (response.status == 200) {
-      if (action === "suspend") {
+      if (action === "suspend-clerk") {
         toast({
           title: "Account suspended!",
           description:
-            "Account is suspended and user will not be able to login!",
+            "Account is suspended and user will not be able to login! All meetings are cancelled!",
           variant: "default",
         });
       } else {
