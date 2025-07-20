@@ -37,10 +37,12 @@ type UserService struct {
 func (service *UserService) FindById(id uint64) (*dto.UserDto, error) {
 	user, _ := service.repository.FindById(id)
 	userReturn := dto.UserDto{
-		Id:       user.Id,
-		Username: user.Username,
-		Email:    user.Email,
-		Role:     user.Role.RoleToString(),
+		Id:        user.Id,
+		FirstName: user.FirstName,
+		LastName:  user.LastName,
+		Username:  user.Username,
+		Email:     user.Email,
+		Role:      user.Role.RoleToString(),
 	}
 	return &userReturn, nil
 }
@@ -110,6 +112,9 @@ func (service *UserService) Login(loginCredentials dto.LoginDto) (string, error)
 	if user.Status == model.Inactive {
 		return "", errors.New("user is inactive")
 	}
+	if user.Status == model.Suspended {
+		return "", errors.New("user is suspended")
+	}
 	if !util.ComparePasswords(user.Password, loginCredentials.Password) {
 		return "", errors.New("invalid credentials")
 	} else {
@@ -172,6 +177,8 @@ func (service *UserService) RegisterClerk(registrationDto *dto.ClerkRegisterDto)
 	}
 	user := model.User{}
 	user.Username = registrationDto.Username
+	user.FirstName = registrationDto.FirstName
+	user.LastName = registrationDto.LastName
 	user.Email = registrationDto.Email
 	user.Password = util.HashPassword(registrationDto.Jmbg)
 	user.Role = model.Clerk
@@ -192,10 +199,12 @@ func (service *UserService) RegisterClerk(registrationDto *dto.ClerkRegisterDto)
 		return nil, err
 	}
 	userDto := dto.UserDto{
-		Id:       createdUser.Id,
-		Username: createdUser.Username,
-		Email:    createdUser.Email,
-		Role:     createdUser.Role.RoleToString(),
+		Id:        createdUser.Id,
+		Username:  createdUser.Username,
+		FirstName: createdUser.FirstName,
+		LastName:  createdUser.LastName,
+		Email:     createdUser.Email,
+		Role:      createdUser.Role.RoleToString(),
 	}
 	return &userDto, nil
 }
@@ -337,11 +346,13 @@ func (service *UserService) Query(queryParams *dto.UserQueryParams) ([]dto.UserD
 
 func MapToDto(user *model.User) (dto.UserDto, error) {
 	response := dto.UserDto{
-		Id:       user.Id,
-		Email:    user.Email,
-		Role:     user.Role.RoleToString(),
-		Username: user.Username,
-		Status:   user.Status.StatusToString(),
+		Id:        user.Id,
+		FirstName: user.FirstName,
+		LastName:  user.LastName,
+		Email:     user.Email,
+		Role:      user.Role.RoleToString(),
+		Username:  user.Username,
+		Status:    user.Status.StatusToString(),
 	}
 	return response, nil
 }
