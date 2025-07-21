@@ -5,6 +5,7 @@ import HouseholdView from '@/views/household/HouseholdView.vue'
 import NotFoundView from '@/views/NotFoundView.vue'
 import HomeView from '@/views/HomeView.vue'
 import HouseholdSearch from '@/views/household/HouseholdSearch.vue'
+import MyHouseholds from '@/views/household/MyHouseholds.vue'
 import PropertyRequestView from '@/views/property/PropertyRequestView.vue'
 import SuperAdminChangePasswordView from '@/views/auth/SuperAdminChangePasswordView.vue'
 import ManageAdminsView from '@/views/user/ManageAdminsView.vue'
@@ -50,6 +51,12 @@ const router = createRouter({
       path: '/household/search',
       name: 'household-search',
       component: HouseholdSearch,
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/household/my',
+      name: 'my-households',
+      component: MyHouseholds,
       meta: { requiresAuth: true }
     },
     {

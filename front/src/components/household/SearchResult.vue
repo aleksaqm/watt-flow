@@ -46,6 +46,10 @@ const props = defineProps({
   triggerSearch: {
     type: Number,
     default: 0
+  },
+  mode: {
+    type: String,
+    default: 'search' // 'search' | 'my-households'
   }
 })
 const dialogKey = ref(0)
@@ -152,7 +156,7 @@ onMounted(()=>{
 })
 
 function viewHousehold(id: number) {
-  if (isAdmin.value){
+  if (isAdmin.value || props.mode === 'my-households'){
     router.push({ name: "household", params: { id: id } })
   }else{
     console.log("Nothing");
@@ -183,7 +187,7 @@ function handleRequestSent(){
           <TableHead>Floor</TableHead>
           <TableHead>Suite</TableHead>
           <TableHead>C-Number</TableHead>
-          <TableHead v-if="!isAdmin">Ownership</TableHead>
+          <TableHead v-if="!isAdmin && props.mode === 'search'">Ownership</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -195,7 +199,7 @@ function handleRequestSent(){
           <TableCell>{{ household.floor }}</TableCell>
           <TableCell>{{ household.suite }}</TableCell>
           <TableCell>{{ household.cadastral_number }}</TableCell>
-          <TableCell v-if="!isAdmin">
+          <TableCell v-if="!isAdmin && props.mode === 'search'">
             <Dialog :key="dialogKey">
               <DialogTrigger>
                 <Button class="bg-indigo-500 hover:bg-gray-600">Ownership</Button>

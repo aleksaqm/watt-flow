@@ -7,7 +7,7 @@ export const authGuard: NavigationGuard = async (to, from, next) => {
     "Admin": ['/household/info/:id', '/household/search', '/home', '/properties/requests-manage', '/manage/clerks', '/manage/clerks/new', '/ownership/requests', '/bills/prices', '/bills/send'],
     "SuperAdmin": ['/manage/admins', '/household/info/:id', '/household/search', '/home', '/properties/requests-manage', '/manage/clerks', '/manage/clerks/new', '/ownership/requests', '/bills/prices', '/bills/send'],
     "Clerk": ["/home", "/meeting/clerk"],
-    "Regular": ['/profile', '/home', '/my-property-request', '/property-request', '/household/search', '/ownership/requests', '/meeting/user', '/meeting/schedule']
+    "Regular": ['/profile', '/home', '/my-property-request', '/property-request', '/household/search', '/ownership/requests', '/meeting/user', '/meeting/schedule', '/household/my']
   };
   const role = userStore.role;
   let allowedPaths: string[];
