@@ -172,6 +172,8 @@ func (service *BillService) InitiateBillingOffload(year int, month int) (*model.
 			PowerMeterID:  household.DeviceStatusID,
 			Last:          i == len(households)-1,
 			MonthlyBillID: monthlyBill.ID,
+			HouseHoldID:   household.Id,
+			HouseholdCN:   household.CadastralNumber,
 		}
 		taskJSON, _ := json.Marshal(billTask)
 		err = mq.Publish("billing_queue", taskJSON)
