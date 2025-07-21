@@ -125,9 +125,11 @@ watch(searchInput, (newValue) => {
 })
 
 const fetchUsers = async (searchTerm: string) => {
-  const searchQuery = { Role: "Regular", Username: searchTerm }
+  const searchQuery = { Role: "Regular", Username: searchTerm, Status: "Active" }
   const params = {
     sortBy: "username",
+    pageSize: 20,
+    page: 1
   }
   axios.post("/api/user/query", searchQuery, { params: params }).then((result) => {
     users.value = result.data.users

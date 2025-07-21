@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strconv"
 	"time"
+
 	"watt-flow/dto"
 	"watt-flow/model"
 	"watt-flow/repository"
@@ -154,7 +155,7 @@ func (service *BillService) InitiateBillingOffload(year int, month int) (*model.
 		service.monthlyBillRepository.Update(monthlyBill)
 		return nil, fmt.Errorf("failed to fetch active pricelist: %w", err)
 	}
-	for _, household := range households {
+	for i, household := range households {
 		billingDate := fmt.Sprintf("%d-%02d", year, month)
 		if household.Owner == nil || activePricelist == nil {
 			fmt.Printf("failed querying household owner metadata for %s - %s", billingDate, household.DeviceStatusID)
@@ -169,6 +170,10 @@ func (service *BillService) InitiateBillingOffload(year int, month int) (*model.
 			OwnerEmail:    household.Owner.Email,
 			OwnerUsername: household.Owner.Username,
 			PowerMeterID:  household.DeviceStatusID,
+			Last:          i == len(households)-1,
+			MonthlyBillID: monthlyBill.ID,
+			HouseHoldID:   household.Id,
+			HouseholdCN:   household.CadastralNumber,
 		}
 		taskJSON, _ := json.Marshal(billTask)
 		err = mq.Publish("billing_queue", taskJSON)

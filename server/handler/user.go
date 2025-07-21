@@ -2,6 +2,7 @@ package handler
 
 import (
 	"strconv"
+
 	"watt-flow/dto"
 	"watt-flow/service"
 	"watt-flow/util"
@@ -76,6 +77,21 @@ func (u *UserHandler) Suspend(c *gin.Context) {
 		return
 	}
 	err = u.service.Suspend(userId)
+	if err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(200, gin.H{"data": "success"})
+}
+
+func (u *UserHandler) SuspendClerk(c *gin.Context) {
+	id := c.Param("id")
+	userId, err := strconv.ParseUint(id, 10, 64)
+	if err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
+		return
+	}
+	err = u.service.SuspendClerk(userId)
 	if err != nil {
 		c.JSON(400, gin.H{"error": err.Error()})
 		return

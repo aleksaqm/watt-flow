@@ -117,7 +117,7 @@ const openSlot = async (slot: any) => {
       let last = 30;
       console.log(slot.number)
       for (let i = slot.number + 1; i < 15; i++) {
-        if (slots.value[i].meetingId == 0 && i != 7 && last != 180) {
+        if (slots.value[i].meetingId == 0 && i != 8 && last != 180) {
           last += 30
           availableDuration.value.push(last)
         } else {

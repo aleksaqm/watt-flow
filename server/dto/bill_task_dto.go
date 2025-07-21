@@ -2,6 +2,7 @@ package dto
 
 import (
 	"time"
+
 	"watt-flow/model"
 )
 
@@ -13,4 +14,8 @@ type BillTaskDto struct {
 	OwnerEmail    string
 	OwnerUsername string
 	PowerMeterID  string
+	Last          bool
+	MonthlyBillID uint64
+	HouseHoldID   uint64
+	HouseholdCN   string
 }
