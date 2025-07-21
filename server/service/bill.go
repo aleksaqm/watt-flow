@@ -21,6 +21,7 @@ type IBillService interface {
 	InitiateBilling(year int, month int) (*model.MonthlyBill, error)
 	InitiateBillingOffload(year int, month int) (*model.MonthlyBill, error)
 	WithTrx(trx *gorm.DB) IBillService
+	SearchBills(params *dto.BillQueryParams) ([]model.Bill, int64, error)
 }
 
 type BillService struct {
@@ -320,4 +321,21 @@ func (s *BillService) GenerateMonthlyBill(year int, month int) (*model.MonthlyBi
 		return nil, err
 	}
 	return &bill, nil
+}
+
+func (s *BillService) SearchBills(params *dto.BillQueryParams) ([]model.Bill, int64, error) {
+	if params.SortOrder != "asc" && params.SortOrder != "desc" {
+		params.SortOrder = "desc"
+	}
+	allowedSortColumns := map[string]bool{
+		"issue_date":   true,
+		"price":        true,
+		"spent_power":  true,
+		"billing_date": true,
+	}
+	if !allowedSortColumns[params.SortBy] {
+		params.SortBy = "billing_date"
+	}
+
+	return s.billRepository.SearchBills(params)
 }

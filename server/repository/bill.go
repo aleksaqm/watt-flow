@@ -1,7 +1,9 @@
 package repository
 
 import (
+	"fmt"
 	"watt-flow/db"
+	"watt-flow/dto"
 	"watt-flow/model"
 	"watt-flow/util"
 
@@ -59,6 +61,49 @@ func (repository *BillRepository) Update(bill *model.Bill) (model.Bill, error) {
 		return *bill, result.Error
 	}
 	return *bill, nil
+}
+
+func (r *BillRepository) SearchBills(params *dto.BillQueryParams) ([]model.Bill, int64, error) {
+	var bills []model.Bill
+	var total int64
+
+	db := r.Database.Model(&model.Bill{})
+
+	searchParams := params.Search
+
+	if searchParams.UserID != 0 {
+		db = db.Where("owner_id = ?", searchParams.UserID)
+	}
+	if searchParams.Status != "" {
+		db = db.Where("status = ?", searchParams.Status)
+	}
+	if searchParams.MinPrice > 0 {
+		db = db.Where("price >= ?", searchParams.MinPrice)
+	}
+	if searchParams.MaxPrice > 0 {
+		db = db.Where("price <= ?", searchParams.MaxPrice)
+	}
+	if searchParams.BillingDate != "" {
+		db = db.Where("billing_date = ?", searchParams.BillingDate)
+	}
+
+	if err := db.Count(&total).Error; err != nil {
+		r.Logger.Error("Error counting bills", err)
+		return nil, 0, err
+	}
+
+	orderByClause := fmt.Sprintf("%s %s", params.SortBy, params.SortOrder)
+	db = db.Order(orderByClause)
+
+	offset := (params.Page - 1) * params.PageSize
+	db = db.Offset(offset).Limit(params.PageSize)
+
+	if err := db.Preload("Owner").Preload("Pricelist").Find(&bills).Error; err != nil {
+		r.Logger.Error("Error finding bills with query", err)
+		return nil, 0, err
+	}
+
+	return bills, total, nil
 }
 
 // func (repository *BillRepository) FindForUser(userID uint64, params *dto.BillSearchParams) ([]model.Bill, int64, error) {

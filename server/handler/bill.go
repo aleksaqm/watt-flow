@@ -1,7 +1,9 @@
 package handler
 
 import (
+	"encoding/json"
 	"fmt"
+	"net/http"
 	"strconv"
 	"watt-flow/dto"
 	"watt-flow/service"
@@ -52,6 +54,92 @@ func (h BillHandler) Query(c *gin.Context) {
 		return
 	}
 	c.JSON(200, gin.H{"bills": bills, "total": total})
+}
+
+func (h *BillHandler) SearchBills(c *gin.Context) {
+	page := c.DefaultQuery("page", "1")
+	pageSize := c.DefaultQuery("pageSize", "10")
+	sortBy := c.DefaultQuery("sortBy", "billing_date")
+	sortOrder := c.DefaultQuery("sortOrder", "asc")
+	search := c.DefaultQuery("search", "{}")
+
+	pageInt, err := strconv.Atoi(page)
+	if err != nil {
+		h.logger.Error("Invalid page parameter", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid page parameter"})
+		return
+	}
+	pageSizeInt, err := strconv.Atoi(pageSize)
+	if err != nil {
+		h.logger.Error("Invalid pageSize parameter", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid pageSize parameter"})
+		return
+	}
+
+	var searchParams dto.BillSearchParams
+	if search != "" && search != "{}" {
+		if err := json.Unmarshal([]byte(search), &searchParams); err != nil {
+			h.logger.Error("Invalid search parameter", err)
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid search parameter format"})
+			return
+		}
+	}
+
+	loggedInUserID := c.GetUint64("userId")
+	if searchParams.UserID == 0 {
+		searchParams.UserID = loggedInUserID
+	} else if searchParams.UserID != loggedInUserID {
+		c.JSON(http.StatusForbidden, gin.H{"error": "You are not authorized to view these bills"})
+		return
+	}
+
+	params := dto.BillQueryParams{
+		Page:      pageInt,
+		PageSize:  pageSizeInt,
+		SortBy:    sortBy,
+		SortOrder: sortOrder,
+		Search:    searchParams,
+	}
+
+	h.logger.Info("Search bills params", params)
+
+	bills, total, err := h.service.SearchBills(&params)
+	if err != nil {
+		h.logger.Error("Failed to query bills", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve bills"})
+		return
+	}
+
+	var billsDto []dto.BillResponseDto
+	for _, bill := range bills {
+		billsDto = append(billsDto, dto.BillResponseDto{
+			ID:          bill.ID,
+			IssueDate:   bill.IssueDate,
+			BillingDate: bill.BillingDate,
+			SpentPower:  bill.SpentPower,
+			Price:       bill.Price,
+			Status:      bill.Status,
+			Pricelist: dto.PricelistDto{
+				ID:           bill.Pricelist.ID,
+				ValidFrom:    bill.Pricelist.ValidFrom,
+				BlueZone:     bill.Pricelist.BlueZone,
+				RedZone:      bill.Pricelist.RedZone,
+				GreenZone:    bill.Pricelist.GreenZone,
+				BillingPower: bill.Pricelist.BillingPower,
+				Tax:          bill.Pricelist.Tax,
+			},
+			Owner: dto.OwnerDto{
+				ID:       bill.OwnerID,
+				Username: bill.Owner.Username,
+				Email:    bill.Owner.Email,
+			},
+		})
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"bills": billsDto,
+		"total": total,
+	})
 }
 
 func (h *BillHandler) GetUnsentMonthlyBills(c *gin.Context) {
