@@ -8,7 +8,6 @@ const triggerSearch = ref(0)
 const searchQuery = ref<{ ownerid?: string }>({})
 
 onMounted(() => {
-  // Set the search to find households owned by the current user
   if (userStore.id) {
     searchQuery.value = { ownerid: userStore.id.toString() }
     triggerSearch.value++

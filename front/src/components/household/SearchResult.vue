@@ -156,9 +156,11 @@ onMounted(()=>{
 })
 
 function viewHousehold(id: number) {
-  if (isAdmin.value || props.mode === 'my-households'){
+  if (isAdmin.value) {
     router.push({ name: "household", params: { id: id } })
-  }else{
+  } else if (props.mode === 'my-households') {
+    router.push({ name: "my-household", params: { id: id } })
+  } else {
     console.log("Nothing");
   }
 }
