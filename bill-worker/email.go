@@ -75,7 +75,7 @@ func GenerateQRCode(link string) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func GenerateMonthlyBillEmail(bill Bill, pricelist Pricelist, user string) (string, []byte, error) {
+func GenerateMonthlyBillEmail(bill Bill, pricelist Pricelist, user string, householdCN string) (string, []byte, error) {
 	date := time.Time(pricelist.ValidFrom).Format("2006-01")
 	paymentLink := fmt.Sprintf("http://localhost:80/api/pay/%s", "test")
 	qrCodeBytes, err := GenerateQRCode(paymentLink)
@@ -86,8 +86,8 @@ func GenerateMonthlyBillEmail(bill Bill, pricelist Pricelist, user string) (stri
 	<html>
 		<body style="font-family: Arial, sans-serif; background: #f4f4f4; color: #333; padding: 40px; text-align: center;">
 			<div style="background: white; max-width: 600px; margin: 0 auto; padding: 40px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); text-align: left;">
-				<h2 style="color: #1d1e26; text-align: center;">Electricity Bill - %s</h2>
-				
+				<h2 style="color: #1d1e26; text-align: center;">Electricity Bill - %s - household: %s</h2>
+
 				<table style="width: 100%%; border-collapse: collapse; margin-top: 20px;">
 					<tr>
 						<th style="text-align: left; padding: 10px; background: #1d1e26; color: white;">Bill Details</th>
@@ -133,5 +133,5 @@ func GenerateMonthlyBillEmail(bill Bill, pricelist Pricelist, user string) (stri
 			</div>
 		</body>
 	</html>
-	`, bill.BillingDate, bill.BillingDate, user, bill.SpentPower, date, pricelist.GreenZone, pricelist.BlueZone, pricelist.RedZone, pricelist.BillingPower, pricelist.Tax, bill.Price, paymentLink), qrCodeBytes, nil
+	`, bill.BillingDate, householdCN, bill.BillingDate, user, bill.SpentPower, date, pricelist.GreenZone, pricelist.BlueZone, pricelist.RedZone, pricelist.BillingPower, pricelist.Tax, bill.Price, paymentLink), qrCodeBytes, nil
 }

@@ -2,11 +2,13 @@ package service
 
 import (
 	"encoding/json"
+
 	"watt-flow/dto"
 	"watt-flow/model"
 	"watt-flow/repository"
 
 	"gorm.io/datatypes"
+	"gorm.io/gorm"
 )
 
 type IMeetingService interface {
@@ -18,6 +20,8 @@ type IMeetingService interface {
 	FindMeetingById(id uint64) (*dto.MeetingDTO, error)
 	FindMeetingBySlotId(slotId uint64) (*dto.MeetingDTO, error)
 	GetUsersMeetings(userID uint64, params *dto.MeetingQueryParams) ([]dto.UsersMeetingDTO, int64, error)
+	CancelMeetingsForClerk(clerkId uint64) error
+	WithTrx(trxHandle *gorm.DB) IMeetingService
 }
 
 type MeetingService struct {
@@ -30,6 +34,12 @@ func NewMeetingService(timeslotRepository repository.TimeSlotRepository, meeting
 		slotRepository:    timeslotRepository,
 		meetingRepository: meetingRepository,
 	}
+}
+
+func (t MeetingService) WithTrx(trxHandle *gorm.DB) IMeetingService {
+	t.slotRepository = t.slotRepository.WithTrx(trxHandle)
+	t.meetingRepository = t.meetingRepository.WithTrx(trxHandle)
+	return &t
 }
 
 func (t *MeetingService) FindByDate(date datatypes.Date) (*dto.TimeSlotDto, error) {
@@ -48,6 +58,18 @@ func (t *MeetingService) FindByDate(date datatypes.Date) (*dto.TimeSlotDto, erro
 		ClerkId: timeslot.Clerk.Id,
 		Id:      timeslot.Id,
 	}, nil
+}
+
+func (t *MeetingService) CancelMeetingsForClerk(clerkId uint64) error {
+	error := t.meetingRepository.CancelMeetingsForClerk(clerkId)
+	if error != nil {
+		return error
+	}
+	error = t.slotRepository.DeleteSlotsForClerk(clerkId)
+	if error != nil {
+		return error
+	}
+	return nil
 }
 
 func (t *MeetingService) FindByDateAndClerkId(date datatypes.Date, clerkId uint64) (*dto.TimeSlotDto, error) {

@@ -173,10 +173,11 @@ func (c *Worker) processBills(ctx context.Context, msgs <-chan amqp.Delivery) {
 				SpentPower:  spentPower,
 				Price:       calculatedPrice,
 				Status:      "Delivered",
+				HouseholdID: billTask.HouseHoldID,
 			}
 
 			// Send Email
-			emailBody, qrCode, err := GenerateMonthlyBillEmail(bill, billTask.Pricelist, billTask.OwnerUsername)
+			emailBody, qrCode, err := GenerateMonthlyBillEmail(bill, billTask.Pricelist, billTask.OwnerUsername, billTask.HouseholdCN)
 			if err != nil {
 				fmt.Printf("Failed generating email for %s - %s, %s\n", billTask.PowerMeterID, billTask.OwnerUsername, err.Error())
 				bill.Status = "Not Delivered"
@@ -193,13 +194,23 @@ func (c *Worker) processBills(ctx context.Context, msgs <-chan amqp.Delivery) {
 				continue
 			}
 			fmt.Printf("Successfully processed bill for %s\n", billTask.OwnerEmail)
+
+			if billTask.Last {
+				fmt.Printf("Received last email task, updating status")
+				err = c.UpdateStatus(ctx, billTask.MonthlyBillID, "Completed")
+				if err != nil {
+					fmt.Printf("Failed updating monthly bill status for %d: %s\n", billTask.MonthlyBillID, err.Error())
+				} else {
+					fmt.Printf("Successfully updated monthly bill status for %d\n", billTask.MonthlyBillID)
+				}
+			}
 		}
 	}
 }
 
 func (c *Worker) InsertBill(ctx context.Context, bill *Bill) error {
-	query := `INSERT INTO bills (issue_date, billing_date, pricelist_id, spent_power, price, owner_id, status)
-	          VALUES ($1, $2, $3, $4, $5, $6, $7)`
+	query := `INSERT INTO bills (issue_date, billing_date, pricelist_id, spent_power, price, owner_id, status, household_id)
+	          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`
 
 	_, err := c.pgDB.ExecContext(ctx, query,
 		bill.IssueDate,
@@ -209,6 +220,7 @@ func (c *Worker) InsertBill(ctx context.Context, bill *Bill) error {
 		bill.Price,
 		bill.OwnerID,
 		bill.Status,
+		bill.HouseholdID,
 	)
 	if err != nil {
 		log.Printf("Failed to insert bill: %v", err)
@@ -216,6 +228,22 @@ func (c *Worker) InsertBill(ctx context.Context, bill *Bill) error {
 	}
 
 	log.Println("Bill inserted successfully")
+	return nil
+}
+
+func (c *Worker) UpdateStatus(ctx context.Context, billID uint64, status string) error {
+	query := `UPDATE monthly_bills SET status = $1 WHERE id = $2`
+
+	_, err := c.pgDB.ExecContext(ctx, query,
+		status,
+		billID,
+	)
+	if err != nil {
+		log.Printf("Failed to update monthly bill: %v", err)
+		return err
+	}
+
+	log.Println("Bill status updated successfully")
 	return nil
 }
 
