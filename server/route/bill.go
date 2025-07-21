@@ -20,6 +20,7 @@ func (r BillRoute) Register(server *server.Server) {
 		api.POST("/bills/send", authMid.RoleMiddleware([]string{"Admin", "SuperAdmin"}), server.BillHandler.InitiateBilling)
 		api.GET("/bills/query", authMid.RoleMiddleware([]string{"Admin", "SuperAdmin"}), server.BillHandler.Query)
 		api.GET("/bills/search", authMid.RoleMiddleware([]string{"Admin", "SuperAdmin"}), server.BillHandler.SearchBills)
+		api.GET("/bills", authMid.RoleMiddleware([]string{"Admin", "SuperAdmin"}), server.BillHandler.GetBill)
 	}
 }
 

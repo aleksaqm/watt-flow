@@ -142,6 +142,57 @@ func (h *BillHandler) SearchBills(c *gin.Context) {
 	})
 }
 
+func (h *BillHandler) GetBill(c *gin.Context) {
+
+	id := c.Query("id")
+
+	if id == "" {
+		c.JSON(400, gin.H{"error": "ID missing in request"})
+		return
+	}
+
+	idInt, err := strconv.ParseUint(id, 10, 64)
+	if err != nil {
+		h.logger.Error(err)
+		c.JSON(400, gin.H{"error": "Invalid id"})
+		return
+	}
+	h.logger.Info("Get bill", idInt)
+	bill, err := h.service.FindById(idInt)
+	if err != nil {
+		h.logger.Error(err)
+		c.JSON(404, gin.H{"error": err.Error()})
+		return
+	}
+
+	billDto := dto.BillResponseDto{
+		ID:          bill.ID,
+		IssueDate:   bill.IssueDate,
+		BillingDate: bill.BillingDate,
+		SpentPower:  bill.SpentPower,
+		Price:       bill.Price,
+		Status:      bill.Status,
+		Pricelist: dto.PricelistDto{
+			ID:           bill.Pricelist.ID,
+			ValidFrom:    bill.Pricelist.ValidFrom,
+			BlueZone:     bill.Pricelist.BlueZone,
+			RedZone:      bill.Pricelist.RedZone,
+			GreenZone:    bill.Pricelist.GreenZone,
+			BillingPower: bill.Pricelist.BillingPower,
+			Tax:          bill.Pricelist.Tax,
+		},
+		Owner: dto.OwnerDto{
+			ID:       bill.OwnerID,
+			Username: bill.Owner.Username,
+			Email:    bill.Owner.Email,
+		},
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"bill": billDto,
+	})
+}
+
 func (h *BillHandler) GetUnsentMonthlyBills(c *gin.Context) {
 	cities, err := h.service.GetUnsentMonthlyBills()
 	if err != nil {

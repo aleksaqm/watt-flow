@@ -48,7 +48,9 @@ import {
 }from '@/shad/components/ui/popover'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/shad/components/ui/dialog';
 import { XCircleIcon } from '@heroicons/vue/24/solid';
+import { useRouter } from 'vue-router';
 
+const router = useRouter();
 const bills = ref<SearchBill[]>([])
 
 const searchQuery = ref({
@@ -225,6 +227,11 @@ const clearPeriod = () => {
   tempYear.value = undefined;
 };
 
+
+const onPay = (bill: number) => {
+  router.push('/bills/pay/' + bill)
+}
+
 </script>
 
 <template>
@@ -385,7 +392,7 @@ const clearPeriod = () => {
           {{ bill.status }}
         </TableCell>
         <TableCell>
-          <Button v-if="bill.status !== 'Paid'" size="sm">
+          <Button v-if="bill.status !== 'Paid'" size="sm" @click="onPay(bill.id)">
             Plati
           </Button>
         </TableCell>

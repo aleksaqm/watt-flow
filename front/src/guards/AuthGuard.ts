@@ -4,8 +4,8 @@ import type { NavigationGuard } from 'vue-router';
 export const authGuard: NavigationGuard = async (to, from, next) => {
   const userStore = useUserStore();
   const authMap = {
-    "Admin": ['/household/info/:id', '/household/search', '/home', '/properties/requests-manage', '/manage/clerks', '/manage/clerks/new', '/ownership/requests', '/bills/prices', '/bills/send', '/consumption', '/clerk/profile/:id', '/bills/owner'],
-    "SuperAdmin": ['/manage/admins', '/household/info/:id', '/household/search', '/home', '/properties/requests-manage', '/manage/clerks', '/manage/clerks/new', '/ownership/requests', '/bills/prices', '/bills/send', '/consumption', '/clerk/profile/:id', '/bills/owner'],
+    "Admin": ['/household/info/:id', '/household/search', '/home', '/properties/requests-manage', '/manage/clerks', '/manage/clerks/new', '/ownership/requests', '/bills/prices', '/bills/send', '/consumption', '/clerk/profile/:id', '/bills/owner',  '/bills/pay/:billId', '/bills/pay/success'],
+    "SuperAdmin": ['/manage/admins', '/household/info/:id', '/household/search', '/home', '/properties/requests-manage', '/manage/clerks', '/manage/clerks/new', '/ownership/requests', '/bills/prices', '/bills/send', '/consumption', '/clerk/profile/:id', '/bills/owner', '/bills/pay/:billId', '/bills/pay/success'],
     "Clerk": ["/home", "/meeting/clerk"],
     "Regular": ['/profile', '/home', '/my-property-request', '/property-request', '/household/search', '/ownership/requests', '/meeting/user', '/meeting/schedule']
   };
