@@ -126,7 +126,6 @@ func NewWsServer() *WsServer {
 }
 
 func ValidateUser(token string, connType string) (bool, error) {
-	// Handle token that might have multiple parts
 	token = strings.Split(token, ",")[0]
 
 	var endpoint string
@@ -194,8 +193,6 @@ func ServeWs(wsServer *WsServer, w http.ResponseWriter, r *http.Request) {
 }
 
 func (server *WsServer) Run() {
-	// Start the health check goroutine
-
 	for {
 		select {
 		case client := <-server.register:

@@ -128,69 +128,51 @@ const isConnectedToWs = ref(false)
 const connectToWebSocket = async () => {
   const authToken = localStorage.getItem("authToken")
   if (authToken != null) {
-    console.log(`Connecting to WebSocket: ${serverUrl}`)
-    console.log(`Using auth token: ${authToken.substring(0, 20)}...`) // Log partial token for debugging
-    
     try {
       ws = new WebSocket(serverUrl, [authToken, "token"])
       
       ws.addEventListener("open", (event) => { 
-        console.log("Connected to consumption WebSocket!"); 
         isConnectedToWs.value = true 
       })
       
       ws.addEventListener("message", (event) => {
-        console.log("Received WebSocket message:", event.data)
         handleConsumptionUpdate(event)
       })
       
       ws.addEventListener("error", (event) => {
-        console.error("WebSocket error:", event)
         console.error("WebSocket state:", ws?.readyState)
       })
       
       ws.addEventListener("close", (event) => {
-        console.log("WebSocket connection closed:", event.code, event.reason)
-        if (event.code === 1006) {
-          console.log("Connection closed abnormally - likely authentication failure")
-        }
         isConnectedToWs.value = false
       })
     } catch (error) {
       console.error("Failed to create WebSocket connection:", error)
     }
   } else {
-    console.log("Auth token not found in localStorage!")
     return
   }
 }
 
-const updateRealtimeChart = () => {
-  if (lastConsumptionValue != -1) {
-    chartData.data.push(
-
-      {
-        "time": xFormatter(new Date()),
-        "value": lastConsumptionValue,
-      }
-    )
-    chartData.data.shift()
-    console.log("Updated chart from last value!")
-  }
-
-}
-
 const handleConsumptionUpdate = (event: any) => {
   const data = JSON.parse(event.data)
-  chartData.data.push(
-    {
-      "time": xFormatter(new Date()),
-      "value": data.Consumption || 0,
-    }
-  )
-  chartData.data.shift()
+  
+  const newDataPoint = {
+    "time": xFormatter(new Date()),
+    "value": data.Consumption || 0,
+  }
+  
+  console.log("Adding data point to chart:", newDataPoint)
+  console.log("Chart data before update:", chartData.data.length, "points")
+  
+  chartData.data.push(newDataPoint)
+  
+  chartData.data = [...chartData.data]
+  
+  console.log("Chart data after update:", chartData.data.length, "points")
+  
   lastConsumptionValue = data.Consumption || 0
-  console.log("Received consumption change from server!")
+  console.log("Received consumption change from server!", data.Consumption)
 }
 
 const handleFetch = () => {
@@ -199,8 +181,7 @@ const handleFetch = () => {
   if (isRealtimeSelected.value) {
     if (ws?.readyState !== WebSocket.OPEN) {
       connectToWebSocket()
-      refreshJob = setInterval(updateRealtimeChart, 60000)
-      console.log(refreshJob)
+      console.log("Connected to WebSocket for real-time consumption updates")
     } else {
       return
     }
@@ -217,7 +198,8 @@ const handleFetch = () => {
     lastConsumptionValue = -1
     if (refreshJob != -1) {
       clearInterval(refreshJob)
-      console.log("Cleared job")
+      refreshJob = -1
+      console.log("Cleared refresh timer")
     }
   }
 
@@ -275,7 +257,7 @@ const handleFetch = () => {
         }
     }
   }
-  // Changed endpoint to consumption
+
   axios.post('/api/device-consumption/query-consumption', query).then(
     (result) => {
       console.log("API Response:", result.data)
@@ -297,21 +279,24 @@ const handleFetch = () => {
 }
 
 const formatRealtimeData = (data: any[]) => {
+  console.log("formatRealtimeData called with:", data)
   chartData.data = []
   if (!data || data.length === 0) {
-    console.log("No realtime data received")
+    console.log("No realtime data received - chart will start empty")
     return
   }
   
   const length = data.length
+  console.log(`Processing ${length} initial data points for realtime chart`)
   for (let i = 0; i < length; i++) {
     chartData.data.push({
       "time": xFormatter(new Date(data[i].TimeField)),
       "value": data[i].Value || 0,
     })
   }
+  console.log("Initial chart data populated:", chartData.data.length, "points")
   lastConsumptionValue = data[data.length - 1]?.Value || 0
-  chartData.unit = 0 // Not used for consumption
+  chartData.unit = 0
 }
 
 const formatData = (data: any[]) => {
@@ -319,7 +304,7 @@ const formatData = (data: any[]) => {
   let totalConsumption = 0
 
   chartData.data = []
-  chartData.unit = 0 // Not used for consumption
+  chartData.unit = 0
 
   for (let i = 0; i < length; i++) {
     const consumptionValue = data[i].Value
@@ -327,7 +312,7 @@ const formatData = (data: any[]) => {
     
     chartData.data.push({
       "time": xFormatter(new Date(data[i].TimeField)),
-      "value": consumptionValue, // actual consumption value in kWh
+      "value": consumptionValue,
     })
   }
 

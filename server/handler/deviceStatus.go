@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"encoding/json"
 	"strconv"
 	"watt-flow/dto"
 	"watt-flow/model"
@@ -43,16 +44,16 @@ func (h DeviceStatusHandler) QueryStatus(c *gin.Context) {
 }
 
 func (h DeviceStatusHandler) QueryConsumption(c *gin.Context) {
-	var queryParams dto.FluxQueryConsumptionDto
+	var queryParams dto.FluxQueryCityConsumptionDto
 	if err := c.BindJSON(&queryParams); err != nil {
 		h.logger.Error(err)
-		c.JSON(400, gin.H{"error": "Invalid device status query params"})
+		c.JSON(400, gin.H{"error": "Invalid city consumption query params"})
 		return
 	}
-	data, err := h.service.QueryConsumption(queryParams)
+	data, err := h.service.QueryCityConsumption(queryParams)
 	if err != nil {
 		h.logger.Error(err)
-		c.JSON(500, gin.H{"error": "Failed to query device status"})
+		c.JSON(500, gin.H{"error": "Failed to query city consumption"})
 		return
 	}
 	c.JSON(200, gin.H{"data": data})
@@ -123,4 +124,16 @@ func NewDeviceStatusHandler(deviceStatusService service.IDeviceStatusService, lo
 		service: deviceStatusService,
 		logger:  logger,
 	}
+}
+
+// Helper function to convert map[string]interface{} to a specific struct
+func convertMapToStruct(data map[string]interface{}, target interface{}) error {
+	// Convert map to JSON bytes
+	jsonBytes, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
+
+	// Unmarshal JSON bytes into target struct
+	return json.Unmarshal(jsonBytes, target)
 }

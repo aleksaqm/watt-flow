@@ -6,7 +6,7 @@ defineProps<{
   data: {
     name: string
     color: string
-    value: any  // consumption value in kWh
+    value: any
   }[]
   isRealtime: boolean
   unit: number
