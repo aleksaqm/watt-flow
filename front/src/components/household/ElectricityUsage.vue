@@ -344,12 +344,12 @@ const yFormatter = (value: number) => {
 </script>
 
 <template>
-  <div class="flex justify-center w-full">
-    <Card class="max-w-4xl w-full">
+  <div class="flex flex-col gap-3 items-center justify-center w-full mb-10">
+    <Card class="w-5/6">
       <CardHeader>
         <div class="flex items-center justify-between">
-          <CardTitle class="text-gray-600 text-xl">
-            {{ chartTitle }}
+          <CardTitle>
+            <span class="text-gray-600 text-xl">{{ chartTitle }}</span>
           </CardTitle>
           
           <div class="flex items-center gap-2">
@@ -380,31 +380,30 @@ const yFormatter = (value: number) => {
             </Button>
           </div>
         </div>
-        
-        <div class="text-xs text-gray-500 mt-2">
-          kWh - Kilowatt hours
-        </div>
       </CardHeader>
       <CardContent>
-        <div class="p-2">
+        <div class="text-xs text-gray-500 mb-4">
+          kWh - Kilowatt hours
+        </div>
+        <div class="w-full">
           <div v-if="isLoading" class="flex items-center justify-center h-64">
             <div class="text-gray-500">Loading consumption data...</div>
           </div>
           
-          <BarChart
-            v-else
-            :data="chartData"
-            :index="chartIndex"
-            :categories="chartCategories"
-            :y-formatter="yFormatter"
-            :colors="['#3b82f6']"
-            :bar-spacing="0.4"
-            @bar-click="handleBarClick"
-          />
-          <br />
-          <br />
-          <br />
-          <div class="text-center text-sm text-gray-500"> 
+          <div v-else class="w-full min-h-[400px]">
+            <BarChart
+              :data="chartData"
+              :index="chartIndex"
+              :categories="chartCategories"
+              :y-formatter="yFormatter"
+              :colors="['#3b82f6']"
+              :bar-spacing="0.4"
+              @bar-click="handleBarClick"
+              class="w-full"
+            />
+          </div>
+          
+          <div class="text-center text-sm text-gray-500 mt-8"> 
             {{ currentView === 'monthly' ? 'Click on a month to see daily consumption' : 'Daily electricity consumption' }}
           </div>
         </div>

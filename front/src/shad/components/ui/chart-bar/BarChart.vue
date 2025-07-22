@@ -3,7 +3,7 @@ import type { BaseChartProps } from '.'
 import { ChartLegend, defaultColors } from '@/shad/components/ui/chart'
 import { cn } from '@/lib/utils'
 import { type BulletLegendItemInterface } from '@unovis/ts'
-import { computed, ref } from 'vue'
+import { computed, ref, onMounted, onUnmounted } from 'vue'
 
 const props = withDefaults(defineProps<BaseChartProps<T> & {
   /**
@@ -48,14 +48,15 @@ const legendItems = ref<BulletLegendItemInterface[]>(props.categories.map((categ
 const hoveredBar = ref<{ dataIndex: number, categoryIndex: number } | null>(null)
 const tooltipData = ref<{ x: number, y: number, data: any } | null>(null)
 
-const chartWidth = 800
-const chartHeight = 450
+const chartContainer = ref<HTMLDivElement>()
+const chartWidth = ref(800)
+const chartHeight = ref(450)
 const marginTop = props.margin.top || 20
 const marginBottom = props.margin.bottom || 60
 const marginLeft = props.margin.left || 70
 const marginRight = props.margin.right || 30
-const innerWidth = chartWidth - marginLeft - marginRight
-const innerHeight = chartHeight - marginTop - marginBottom
+const innerWidth = computed(() => chartWidth.value - marginLeft - marginRight)
+const innerHeight = computed(() => chartHeight.value - marginTop - marginBottom)
 
 const maxValue = computed(() => {
   let max = 0
@@ -69,18 +70,46 @@ const maxValue = computed(() => {
 })
 
 const xScale = computed(() => {
-  const totalBarWidth = innerWidth / props.data.length
+  const totalBarWidth = innerWidth.value / props.data.length
   return (index: number) => index * totalBarWidth + totalBarWidth / 2
 })
 
 const yScale = computed(() => {
-  return (value: number) => innerHeight - (value / maxValue.value) * innerHeight
+  return (value: number) => innerHeight.value - (value / maxValue.value) * innerHeight.value
 })
 
 const barWidth = computed(() => {
-  const totalBarWidth = innerWidth / props.data.length
+  const totalBarWidth = innerWidth.value / props.data.length
   const availableWidth = totalBarWidth * (1 - props.barSpacing)
   return availableWidth / props.categories.length
+})
+
+// Resize observer for responsive chart
+let resizeObserver: ResizeObserver | null = null
+
+const updateChartDimensions = () => {
+  if (chartContainer.value) {
+    const containerRect = chartContainer.value.getBoundingClientRect()
+    chartWidth.value = Math.max(300, containerRect.width)
+    chartHeight.value = Math.max(300, Math.min(450, containerRect.width * 0.6)) // Maintain aspect ratio
+  }
+}
+
+onMounted(() => {
+  if (chartContainer.value) {
+    updateChartDimensions()
+    
+    resizeObserver = new ResizeObserver(() => {
+      updateChartDimensions()
+    })
+    resizeObserver.observe(chartContainer.value)
+  }
+})
+
+onUnmounted(() => {
+  if (resizeObserver) {
+    resizeObserver.disconnect()
+  }
 })
 
 function handleLegendItemClick(d: BulletLegendItemInterface, i: number) {
@@ -128,11 +157,17 @@ const gridLines = computed(() => {
 </script>
 
 <template>
-  <div :class="cn('w-full h-[400px] flex flex-col items-end', $attrs.class ?? '')">
+  <div :class="cn('w-full min-h-[400px] flex flex-col items-end', $attrs.class ?? '')">
     <ChartLegend v-if="showLegend" v-model:items="legendItems" @legend-item-click="handleLegendItemClick" />
 
-    <div class="relative w-full flex-1">
-      <svg :width="chartWidth" :height="chartHeight" class="overflow-visible">
+    <div ref="chartContainer" class="relative w-full flex-1">
+      <svg 
+        :width="chartWidth" 
+        :height="chartHeight" 
+        :viewBox="`0 0 ${chartWidth} ${chartHeight}`"
+        class="w-full h-full overflow-visible"
+        preserveAspectRatio="xMidYMid meet"
+      >
         <!-- Grid lines -->
         <g v-if="showGridLine">
           <line
