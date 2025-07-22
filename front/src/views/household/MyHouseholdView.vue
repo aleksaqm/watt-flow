@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import HouseholdInfo from '@/components/household/HouseholdInfo.vue';
 import ElectricityUsage from '@/components/household/ElectricityUsage.vue';
-import SimulatorAvailabilty from '@/components/household/SimulatorAvailabilty.vue';
 import ElectricityConsumption from '@/components/household/ElectricityConsumption.vue';
 import { useRoute } from 'vue-router';
 import { computed, onMounted, ref } from 'vue';
@@ -56,7 +55,7 @@ onMounted(() => {
       </div>
       
       <div v-if="!isLoading && household" class="my-10">
-        <ElectricityConsumption :device-id="household.id" />
+        <ElectricityConsumption :device-id="household.device_address" />
       </div>
       <br />
     </div>

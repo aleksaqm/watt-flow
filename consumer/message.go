@@ -24,3 +24,8 @@ type Status struct {
 	DeviceId string
 	IsActive bool
 }
+
+type Consumption struct {
+	DeviceId    string
+	Consumption float64
+}

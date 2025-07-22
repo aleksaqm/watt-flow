@@ -270,3 +270,97 @@ func generateRealtimeQuery(params dto.FluxQueryStatusDto) string {
     `, params.DeviceId, params.DeviceId)
 	return fluxQuery
 }
+
+func (inf *InfluxQueryHelper) SendConsumptionQuery(queryParams dto.FluxQueryConsumptionDto) (*dto.ConsumptionQueryResult, error) {
+	queryAPI := inf.client.QueryAPI(inf.organization)
+	fluxQuery := ""
+
+	if queryParams.Realtime {
+		fluxQuery = generateRealtimeConsumptionQuery(queryParams)
+	} else {
+		if queryParams.TimePeriod == "custom" {
+			fluxQuery = generateRangeConsumptionQueryString(queryParams)
+		} else {
+			fluxQuery = generateConsumptionQueryString(queryParams)
+		}
+	}
+
+	result, err := queryAPI.Query(context.Background(), fluxQuery)
+	if err != nil {
+		return nil, err
+	}
+	defer result.Close()
+
+	results := dto.ConsumptionQueryResult{
+		Rows: []dto.ConsumptionQueryResultRow{},
+	}
+
+	for result.Next() {
+		value := result.Record().Value()
+		var floatVal float64
+
+		switch v := value.(type) {
+		case float64:
+			floatVal = v
+		case int64:
+			floatVal = float64(v)
+		case int:
+			floatVal = float64(v)
+		case string:
+			parsed, err := strconv.ParseFloat(v, 64)
+			if err != nil {
+				log.Printf("Error converting string to float: %v", err)
+				continue
+			}
+			floatVal = parsed
+		case nil:
+			floatVal = 0
+		default:
+			log.Printf("Unexpected value type: %T", value)
+			continue
+		}
+
+		results.Rows = append(results.Rows, dto.ConsumptionQueryResultRow{
+			TimeField: result.Record().Time(),
+			Value:     floatVal,
+		})
+	}
+	if result.Err() != nil {
+		log.Fatalf("Query execution error: %v", result.Err())
+		return nil, err
+	}
+	return &results, nil
+}
+
+func generateConsumptionQueryString(params dto.FluxQueryConsumptionDto) string {
+	fluxQuery := fmt.Sprintf(`
+  from(bucket: "power_measurements")
+    |> range(start: -%s)
+    |> filter(fn: (r) => r._measurement == "power_consumption" and r._field == "value" and r.device_id=="%s")
+    |> aggregateWindow(every: %s, fn: mean, createEmpty: false)
+    |> yield(name: "mean")
+    `, params.TimePeriod, params.DeviceId, params.GroupPeriod)
+	return fluxQuery
+}
+
+func generateRangeConsumptionQueryString(params dto.FluxQueryConsumptionDto) string {
+	fluxQuery := fmt.Sprintf(`
+  from(bucket: "power_measurements")
+    |> range(start: %s, stop: %s)
+    |> filter(fn: (r) => r._measurement == "power_consumption" and r._field == "value" and r.device_id=="%s")
+    |> aggregateWindow(every: %s, fn: mean, createEmpty: false)
+    |> yield(name: "mean")
+    `, params.StartDate.Format(time.RFC3339), params.EndDate.Format(time.RFC3339), params.DeviceId, params.GroupPeriod)
+	return fluxQuery
+}
+
+func generateRealtimeConsumptionQuery(params dto.FluxQueryConsumptionDto) string {
+	fluxQuery := fmt.Sprintf(`
+  from(bucket: "power_measurements")
+    |> range(start: -3h)
+    |> filter(fn: (r) => r._measurement == "power_consumption" and r._field == "value" and r.device_id=="%s")
+    |> aggregateWindow(every: 1m, fn: mean, createEmpty: false)
+    |> yield(name: "mean")
+    `, params.DeviceId)
+	return fluxQuery
+}

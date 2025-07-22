@@ -73,11 +73,12 @@ func (c *WebsocketClient) readPump(wsServer *WsServer) {
 			_, _, err := c.conn.ReadMessage()
 			if err != nil {
 				if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-					log.Printf("error: %v", err)
+					log.Printf("ReadMessage error for client %s (%s): %v", c.deviceId, c.connType, err)
 				}
 				return
 			}
 			// Handle other message types if needed
+			log.Printf("Received message from client %s (%s)", c.deviceId, c.connType)
 		}
 	}
 }
@@ -122,8 +123,15 @@ func NewWsServer() *WsServer {
 	}
 }
 
-func ValidateUser(token string) (bool, error) {
-	req, err := http.NewRequest(http.MethodGet, "http://server:5000/api/validate/admin", nil)
+func ValidateUser(token string, connType string) (bool, error) {
+	var endpoint string
+	if connType == "consumption" {
+		endpoint = "http://server:5000/api/validate/user"
+	} else {
+		endpoint = "http://server:5000/api/validate/admin"
+	}
+
+	req, err := http.NewRequest(http.MethodGet, endpoint, nil)
 	if err != nil {
 		return false, err
 	}
@@ -132,7 +140,7 @@ func ValidateUser(token string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	log.Println("statusCode", res.StatusCode)
+	log.Printf("Validating token for connType=%s, statusCode=%d", connType, res.StatusCode)
 	return res.StatusCode == 200, nil
 }
 
@@ -144,23 +152,24 @@ func ServeWs(wsServer *WsServer, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	valid, err := ValidateUser(token)
+	deviceId := r.URL.Query().Get("deviceId")
+	connType := r.URL.Query().Get("connType")
+	if deviceId == "" || connType == "" {
+		log.Println("Invalid request! Missing device id or connection params!")
+		http.Error(w, "Missing required parameters", http.StatusBadRequest)
+		return
+	}
+
+	valid, err := ValidateUser(token, connType)
+
 	if err != nil {
 		log.Printf("Error validating user: %v", err)
 		http.Error(w, "Authentication error", http.StatusInternalServerError)
 		return
 	}
 	if !valid {
-		log.Println("User not valid, refusing connection!")
+		log.Printf("User not valid for connType=%s, refusing connection!", connType)
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
-
-	deviceId := r.URL.Query().Get("deviceId")
-	connType := r.URL.Query().Get("connType")
-	if deviceId == "" || connType == "" {
-		log.Println("Invalid request! Missing device id or connection params!")
-		http.Error(w, "Missing required parameters", http.StatusBadRequest)
 		return
 	}
 

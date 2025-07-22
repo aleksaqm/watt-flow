@@ -242,6 +242,17 @@ func (c *Consumer) processMeasurements(ctx context.Context, msgs <-chan amqp.Del
 			} else {
 				// log.Printf("Successfully written measurement to InfluxDB")
 			}
+
+			consumptionMsg, err := json.Marshal(Consumption{
+				DeviceId:    measurement.DeviceID,
+				Consumption: measurement.Value,
+			})
+			if err != nil {
+				log.Printf("Failed marshalling consumption to json!", err)
+			} else {
+				c.wsServer.SendMessage(measurement.DeviceID, consumptionMsg, "consumption")
+				log.Printf("Sent realtime consumption data for device %s: %f kWh", measurement.DeviceID, measurement.Value)
+			}
 		case <-c.channel.NotifyClose(make(chan *amqp.Error)):
 			log.Println("Connection to RabbitMQ lost. Reconnecting...")
 			if err := c.reconnectBroker(); err != nil {
@@ -384,8 +395,6 @@ func (c *Consumer) updateStatusInDB(key string, status bool, ctx *context.Contex
 		},
 		time.Now(),
 	)
-
-	// websocket
 
 	msg, err := json.Marshal(Status{
 		DeviceId: key,

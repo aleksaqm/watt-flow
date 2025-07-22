@@ -23,7 +23,7 @@ import { reactive, ref, watch } from 'vue';
 import Button from '@/shad/components/ui/button/Button.vue';
 import axios from 'axios';
 import Checkbox from '@/shad/components/ui/checkbox/Checkbox.vue';
-import CustomTooltip from './CustomTooltip.vue';
+import ConsumptionTooltip from './ConsumptionTooltip.vue';
 
 
 const { toast } = useToast()
@@ -122,18 +122,45 @@ let lastConsumptionValue = -1
 let refreshJob = -1
 
 let ws: WebSocket | null = null
-const serverUrl = `ws://localhost:9000/ws?deviceId=${props.deviceId}&connType=consumption`
+const serverUrl = `ws://localhost:9000/ws?deviceId=${String(props.deviceId)}&connType=consumption`
 const isConnectedToWs = ref(false)
 
 const connectToWebSocket = async () => {
   const authToken = localStorage.getItem("authToken")
   if (authToken != null) {
-    ws = new WebSocket(serverUrl, [authToken, "token"])
-    ws.addEventListener("open", (event) => { console.log("Connected to ws!"); isConnectedToWs.value = true })
-    ws.addEventListener("message", (event) => handleConsumptionUpdate(event))
-    ws.addEventListener("error", (event) => console.log(event))
+    console.log(`Connecting to WebSocket: ${serverUrl}`)
+    console.log(`Using auth token: ${authToken.substring(0, 20)}...`) // Log partial token for debugging
+    
+    try {
+      ws = new WebSocket(serverUrl, [authToken, "token"])
+      
+      ws.addEventListener("open", (event) => { 
+        console.log("Connected to consumption WebSocket!"); 
+        isConnectedToWs.value = true 
+      })
+      
+      ws.addEventListener("message", (event) => {
+        console.log("Received WebSocket message:", event.data)
+        handleConsumptionUpdate(event)
+      })
+      
+      ws.addEventListener("error", (event) => {
+        console.error("WebSocket error:", event)
+        console.error("WebSocket state:", ws?.readyState)
+      })
+      
+      ws.addEventListener("close", (event) => {
+        console.log("WebSocket connection closed:", event.code, event.reason)
+        if (event.code === 1006) {
+          console.log("Connection closed abnormally - likely authentication failure")
+        }
+        isConnectedToWs.value = false
+      })
+    } catch (error) {
+      console.error("Failed to create WebSocket connection:", error)
+    }
   } else {
-    console.log("Token not found!")
+    console.log("Auth token not found in localStorage!")
     return
   }
 }
@@ -156,7 +183,6 @@ const updateRealtimeChart = () => {
 const handleConsumptionUpdate = (event: any) => {
   const data = JSON.parse(event.data)
   chartData.data.push(
-
     {
       "time": xFormatter(new Date()),
       "value": data.Consumption || 0,
@@ -182,7 +208,7 @@ const handleFetch = () => {
       TimePeriod: "3h",
       GroupPeriod: "1m",
       Precision: "m",
-      DeviceId: props.deviceId,
+      DeviceId: String(props.deviceId),
       Realtime: true
     }
   } else {
@@ -230,7 +256,7 @@ const handleFetch = () => {
           TimePeriod: selectedTimePeriod.value,
           GroupPeriod: selectedGroupPeriod,
           Precision: "m",
-          DeviceId: props.deviceId,
+          DeviceId: String(props.deviceId),
           StartDate: startDate,
           EndDate: endDate,
           Realtime: false
@@ -244,7 +270,7 @@ const handleFetch = () => {
           TimePeriod: selectedTimePeriod.value,
           GroupPeriod: GroupPeriodMap[selectedTimePeriod.value],
           Precision: PrecisionMap[selectedTimePeriod.value],
-          DeviceId: props.deviceId,
+          DeviceId: String(props.deviceId),
           Realtime: false
         }
     }
@@ -252,71 +278,61 @@ const handleFetch = () => {
   // Changed endpoint to consumption
   axios.post('/api/device-consumption/query-consumption', query).then(
     (result) => {
+      console.log("API Response:", result.data)
       if (isRealtimeSelected.value) {
         formatRealtimeData(result.data.data.Rows)
       } else {
         formatData(result.data.data.Rows)
       }
     }
-  ).catch((error) => console.log(error))
+  ).catch((error) => {
+    console.error("API Error:", error)
+    toast({
+      title: 'Query Failed',
+      description: "Failed to fetch consumption data",
+      variant: 'destructive',
+    })
+  })
 
 }
 
 const formatRealtimeData = (data: any[]) => {
   chartData.data = []
+  if (!data || data.length === 0) {
+    console.log("No realtime data received")
+    return
+  }
+  
   const length = data.length
   for (let i = 0; i < length; i++) {
-    chartData.data.push(
-
-      {
-        "time": xFormatter(new Date(data[i].TimeField)),
-        "value": data[i].Value,
-      }
-    )
+    chartData.data.push({
+      "time": xFormatter(new Date(data[i].TimeField)),
+      "value": data[i].Value || 0,
+    })
   }
-  lastConsumptionValue = data[data.length - 1].Value
-  chartData.unit = -1
+  lastConsumptionValue = data[data.length - 1]?.Value || 0
+  chartData.unit = 0 // Not used for consumption
 }
 
 const formatData = (data: any[]) => {
   const length = data.length
-  const standardUnit = MinutesInGroupPeriod[selectedGroupPeriod]
-  const lastTick = new Date(data[length - 1].TimeField).getTime()
-  const firstTick = new Date(data[0].TimeField).getTime()
-
-  const secondTick = new Date(data[length - 2].TimeField).getTime()
-  const firstUnit = (lastTick - secondTick) / 60000
-
-  const totalTime = (lastTick - firstTick) / 60000
-
-  let lastData = data[length - 1].Value
-  let currentValue = 0
-  let unit = 0
   let totalConsumption = 0
 
-  chartData.data = Array.from({ length: length - 1 })
-  chartData.unit = standardUnit
+  chartData.data = []
+  chartData.unit = 0 // Not used for consumption
 
-  for (let i = length - 2; i >= 0; i--) {
-    if (i == length - 2) {
-      unit = firstUnit
-    } else {
-      unit = standardUnit
-    }
+  for (let i = 0; i < length; i++) {
+    const consumptionValue = data[i].Value
+    totalConsumption += consumptionValue
     
-    currentValue = lastData // For consumption, we use the actual value
-    lastData = data[i].Value
-    totalConsumption += currentValue
-    
-    chartData.data[i] =
-    {
+    chartData.data.push({
       "time": xFormatter(new Date(data[i].TimeField)),
-      "value": currentValue, // consumption value in kWh or watts
-    }
+      "value": consumptionValue, // actual consumption value in kWh
+    })
   }
 
   chartData.totalConsumption = totalConsumption
-  chartData.averageConsumption = totalConsumption / (length - 1)
+  chartData.averageConsumption = length > 0 ? totalConsumption / length : 0
 }
 
 const xFormatter = (date: Date) => {
@@ -414,7 +430,7 @@ const xFormatter = (date: Date) => {
         </div>
         <div class="p-10">
           <AreaChart :show-legend="false" :data="chartData.data" index="time" :categories="['value']"
-            :custom-tooltip="CustomTooltip" :is-realtime="isRealtimeSelected" :unit="chartData.unit">
+            :custom-tooltip="ConsumptionTooltip" :is-realtime="isRealtimeSelected" :unit="chartData.unit">
           </AreaChart>
           <div class="flex flex-row gap-20 justify-center text-sm p-5 text-gray-600" v-if="!isRealtimeSelected">
             <div class="flex flex-row items-center justify-center">

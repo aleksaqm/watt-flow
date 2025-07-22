@@ -22,6 +22,7 @@ func RegisterRoutes(
 	NewHouseholdRoute(engine).Register(server)
 	NewOwnershipRoute(engine).Register(server)
 	NewDeviceStatusRoute(engine).Register(server)
+	NewDeviceConsumptionRoute(engine).Register(server)
 	NewAddressRoute(engine).Register(server)
 	NewAdminRoute(engine).Register(server)
 	NewPermissionRoute(engine).Register(server)
