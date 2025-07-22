@@ -2,6 +2,7 @@ package service
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strconv"
 	"time"
@@ -22,6 +23,8 @@ type IBillService interface {
 	InitiateBilling(year int, month int) (*model.MonthlyBill, error)
 	InitiateBillingOffload(year int, month int) (*model.MonthlyBill, error)
 	WithTrx(trx *gorm.DB) IBillService
+	SearchBills(params *dto.BillQueryParams) ([]model.Bill, int64, error)
+	PayBill(billID uint64, loggedInUserID uint64) error
 }
 
 type BillService struct {
@@ -56,6 +59,49 @@ func (t *BillService) FindById(id uint64) (*model.Bill, error) {
 		return nil, err
 	}
 	return bill, nil
+}
+
+func (s *BillService) PayBill(billID uint64, loggedInUserID uint64) error {
+	tx := s.billRepository.Database.Begin()
+	if tx.Error != nil {
+		return errors.New("could not start database transaction")
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
+	transactionalService := s.WithTrx(tx).(*BillService)
+
+	bill, err := transactionalService.billRepository.FindById(billID)
+	if err != nil {
+		tx.Rollback()
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return errors.New("bill not found")
+		}
+		return err
+	}
+
+	if bill.OwnerID != loggedInUserID {
+		tx.Rollback()
+		return errors.New("forbidden: you are not authorized to pay this bill")
+	}
+
+	if bill.Status == "Paid" {
+		tx.Rollback()
+		return errors.New("this bill has already been paid")
+	}
+
+	err = transactionalService.billRepository.UpdateStatusToPaid(billID)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// email
+
+	return tx.Commit().Error
 }
 
 func formatMonthKey(month, year uint) string {
@@ -325,4 +371,21 @@ func (s *BillService) GenerateMonthlyBill(year int, month int) (*model.MonthlyBi
 		return nil, err
 	}
 	return &bill, nil
+}
+
+func (s *BillService) SearchBills(params *dto.BillQueryParams) ([]model.Bill, int64, error) {
+	if params.SortOrder != "asc" && params.SortOrder != "desc" {
+		params.SortOrder = "desc"
+	}
+	allowedSortColumns := map[string]bool{
+		"issue_date":   true,
+		"price":        true,
+		"spent_power":  true,
+		"billing_date": true,
+	}
+	if !allowedSortColumns[params.SortBy] {
+		params.SortBy = "billing_date"
+	}
+
+	return s.billRepository.SearchBills(params)
 }
