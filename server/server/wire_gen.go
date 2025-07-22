@@ -59,11 +59,11 @@ func InitDeps(env *config.Environment) *Server {
 	cityRepository := repository.NewCityRepository(database, logger)
 	cityService := service.NewCityService(cityRepository)
 	cityHandler := handler.NewCityHandler(cityService, logger)
+	iElectricityConsumptionService := service.NewElectricityConsumptionService(env, householdRepository)
+	electricityConsumptionHandler := handler.NewElectricityConsumptionHandler(iElectricityConsumptionService, logger)
 	householdAccessRepository := repository.NewHouseholdAccessRepository(database, logger)
 	householdAccessService := service.NewHouseholdAccessService(householdAccessRepository, householdRepository, userRepository)
 	householdAccessHandler := handler.NewHouseholdAccessHandler(householdAccessService, logger)
-	iElectricityConsumptionService := service.NewElectricityConsumptionService(env, householdRepository)
-	electricityConsumptionHandler := handler.NewElectricityConsumptionHandler(iElectricityConsumptionService, logger)
 	server := NewServer(logger, userService, authService, restartService, userHandler, propertyService, propertyHandler, householdService, householdHandler, ownershipService, ownershipHandler, deviceStatusService, deviceStatusHandler, deviceConsumptionService, deviceConsumptionHandler, addressService, addressHandler, meetingService, meetingHandler, pricelistService, pricelistHandler, billService, billHandler, cityService, cityHandler, iElectricityConsumptionService, electricityConsumptionHandler, householdAccessService, householdAccessHandler, database)
 	return server
 }

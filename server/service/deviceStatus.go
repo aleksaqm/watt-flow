@@ -38,7 +38,18 @@ func (service *DeviceStatusService) QueryStatus(queryParams dto.FluxQueryStatusD
 }
 
 func (service *DeviceStatusService) QueryConsumption(queryParams dto.FluxQueryConsumptionDto) (*dto.StatusQueryResult, error) {
-	result, err := service.influxQueryHelper.SendConsumptionQuery(queryParams)
+	// Convert consumption DTO to status DTO for status queries
+	statusParams := dto.FluxQueryStatusDto{
+		TimePeriod:  queryParams.TimePeriod,
+		GroupPeriod: queryParams.GroupPeriod,
+		DeviceId:    queryParams.DeviceId,
+		Precision:   queryParams.Precision,
+		StartDate:   queryParams.StartDate,
+		EndDate:     queryParams.EndDate,
+		Realtime:    queryParams.Realtime,
+	}
+	
+	result, err := service.influxQueryHelper.SendStatusQuery(statusParams)
 	if err != nil {
 		return nil, err
 	}

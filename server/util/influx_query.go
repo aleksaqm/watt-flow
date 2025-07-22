@@ -150,10 +150,10 @@ func (inf *InfluxQueryHelper) SendStatusQuery(queryParams dto.FluxQueryStatusDto
 	return &results, nil
 }
 
-func (inf *InfluxQueryHelper) SendConsumptionQuery(queryParams dto.FluxQueryConsumptionDto) (*dto.StatusQueryResult, error) {
+func (inf *InfluxQueryHelper) SendConsumptionQuery(queryParams dto.FluxQueryConsumptionDto) (*dto.ConsumptionQueryResult, error) {
 	queryAPI := inf.client.QueryAPI(inf.organization)
 	fluxQuery := ""
-	log.Print(inf)
+	
 	if queryParams.Realtime {
 		fluxQuery = generateRealtimeConsumptionQuery(queryParams)
 	} else {
@@ -170,8 +170,8 @@ func (inf *InfluxQueryHelper) SendConsumptionQuery(queryParams dto.FluxQueryCons
 	}
 	defer result.Close()
 
-	results := dto.StatusQueryResult{
-		Rows: []dto.StatusQueryResultRow{},
+	results := dto.ConsumptionQueryResult{
+		Rows: []dto.ConsumptionQueryResultRow{},
 	}
 
 	for result.Next() {
@@ -206,14 +206,14 @@ func (inf *InfluxQueryHelper) SendConsumptionQuery(queryParams dto.FluxQueryCons
 			continue
 		}
 
-		results.Rows = append(results.Rows, dto.StatusQueryResultRow{
+		results.Rows = append(results.Rows, dto.ConsumptionQueryResultRow{
 			TimeField: result.Record().Time(),
 			Value:     floatVal,
 		})
 	}
 	if result.Err() != nil {
-		log.Fatalf("Query execution error: %v", result.Err())
-		return nil, err
+		log.Printf("Query execution error: %v", result.Err())
+		return nil, result.Err()
 	}
 	return &results, nil
 }
@@ -387,12 +387,12 @@ func generatePowerConsumptionQuery(params dto.FluxQueryConsumptionDto) string {
     |> filter(fn: (r) => r._measurement == "power_consumption" and r._field == "value" and r.city == "%s")
 
   bounds = array.from(rows: [
-    { 
-      _time: startTime, 
+    {
+      _time: startTime,
       _value: 0.0, // Vrednost 0 da ne utiče na sumu
-      _field: "value", 
-      _measurement: "power_consumption", 
-      city: "%s", 
+      _field: "value",
+      _measurement: "power_consumption",
+      city: "%s",
       _start: startTime, // Dodajemo _start i _stop da se poklopi shema
       _stop: now()
     }
@@ -422,22 +422,22 @@ func generatePowerConsumptionRangeQueryString(params dto.FluxQueryConsumptionDto
   data = from(bucket: "power_measurements")
     |> range(start: %s, stop: %s)
     |> filter(fn: (r) => r._measurement == "power_consumption" and r._field == "value" and r.city == "%s")
-    
+
   bounds = array.from(rows: [
-    { 
-      _time: %s, 
-      _value: 0.0, 
-      _field: "value", 
-      _measurement: "power_consumption", 
-      city: "%s", 
-      _start: %s, 
-      _stop: %s 
+    {
+      _time: %s,
+      _value: 0.0,
+      _field: "value",
+      _measurement: "power_consumption",
+      city: "%s",
+      _start: %s,
+      _stop: %s
     }
   ])
 
   union(tables: [data, bounds])
     |> group(columns: ["city"])
-    |> sort(columns: ["_time"]) 
+    |> sort(columns: ["_time"])
     |> aggregateWindow(every: %s, fn: sum)
     |> map(fn: (r) => ({
       _time: r._time,
@@ -461,14 +461,14 @@ func generateRealtimePowerConsumptionQuery(params dto.FluxQueryConsumptionDto) s
   data = from(bucket: "power_measurements")
       |> range(start: startTime)
       |> filter(fn: (r) => r._measurement == "power_consumption" and r._field == "value" and r.city == "%s")
-  
+
   bounds = array.from(rows: [
-    { 
-      _time: startTime, 
-      _value: 0.0, 
-      _field: "value", 
-      _measurement: "power_consumption", 
-      city: "%s", 
+    {
+      _time: startTime,
+      _value: 0.0,
+      _field: "value",
+      _measurement: "power_consumption",
+      city: "%s",
       _start: startTime,
       _stop: now()
     }
