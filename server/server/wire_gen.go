@@ -57,7 +57,9 @@ func InitDeps(env *config.Environment) *Server {
 	cityRepository := repository.NewCityRepository(database, logger)
 	cityService := service.NewCityService(cityRepository)
 	cityHandler := handler.NewCityHandler(cityService, logger)
-	server := NewServer(logger, userService, authService, restartService, userHandler, propertyService, propertyHandler, householdService, householdHandler, ownershipService, ownershipHandler, deviceStatusService, deviceStatusHandler, addressService, addressHandler, meetingService, meetingHandler, pricelistService, pricelistHandler, billService, billHandler, cityService, cityHandler, database)
+	iElectricityConsumptionService := service.NewElectricityConsumptionService(env, householdRepository)
+	electricityConsumptionHandler := handler.NewElectricityConsumptionHandler(iElectricityConsumptionService, logger)
+	server := NewServer(logger, userService, authService, restartService, userHandler, propertyService, propertyHandler, householdService, householdHandler, ownershipService, ownershipHandler, deviceStatusService, deviceStatusHandler, addressService, addressHandler, meetingService, meetingHandler, pricelistService, pricelistHandler, billService, billHandler, cityService, cityHandler, iElectricityConsumptionService, electricityConsumptionHandler, database)
 	return server
 }
 
@@ -82,3 +84,5 @@ var meetingServiceSet = wire.NewSet(service.NewMeetingService, wire.Bind(new(ser
 var pricelistServiceSet = wire.NewSet(service.NewPricelistService, wire.Bind(new(service.IPricelistService), new(*service.PricelistService)))
 
 var billServiceSet = wire.NewSet(service.NewBillService, wire.Bind(new(service.IBillService), new(*service.BillService)))
+
+var electricityConsumptionServiceSet = wire.NewSet(service.NewElectricityConsumptionService)

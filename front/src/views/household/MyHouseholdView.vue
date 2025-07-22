@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import HouseholdInfo from '@/components/household/HouseholdInfo.vue';
+import ElectricityUsage from '@/components/household/ElectricityUsage.vue';
 import { useRoute } from 'vue-router';
 import { computed, onMounted, ref } from 'vue';
 import { useUserStore } from '@/stores/user';
@@ -48,17 +49,10 @@ onMounted(() => {
     <div class="w-10/12 h-screen wrapper">
       <HouseholdInfo v-if="!isLoading && household" :household="household"></HouseholdInfo>
       
-      <!-- Placeholder for electricity usage component -->
       <div v-if="!isLoading && household" class="my-10">
-        <div class="text-center text-xl text-gray-600 mb-5">
-          Electricity Usage
-        </div>
-        <div class="bg-white shadow-lg rounded-lg p-8 text-center">
-          <p class="text-gray-500">
-            Electricity usage analytics will be displayed here
-          </p>
-        </div>
+        <ElectricityUsage :household-id="householdId.toString()" />
       </div>
+      <br />
     </div>
   </main>
 </template>

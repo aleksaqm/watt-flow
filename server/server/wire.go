@@ -54,6 +54,9 @@ var billServiceSet = wire.NewSet(
 	service.NewBillService,
 	wire.Bind(new(service.IBillService), new(*service.BillService)))
 
+var electricityConsumptionServiceSet = wire.NewSet(
+	service.NewElectricityConsumptionService)
+
 func InitDeps(env *config.Environment) *Server {
 	wire.Build(db.NewDatabase, util.NewLogger, util.NewEmailSender, util.NewInfluxQueryHelper, repository.NewUserRepository, service.NewAuthService, userServiceSet, service.NewRestartService, handler.NewUserHandler,
 		repository.NewPropertyRepository, propertyServiceSet, handler.NewPropertyHandler,
@@ -64,6 +67,7 @@ func InitDeps(env *config.Environment) *Server {
 		repository.NewDeviceStatusRepository, deviceStatusServiceSet, handler.NewDeviceStatusHandler,
 		repository.NewAddressRepository, addressServiceSet, handler.NewAddressHandler,
 		repository.NewCityRepository, cityServiceSet, handler.NewCityHandler,
-		repository.NewTimeSlotRepository, repository.NewMeetingRepository, meetingServiceSet, handler.NewMeetingHandler, NewServer)
+		repository.NewTimeSlotRepository, repository.NewMeetingRepository, meetingServiceSet, handler.NewMeetingHandler,
+		electricityConsumptionServiceSet, handler.NewElectricityConsumptionHandler, NewServer)
 	return &Server{}
 }

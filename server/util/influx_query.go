@@ -31,7 +31,7 @@ func NewInfluxQueryHelper(env *config.Environment) *InfluxQueryHelper {
 
 func (inf *InfluxQueryHelper) GetTotalConsumptionForMonth(deviceID string, year int, month int) (float64, error) {
 	queryAPI := inf.client.QueryAPI(inf.organization)
-	startTime := time.Date(year-1, time.Month(month), 1, 0, 0, 0, 0, time.UTC)
+	startTime := time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.UTC)
 	endTime := startTime.AddDate(0, 1, 0) // First day of the next month
 
 	fluxQuery := generateMonthConsumptionQueryString(deviceID, startTime.Format(time.RFC3339), endTime.Format(time.RFC3339))
@@ -54,6 +54,33 @@ func (inf *InfluxQueryHelper) GetTotalConsumptionForMonth(deviceID string, year 
 	}
 
 	return totalConsuption, nil
+}
+
+func (inf *InfluxQueryHelper) GetTotalConsumptionForDay(deviceID string, year int, month int, day int) (float64, error) {
+	queryAPI := inf.client.QueryAPI(inf.organization)
+	startTime := time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC)
+	endTime := startTime.AddDate(0, 0, 1) // Next day
+
+	fluxQuery := generateDayConsumptionQueryString(deviceID, startTime.Format(time.RFC3339), endTime.Format(time.RFC3339))
+
+	result, err := queryAPI.Query(context.Background(), fluxQuery)
+	if err != nil {
+		return -1.0, err
+	}
+	defer result.Close()
+	var totalConsumption float64
+
+	for result.Next() {
+		if value, ok := result.Record().Value().(float64); ok {
+			totalConsumption = value
+		}
+	}
+
+	if result.Err() != nil {
+		return 0, result.Err()
+	}
+
+	return totalConsumption, nil
 }
 
 func (inf *InfluxQueryHelper) SendStatusQuery(queryParams dto.FluxQueryStatusDto) (*dto.StatusQueryResult, error) {
@@ -92,7 +119,6 @@ func (inf *InfluxQueryHelper) SendStatusQuery(queryParams dto.FluxQueryStatusDto
 		case int:
 			floatVal = float64(v)
 		case string:
-			// Try to parse string as float if needed
 			parsed, err := strconv.ParseFloat(v, 64)
 			if err != nil {
 				log.Printf("Error converting string to float: %v", err)
@@ -131,6 +157,17 @@ func generateMonthConsumptionQueryString(deviceID string, startMonth string, end
     |> filter(fn: (r) => r["_measurement"] == "power_consumption" and r.device_id == "%s")
     |> sum(column: "_value")
     `, startMonth, endMonth, deviceID)
+
+	return fluxQuery
+}
+
+func generateDayConsumptionQueryString(deviceID string, startDay string, endDay string) string {
+	fluxQuery := fmt.Sprintf(`
+  from(bucket: "power_measurements")
+    |> range(start: %s, stop: %s)
+    |> filter(fn: (r) => r["_measurement"] == "power_consumption" and r.device_id == "%s")
+    |> sum(column: "_value")
+    `, startDay, endDay, deviceID)
 
 	return fluxQuery
 }

@@ -8,7 +8,6 @@ import (
 
 type Routes []Route
 
-// Route interface
 type Route interface {
 	Register(server *server.Server)
 }
