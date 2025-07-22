@@ -7,10 +7,21 @@ import { useRoute } from 'vue-router';
 import type { HouseholdFull } from './household';
 import { ref } from 'vue';
 import { computed } from 'vue';
-
+import { Button } from '@/shad/components/ui/button';
 import "leaflet/dist/leaflet.css";
 import { LMap, LTileLayer, LMarker, LPopup } from "@vue-leaflet/vue-leaflet";
-
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+  DialogClose
+} from '@/shad/components/ui/dialog';
+import HouseholdAccessManager from '@/components/household/HouseholdAccessManager.vue';
+import { getUsernameFromToken } from '@/utils/jwtDecoder';
 
 
 
@@ -24,7 +35,15 @@ const center = computed<[number, number]>(() => {
 
 const zoom = ref(15);
 
+const dialogKey = ref(0);
 
+
+const handleAccessChange = () => {
+};
+
+const isOwner = computed(() => {
+  return getUsernameFromToken() === props.household.owner_name;
+})
 
 </script>
 <template>
@@ -87,6 +106,23 @@ const zoom = ref(15);
           </CardContent>
         </CardHeader>
 
+        <div class="flex justify-center pb-8">
+          <Dialog :key="dialogKey" >
+            <DialogTrigger>
+              <Button variant="outline" class="border-2">Authorize access</Button>
+            </DialogTrigger>
+            <DialogContent >
+              <DialogHeader>
+                <DialogTitle>Give access to this household</DialogTitle>
+              </DialogHeader>
+              <HouseholdAccessManager 
+                :householdId="household.id" 
+                @authorized="handleAccessChange" 
+              />
+            </DialogContent>
+          </Dialog>
+        </div>
+
       </Card>
 
       <Card class="min-w-fit w-1/2">
@@ -96,8 +132,8 @@ const zoom = ref(15);
           </CardTitle>
           <CardContent class="mt-5 flex flex-col gap-2">
 
-            <div class="w-full h-64 sm:h-96">
-              <l-map ref="map" v-model:zoom="zoom" :center="center" :use-global-leaflet="false" class="w-full h-full">
+            <div class="w-full h-64 sm:h-96 z-[1]">
+              <l-map ref="map" v-model:zoom="zoom" :center="center" :use-global-leaflet="false" class="w-full h-full" >
                 <l-tile-layer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" layer-type="base"
                   name="OpenStreetMap"></l-tile-layer>
                 <l-marker :lat-lng="center">

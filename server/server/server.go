@@ -35,6 +35,8 @@ type Server struct {
 	MeetingHandler                *handler.MeetingHandler
 	ElectricityConsumptionHandler *handler.ElectricityConsumptionHandler
 	electricityConsumptionService service.IElectricityConsumptionService
+	HouseholdAccessService        service.IHouseholdAccessService
+	HouseholdAccessHandler        *handler.HouseholdAccessHandler
 	Db                            db.Database
 }
 
@@ -50,6 +52,7 @@ func NewServer(logger util.Logger, userService service.IUserService, authService
 	billService service.IBillService, BillHandler *handler.BillHandler,
 	cityService service.ICityService, cityHandler *handler.CityHandler,
 	electricityConsumptionService service.IElectricityConsumptionService, electricityConsumptionHandler *handler.ElectricityConsumptionHandler,
+	householdAccessService service.IHouseholdAccessService, householdAccessHandler *handler.HouseholdAccessHandler,
 	db db.Database,
 ) *Server {
 	return &Server{
@@ -80,6 +83,8 @@ func NewServer(logger util.Logger, userService service.IUserService, authService
 		BillHandler:                   BillHandler,
 		ElectricityConsumptionHandler: electricityConsumptionHandler,
 		electricityConsumptionService: electricityConsumptionService,
+		HouseholdAccessService:        householdAccessService,
+		HouseholdAccessHandler:        householdAccessHandler,
 		Db:                            db,
 	}
 }

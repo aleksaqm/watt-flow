@@ -50,6 +50,7 @@ const menuItems = ref<MenuItem[]>([
       { title: 'Search', href: '/household/search', description: 'Search for households', roles: ['Admin', 'SuperAdmin', 'Regular'] },
       { title: 'Ownership Requests', href: '/ownership/requests', description: 'Look at ownership requests', roles: ['Regular', "Admin", "SuperAdmin"] },
       { title: 'My Households', href: '/household/my', description: 'View my households', roles: ['Regular'] },
+      { title: 'City Consumption', href: '/consumption', roles: ['Admin', 'SuperAdmin'], description: 'Power consumption graph' }
     ],
   },
   {
@@ -60,9 +61,10 @@ const menuItems = ref<MenuItem[]>([
     ],
   },
   {
-    title: 'Bills', href: '/bills', roles: ['Admin', 'SuperAdmin'], children: [
+    title: 'Bills', href: '/bills', roles: ['Admin', 'SuperAdmin', 'Regular'], children: [
       { title: 'Price Management', href: '/bills/prices', description: 'Manage active and create new price lists', roles: ['Admin', 'SuperAdmin'] },
       { title: 'Issue bills', href: '/bills/send', description: 'Send bills to users', roles: ['Admin', 'SuperAdmin'] },
+      { title: 'My Bills', href: '/bills/owner', description: 'All your bills', roles: ['Regular']}
     ],
   },
   { title: 'Profile', href: '/profile', roles: ['Regular'] },

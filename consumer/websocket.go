@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -30,6 +31,7 @@ var upgrader = websocket.Upgrader{
 		return true
 	},
 	EnableCompression: true,
+	Subprotocols:      []string{"token"},
 }
 
 type WebsocketClient struct {
@@ -124,6 +126,9 @@ func NewWsServer() *WsServer {
 }
 
 func ValidateUser(token string, connType string) (bool, error) {
+	// Handle token that might have multiple parts
+	token = strings.Split(token, ",")[0]
+	
 	var endpoint string
 	if connType == "consumption" {
 		endpoint = "http://server:5000/api/validate/user"

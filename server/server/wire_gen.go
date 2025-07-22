@@ -24,7 +24,10 @@ func InitDeps(env *config.Environment) *Server {
 	userRepository := repository.NewUserRepository(database, logger)
 	authService := service.NewAuthService(logger, env)
 	emailSender := util.NewEmailSender(env)
-	userService := service.NewUserService(userRepository, authService, emailSender)
+	timeSlotRepository := repository.NewTimeSlotRepository(database, logger)
+	meetingRepository := repository.NewMeetingRepository(database, logger)
+	meetingService := service.NewMeetingService(timeSlotRepository, meetingRepository)
+	userService := service.NewUserService(userRepository, authService, emailSender, meetingService)
 	restartService := service.NewRestartService(database, userService)
 	userHandler := handler.NewUserHandler(userService, logger)
 	propertyRepository := repository.NewPropertyRepository(database, logger)
@@ -45,9 +48,6 @@ func InitDeps(env *config.Environment) *Server {
 	addressRepository := repository.NewAddressRepository(database, logger)
 	addressService := service.NewAddressService(addressRepository)
 	addressHandler := handler.NewAddressHandler(addressService, logger)
-	timeSlotRepository := repository.NewTimeSlotRepository(database, logger)
-	meetingRepository := repository.NewMeetingRepository(database, logger)
-	meetingService := service.NewMeetingService(timeSlotRepository, meetingRepository)
 	meetingHandler := handler.NewMeetingHandler(meetingService, logger)
 	pricelistRepository := repository.NewPricelistRepository(database, logger)
 	pricelistService := service.NewPricelistService(pricelistRepository)
@@ -59,9 +59,12 @@ func InitDeps(env *config.Environment) *Server {
 	cityRepository := repository.NewCityRepository(database, logger)
 	cityService := service.NewCityService(cityRepository)
 	cityHandler := handler.NewCityHandler(cityService, logger)
+	householdAccessRepository := repository.NewHouseholdAccessRepository(database, logger)
+	householdAccessService := service.NewHouseholdAccessService(householdAccessRepository, householdRepository, userRepository)
+	householdAccessHandler := handler.NewHouseholdAccessHandler(householdAccessService, logger)
 	iElectricityConsumptionService := service.NewElectricityConsumptionService(env, householdRepository)
 	electricityConsumptionHandler := handler.NewElectricityConsumptionHandler(iElectricityConsumptionService, logger)
-	server := NewServer(logger, userService, authService, restartService, userHandler, propertyService, propertyHandler, householdService, householdHandler, ownershipService, ownershipHandler, deviceStatusService, deviceStatusHandler, deviceConsumptionService, deviceConsumptionHandler, addressService, addressHandler, meetingService, meetingHandler, pricelistService, pricelistHandler, billService, billHandler, cityService, cityHandler, iElectricityConsumptionService, electricityConsumptionHandler, database)
+	server := NewServer(logger, userService, authService, restartService, userHandler, propertyService, propertyHandler, householdService, householdHandler, ownershipService, ownershipHandler, deviceStatusService, deviceStatusHandler, deviceConsumptionService, deviceConsumptionHandler, addressService, addressHandler, meetingService, meetingHandler, pricelistService, pricelistHandler, billService, billHandler, cityService, cityHandler, iElectricityConsumptionService, electricityConsumptionHandler, householdAccessService, householdAccessHandler, database)
 	return server
 }
 
@@ -90,3 +93,5 @@ var pricelistServiceSet = wire.NewSet(service.NewPricelistService, wire.Bind(new
 var billServiceSet = wire.NewSet(service.NewBillService, wire.Bind(new(service.IBillService), new(*service.BillService)))
 
 var electricityConsumptionServiceSet = wire.NewSet(service.NewElectricityConsumptionService)
+
+var householdAccessServiceSet = wire.NewSet(service.NewHouseholdAccessService, wire.Bind(new(service.IHouseholdAccessService), new(*service.HouseholdAccessService)))

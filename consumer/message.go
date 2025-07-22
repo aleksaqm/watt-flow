@@ -29,3 +29,9 @@ type Consumption struct {
 	DeviceId    string
 	Consumption float64
 }
+
+type MeasurementValue struct {
+	Value     float64
+	Timestamp time.Time
+	City      string
+}

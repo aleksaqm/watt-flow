@@ -61,8 +61,12 @@ var billServiceSet = wire.NewSet(
 var electricityConsumptionServiceSet = wire.NewSet(
 	service.NewElectricityConsumptionService)
 
+var householdAccessServiceSet = wire.NewSet(
+	service.NewHouseholdAccessService,
+	wire.Bind(new(service.IHouseholdAccessService), new(*service.HouseholdAccessService)))
+
 func InitDeps(env *config.Environment) *Server {
-	wire.Build(db.NewDatabase, util.NewLogger, util.NewEmailSender, util.NewInfluxQueryHelper, repository.NewUserRepository, service.NewAuthService, userServiceSet, service.NewRestartService, handler.NewUserHandler,
+	wire.Build(db.NewDatabase, util.NewLogger, util.NewEmailSender, util.NewInfluxQueryHelper, repository.NewUserRepository, service.NewAuthService,
 		repository.NewPropertyRepository, propertyServiceSet, handler.NewPropertyHandler,
 		repository.NewHouseholdRepository, householdServiceSet, handler.NewHouseholdHandler,
 		repository.NewOwnershipRepository, ownershipServiceSet, handler.NewOwnershipHandler,
@@ -72,7 +76,10 @@ func InitDeps(env *config.Environment) *Server {
 		deviceConsumptionServiceSet, handler.NewDeviceConsumptionHandler,
 		repository.NewAddressRepository, addressServiceSet, handler.NewAddressHandler,
 		repository.NewCityRepository, cityServiceSet, handler.NewCityHandler,
+		repository.NewHouseholdAccessRepository, householdAccessServiceSet, handler.NewHouseholdAccessHandler,
 		repository.NewTimeSlotRepository, repository.NewMeetingRepository, meetingServiceSet, handler.NewMeetingHandler,
-		electricityConsumptionServiceSet, handler.NewElectricityConsumptionHandler, NewServer)
+		electricityConsumptionServiceSet, handler.NewElectricityConsumptionHandler,
+		userServiceSet, service.NewRestartService, handler.NewUserHandler,
+		NewServer)
 	return &Server{}
 }

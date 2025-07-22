@@ -5,10 +5,13 @@ import (
 	"fmt"
 	"log"
 	"strings"
+
 	"watt-flow/dto"
 	"watt-flow/model"
 	"watt-flow/repository"
 	"watt-flow/util"
+
+	"gorm.io/gorm"
 )
 
 type IUserService interface {
@@ -25,24 +28,61 @@ type IUserService interface {
 	FindAllByRole(role string) (*[]dto.UserDto, error)
 	Query(queryParams *dto.UserQueryParams) ([]dto.UserDto, int64, error)
 	Suspend(id uint64) error
+	SuspendClerk(id uint64) error
 	Unsuspend(id uint64) error
+	WithTrx(trxHandle *gorm.DB) IUserService
 }
 
 type UserService struct {
-	repository  repository.UserRepository
-	emailSender *util.EmailSender
-	authService *AuthService
+	repository     repository.UserRepository
+	meetingService IMeetingService
+	emailSender    *util.EmailSender
+	authService    *AuthService
+}
+
+func (service UserService) WithTrx(trxHandle *gorm.DB) IUserService {
+	service.repository = service.repository.WithTrx(trxHandle)
+	return &service
 }
 
 func (service *UserService) FindById(id uint64) (*dto.UserDto, error) {
 	user, _ := service.repository.FindById(id)
 	userReturn := dto.UserDto{
-		Id:       user.Id,
-		Username: user.Username,
-		Email:    user.Email,
-		Role:     user.Role.RoleToString(),
+		Id:        user.Id,
+		FirstName: user.FirstName,
+		LastName:  user.LastName,
+		Username:  user.Username,
+		Email:     user.Email,
+		Role:      user.Role.RoleToString(),
 	}
 	return &userReturn, nil
+}
+
+func (service *UserService) SuspendClerk(id uint64) error {
+	tx := service.repository.Database.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+	userServ := service.WithTrx(tx)
+	meetingServ := service.meetingService.WithTrx(tx)
+
+	err := userServ.Suspend(id)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	err = meetingServ.CancelMeetingsForClerk(id)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		return fmt.Errorf("transaction commit failed: %w", err)
+	}
+	return nil
 }
 
 func (service *UserService) Suspend(id uint64) error {
@@ -110,6 +150,9 @@ func (service *UserService) Login(loginCredentials dto.LoginDto) (string, error)
 	if user.Status == model.Inactive {
 		return "", errors.New("user is inactive")
 	}
+	if user.Status == model.Suspended {
+		return "", errors.New("user is suspended")
+	}
 	if !util.ComparePasswords(user.Password, loginCredentials.Password) {
 		return "", errors.New("invalid credentials")
 	} else {
@@ -172,6 +215,8 @@ func (service *UserService) RegisterClerk(registrationDto *dto.ClerkRegisterDto)
 	}
 	user := model.User{}
 	user.Username = registrationDto.Username
+	user.FirstName = registrationDto.FirstName
+	user.LastName = registrationDto.LastName
 	user.Email = registrationDto.Email
 	user.Password = util.HashPassword(registrationDto.Jmbg)
 	user.Role = model.Clerk
@@ -192,10 +237,12 @@ func (service *UserService) RegisterClerk(registrationDto *dto.ClerkRegisterDto)
 		return nil, err
 	}
 	userDto := dto.UserDto{
-		Id:       createdUser.Id,
-		Username: createdUser.Username,
-		Email:    createdUser.Email,
-		Role:     createdUser.Role.RoleToString(),
+		Id:        createdUser.Id,
+		Username:  createdUser.Username,
+		FirstName: createdUser.FirstName,
+		LastName:  createdUser.LastName,
+		Email:     createdUser.Email,
+		Role:      createdUser.Role.RoleToString(),
 	}
 	return &userDto, nil
 }
@@ -337,19 +384,22 @@ func (service *UserService) Query(queryParams *dto.UserQueryParams) ([]dto.UserD
 
 func MapToDto(user *model.User) (dto.UserDto, error) {
 	response := dto.UserDto{
-		Id:       user.Id,
-		Email:    user.Email,
-		Role:     user.Role.RoleToString(),
-		Username: user.Username,
-		Status:   user.Status.StatusToString(),
+		Id:        user.Id,
+		FirstName: user.FirstName,
+		LastName:  user.LastName,
+		Email:     user.Email,
+		Role:      user.Role.RoleToString(),
+		Username:  user.Username,
+		Status:    user.Status.StatusToString(),
 	}
 	return response, nil
 }
 
-func NewUserService(repository repository.UserRepository, authService *AuthService, emailSender *util.EmailSender) *UserService {
+func NewUserService(repository repository.UserRepository, authService *AuthService, emailSender *util.EmailSender, meetingService IMeetingService) *UserService {
 	return &UserService{
-		repository:  repository,
-		authService: authService,
-		emailSender: emailSender,
+		repository:     repository,
+		authService:    authService,
+		emailSender:    emailSender,
+		meetingService: meetingService,
 	}
 }

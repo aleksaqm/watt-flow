@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -243,6 +244,7 @@ func (c *Consumer) processMeasurements(ctx context.Context, msgs <-chan amqp.Del
 				// log.Printf("Successfully written measurement to InfluxDB")
 			}
 
+			// Send consumption WebSocket message for device-specific consumption
 			consumptionMsg, err := json.Marshal(Consumption{
 				DeviceId:    measurement.DeviceID,
 				Consumption: measurement.Value,
@@ -253,12 +255,38 @@ func (c *Consumer) processMeasurements(ctx context.Context, msgs <-chan amqp.Del
 				c.wsServer.SendMessage(measurement.DeviceID, consumptionMsg, "consumption")
 				log.Printf("Sent realtime consumption data for device %s: %f kWh", measurement.DeviceID, measurement.Value)
 			}
+
+			// Update Redis for city-level consumption aggregation
+			cityKey := "city:" + measurement.Address.City
+			err = c.redisClient.HIncrByFloat(ctx, cityKey, "value", measurement.Value).Err()
+			if err != nil {
+				log.Printf("Failed to update Redis: %v", err)
+			}
 		case <-c.channel.NotifyClose(make(chan *amqp.Error)):
 			log.Println("Connection to RabbitMQ lost. Reconnecting...")
 			if err := c.reconnectBroker(); err != nil {
 				log.Printf("Failed to reconnect to RabbitMQ: %v", err)
 			}
 		}
+	}
+}
+
+func debugRedisData(ctx context.Context, redisClient *redis.Client) {
+	keys, err := redisClient.Keys(ctx, "city:*").Result()
+	if err != nil {
+		log.Printf("Failed to fetch Redis keys: %v", err)
+		return
+	}
+
+	for _, key := range keys {
+		value, err := redisClient.HGetAll(ctx, key).Result()
+		if err != nil {
+			log.Printf("Failed to fetch Redis value for key %s: %v", key, err)
+			continue
+		}
+
+		// Log the key and its value
+		log.Printf("Redis Key: %s, Value: %v", key, value)
 	}
 }
 
@@ -276,13 +304,13 @@ func (c *Consumer) processHeartbeats(ctx context.Context, msgs <-chan amqp.Deliv
 				continue
 			}
 			// err := c.redisClient.Set(ctx, heartbeat.DeviceID, heartbeat.Timestamp, redisTTL).Err()
-			err := c.redisClient.HSet(ctx, heartbeat.DeviceID, map[string]interface{}{
+			err := c.redisClient.HSet(ctx, "heartbeat:"+heartbeat.DeviceID, map[string]interface{}{
 				"lastSeen": heartbeat.Timestamp,
 			}).Err()
 			if err != nil {
 				log.Printf("Failed writing to redis!: %v", err)
 			}
-			c.redisClient.Expire(ctx, heartbeat.DeviceID, redisTTL)
+			c.redisClient.Expire(ctx, "heartbeat:"+heartbeat.DeviceID, redisTTL)
 
 		case <-c.channel.NotifyClose(make(chan *amqp.Error)):
 			log.Println("Connection to RabbitMQ lost. Reconnecting...")
@@ -314,7 +342,7 @@ func (c *Consumer) updateDeviceStatus(ctx context.Context) {
 			return
 
 		case <-ticker.C:
-			keys, err := c.redisClient.Keys(ctx, "*").Result()
+			keys, err := c.redisClient.Keys(ctx, "heartbeat:*").Result()
 			if err != nil {
 				log.Printf("Failed to get device IDs from Redis: %v", err)
 				continue
@@ -341,12 +369,12 @@ func (c *Consumer) updateDeviceStatus(ctx context.Context) {
 
 				// If was not previously processed (new device)
 				if !exists {
-					c.updateStatusInDB(key, is_alive, &ctx, writeAPI)
+					c.updateStatusInDB(strings.TrimPrefix(key, "heartbeat:"), is_alive, &ctx, writeAPI)
 					log.Printf("Updated value in postgres on new entry!")
 				} else {
 					// only update postgres on status change
 					if is_alive != was_alive {
-						c.updateStatusInDB(key, is_alive, &ctx, writeAPI)
+						c.updateStatusInDB(strings.TrimPrefix(key, "heartbeat:"), is_alive, &ctx, writeAPI)
 						log.Printf("Updated value in postgres on status change!")
 					}
 				}
@@ -468,6 +496,43 @@ func (c *Consumer) Shutdown(ctx context.Context) error {
 	return nil
 }
 
+func (c *Consumer) SendAggregatedMeasurements(ctx context.Context) {
+	keys, err := c.redisClient.Keys(ctx, "city:*").Result()
+	if err != nil {
+		log.Printf("Failed to fetch keys from Redis: %v", err)
+		return
+	}
+
+	for _, key := range keys {
+		data, err := c.redisClient.HGetAll(ctx, key).Result()
+		if err != nil {
+			log.Printf("Failed to fetch data for %s: %v", key, err)
+			continue
+		}
+
+		city := strings.TrimPrefix(key, "city:")
+		value, _ := strconv.ParseFloat(data["value"], 64)
+
+		if value == 0 {
+			continue
+		}
+		debugRedisData(ctx, c.redisClient)
+		wsmsg, err := json.Marshal(MeasurementValue{
+			Value:     value,
+			Timestamp: time.Now(),
+			City:      city,
+		})
+		if err != nil {
+			log.Printf("Failed to marshal JSON: %v", err)
+			continue
+		}
+		c.wsServer.SendMessage(city, wsmsg, "csm")
+
+		// reset accumulated value
+		c.redisClient.HSet(ctx, key, "value", 0)
+	}
+}
+
 func main() {
 	amqpURI := os.Getenv("AMQP_URI")
 	influxURI := os.Getenv("INFLUX_URI")
@@ -515,6 +580,21 @@ func main() {
 	if err := consumer.Start(ctx); err != nil {
 		log.Fatal(err)
 	}
+
+	//5-min timer for city consumption aggregation
+	go func() {
+		ticker := time.NewTicker(5 * time.Minute)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				consumer.SendAggregatedMeasurements(ctx)
+			}
+		}
+	}()
 
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)

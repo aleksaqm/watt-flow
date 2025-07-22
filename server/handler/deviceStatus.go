@@ -42,6 +42,22 @@ func (h DeviceStatusHandler) QueryStatus(c *gin.Context) {
 	c.JSON(200, gin.H{"data": data})
 }
 
+func (h DeviceStatusHandler) QueryConsumption(c *gin.Context) {
+	var queryParams dto.FluxQueryConsumptionDto
+	if err := c.BindJSON(&queryParams); err != nil {
+		h.logger.Error(err)
+		c.JSON(400, gin.H{"error": "Invalid device status query params"})
+		return
+	}
+	data, err := h.service.QueryConsumption(queryParams)
+	if err != nil {
+		h.logger.Error(err)
+		c.JSON(500, gin.H{"error": "Failed to query device status"})
+		return
+	}
+	c.JSON(200, gin.H{"data": data})
+}
+
 func (h DeviceStatusHandler) GetByHouseholdID(c *gin.Context) {
 	id := c.Param("household_id")
 	householdID, err := strconv.ParseUint(id, 10, 64)

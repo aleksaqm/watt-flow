@@ -209,6 +209,82 @@ services:
       consumer:
         condition: service_started
 
+  simulator-4:
+    build: ./simulator/
+    restart: always
+    networks:
+      - watt-flow-network
+    environment:
+      DEVICE_ID: "be1ffb42-c3b0-475b-bdc5-cb467d0f4111"
+      DEVICE_CITY: "Novi Sad"
+      DEVICE_STREET: "Street"
+      DEVICE_NUMBER: "34"
+      AMQP_URI: "amqp://guest:guest@rabbitmq:5672/"
+    volumes:
+      - ./config/simulator4.json:/usr/src/app/config/config.json
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      consumer:
+        condition: service_started
+
+  simulator-5:
+    build: ./simulator/
+    restart: always
+    networks:
+      - watt-flow-network
+    environment:
+      DEVICE_ID: "be2ffb42-c3b0-475b-bdc5-cb467d0f4111"
+      DEVICE_CITY: "Novi Sad"
+      DEVICE_STREET: "Street"
+      DEVICE_NUMBER: "34"
+      AMQP_URI: "amqp://guest:guest@rabbitmq:5672/"
+    volumes:
+      - ./config/simulator5.json:/usr/src/app/config/config.json
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      consumer:
+        condition: service_started
+
+  simulator-6:
+    build: ./simulator/
+    restart: always
+    networks:
+      - watt-flow-network
+    environment:
+      DEVICE_ID: "be3ffb42-c3b0-475b-bdc5-cb467d0f4111"
+      DEVICE_CITY: "Beograd"
+      DEVICE_STREET: "Street"
+      DEVICE_NUMBER: "34"
+      AMQP_URI: "amqp://guest:guest@rabbitmq:5672/"
+    volumes:
+      - ./config/simulator6.json:/usr/src/app/config/config.json
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      consumer:
+        condition: service_started
+
+  simulator-7:
+    build: ./simulator/
+    restart: always
+    networks:
+      - watt-flow-network
+    environment:
+      DEVICE_ID: "be4ffb42-c3b0-475b-bdc5-cb467d0f4111"
+      DEVICE_CITY: "Futog"
+      DEVICE_STREET: "Street"
+      DEVICE_NUMBER: "34"
+      AMQP_URI: "amqp://guest:guest@rabbitmq:5672/"
+    volumes:
+      - ./config/simulator7.json:/usr/src/app/config/config.json
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      consumer:
+        condition: service_started
+
   nginx:
     image: nginx:latest
     container_name: nginx
