@@ -45,6 +45,26 @@ func (repository *BillRepository) FindById(id uint64) (*model.Bill, error) {
 	return &bill, nil
 }
 
+func (r *BillRepository) UpdateStatusToPaid(billID uint64) error {
+	result := r.Database.
+		Model(&model.Bill{}).
+		Where("id = ?", billID).
+		Updates(map[string]interface{}{
+			"status": "Paid",
+		})
+
+	if result.Error != nil {
+		r.Logger.Error("Error updating bill status to paid", result.Error)
+		return result.Error
+	}
+
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+
+	return nil
+}
+
 func (r BillRepository) WithTrx(trxHandle *gorm.DB) BillRepository {
 	if trxHandle == nil {
 		r.Logger.Error("Transaction Database not found in gin context. ")

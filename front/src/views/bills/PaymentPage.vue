@@ -164,7 +164,9 @@ const onSubmit = handleSubmit(async (formData) => {
   isLoading.value = true;
   
   try {
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    await new Promise((resolve) => setTimeout(resolve, 1500)); // simulate bank transaction
+
+    const response = await axios.put('/api/bills/pay/' + route.params.billId);
     
     console.log("Payment processed for bill:", bill.value?.id, "Details:", formData);
     

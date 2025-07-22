@@ -3,6 +3,8 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/dgrijalva/jwt-go"
+	"go.uber.org/zap"
 	"net/http"
 	"strconv"
 	"watt-flow/dto"
@@ -191,6 +193,70 @@ func (h *BillHandler) GetBill(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"bill": billDto,
 	})
+}
+
+func (h *BillHandler) PayBill(c *gin.Context) {
+	billIdStr := c.Param("id")
+
+	billId, err := strconv.ParseUint(billIdStr, 10, 64)
+	if err != nil {
+		h.logger.Error("Invalid bill ID format", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid bill ID format"})
+		return
+	}
+
+	claims, exists := c.Get("claims")
+	if !exists {
+		h.logger.Error("Claims not found in context, middleware might be missing")
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User claims not found"})
+		c.Abort()
+		return
+	}
+
+	claimsMap, ok := claims.(jwt.MapClaims)
+	if !ok {
+		h.logger.Error("Invalid claims format", zap.Any("claims", claims))
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid user claims format"})
+		c.Abort()
+		return
+	}
+
+	loggedInUserID, ok := claimsMap["id"]
+	if !ok {
+		h.logger.Error("ID not found in claims")
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User ID not found in claims"})
+		c.Abort()
+		return
+	}
+
+	userIDFloat, ok := loggedInUserID.(float64)
+	if !ok {
+		h.logger.Error("Failed to cast user ID to float64")
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid user ID type"})
+		c.Abort()
+		return
+	}
+
+	err = h.service.PayBill(billId, uint64(userIDFloat))
+	if err != nil {
+		h.logger.Error("Failed to process payment", err)
+		if err.Error() == "bill not found" {
+			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+			return
+		}
+		if err.Error() == "forbidden: you are not authorized to pay this bill" {
+			c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+			return
+		}
+		if err.Error() == "this bill has already been paid" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "An error occurred while processing the payment"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Payment successful."})
 }
 
 func (h *BillHandler) GetUnsentMonthlyBills(c *gin.Context) {

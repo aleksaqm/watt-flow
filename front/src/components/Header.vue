@@ -60,9 +60,10 @@ const menuItems = ref<MenuItem[]>([
     ],
   },
   {
-    title: 'Bills', href: '/bills', roles: ['Admin', 'SuperAdmin'], children: [
+    title: 'Bills', href: '/bills', roles: ['Admin', 'SuperAdmin', 'Regular'], children: [
       { title: 'Price Management', href: '/bills/prices', description: 'Manage active and create new price lists', roles: ['Admin', 'SuperAdmin'] },
       { title: 'Issue bills', href: '/bills/send', description: 'Send bills to users', roles: ['Admin', 'SuperAdmin'] },
+      { title: 'My Bills', href: '/bills/owner', description: 'All your bills', roles: ['Regular']}
     ],
   },
   { title: 'Profile', href: '/profile', roles: ['Regular'] },
