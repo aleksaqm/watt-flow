@@ -131,9 +131,17 @@ onMounted(async () => {
       bill.value = data;
     }
   } catch (error: any) {
+    let errorMessage = 'An unexpected error occurred';
+    
+    if (axios.isAxiosError(error)) {
+      console.log(error)
+      errorMessage = error.response?.data.error;
+    } else if (error instanceof Error) {
+      errorMessage = error.message;
+    }
     toast({
       title: 'Error:',
-      description: "Error fetching bill.",
+      description: errorMessage,
       variant: "destructive",
     });
   }
@@ -172,9 +180,18 @@ const onSubmit = handleSubmit(async (formData) => {
     
     router.push('/bills/pay/success');
   } catch (error) {
+    let errorMessage = 'An unexpected error occurred';
+    
+    if (axios.isAxiosError(error)) {
+      console.log(error)
+      errorMessage = error.response?.data.error;
+    } else if (error instanceof Error) {
+      errorMessage = error.message;
+    }
+
     toast({
       title: 'Error',
-      description: 'Payment processing failed. Please try again.',
+      description: errorMessage,
       variant: "destructive",
     });
   } finally {

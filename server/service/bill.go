@@ -16,7 +16,7 @@ import (
 )
 
 type IBillService interface {
-	FindById(id uint64) (*model.Bill, error)
+	FindById(id uint64, loggedInUserID uint64) (*model.Bill, error)
 	GenerateMonthlyBill(year int, month int) (*model.MonthlyBill, error)
 	QueryMonthly(params *dto.MonthlyBillQueryParams) ([]model.MonthlyBill, int64, error)
 	GetUnsentMonthlyBills() ([]string, error)
@@ -53,8 +53,8 @@ func (s BillService) WithTrx(trxHandle *gorm.DB) IBillService {
 	return &s
 }
 
-func (t *BillService) FindById(id uint64) (*model.Bill, error) {
-	bill, err := t.billRepository.FindById(id)
+func (t *BillService) FindById(id uint64, loggedInUserID uint64) (*model.Bill, error) {
+	bill, err := t.billRepository.FindById(id, loggedInUserID)
 	if err != nil {
 		return nil, err
 	}
@@ -74,7 +74,7 @@ func (s *BillService) PayBill(billID uint64, loggedInUserID uint64) error {
 
 	transactionalService := s.WithTrx(tx).(*BillService)
 
-	bill, err := transactionalService.billRepository.FindById(billID)
+	bill, err := transactionalService.billRepository.FindById(billID, loggedInUserID)
 	if err != nil {
 		tx.Rollback()
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -83,17 +83,12 @@ func (s *BillService) PayBill(billID uint64, loggedInUserID uint64) error {
 		return err
 	}
 
-	if bill.OwnerID != loggedInUserID {
-		tx.Rollback()
-		return errors.New("forbidden: you are not authorized to pay this bill")
-	}
-
 	if bill.Status == "Paid" {
 		tx.Rollback()
 		return errors.New("this bill has already been paid")
 	}
 
-	err = transactionalService.billRepository.UpdateStatusToPaid(billID)
+	err = transactionalService.billRepository.UpdateStatusToPaid(billID, loggedInUserID)
 	if err != nil {
 		tx.Rollback()
 		return err

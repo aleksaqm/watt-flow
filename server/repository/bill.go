@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"errors"
 	"fmt"
 	"watt-flow/db"
 	"watt-flow/dto"
@@ -36,16 +37,78 @@ func (repository *BillRepository) Create(bill *model.Bill) (*model.Bill, error) 
 	return bill, nil
 }
 
-func (repository *BillRepository) FindById(id uint64) (*model.Bill, error) {
+func (repository *BillRepository) FindById(id uint64, userID uint64) (*model.Bill, error) {
 	var bill model.Bill
-	if err := repository.Database.Preload(clause.Associations).Where("id = ?", id).First(&bill).Error; err != nil {
+	err := repository.Database.
+		Preload(clause.Associations).
+		Where("id = ?", id).
+		Where(`
+            owner_id = ? OR 
+            EXISTS (
+                SELECT 1 FROM households h 
+                WHERE h.id = bills.household_id AND h.owner_id = ?
+            ) OR
+            EXISTS (
+                SELECT 1 FROM household_accesses ha 
+                WHERE ha.household_id = bills.household_id AND ha.user_id = ?
+            )
+        `, userID, userID, userID).
+		First(&bill).Error
+
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			var billExists int64
+			if countErr := repository.Database.Model(&model.Bill{}).Where("id = ?", id).Count(&billExists).Error; countErr != nil {
+				repository.Logger.Error("Error checking bill existence", countErr)
+				return nil, countErr
+			}
+
+			if billExists == 0 {
+				repository.Logger.Info("Bill not found", map[string]interface{}{"billID": id})
+				return nil, gorm.ErrRecordNotFound
+			} else {
+				repository.Logger.Warn("User does not have permission to view bill",
+					map[string]interface{}{
+						"billID": id,
+						"userID": userID,
+					})
+				return nil, errors.New("user does not have permission to view this bill")
+			}
+		}
 		repository.Logger.Error("Error finding bill by ID", err)
 		return nil, err
 	}
 	return &bill, nil
 }
 
-func (r *BillRepository) UpdateStatusToPaid(billID uint64) error {
+func (r *BillRepository) UpdateStatusToPaid(billID uint64, userID uint64) error {
+	var count int64
+	checkQuery := r.Database.Model(&model.Bill{}).
+		Joins("LEFT JOIN households h ON bills.household_id = h.id").
+		Where("bills.id = ?", billID).
+		Where(`
+            bills.owner_id = ? OR 
+            h.owner_id = ? OR 
+            EXISTS (
+                SELECT 1 FROM household_accesses ha 
+                WHERE ha.household_id = bills.household_id AND ha.user_id = ?
+            )
+        `, userID, userID, userID)
+
+	if err := checkQuery.Count(&count).Error; err != nil {
+		r.Logger.Error("Error checking user permissions for bill update", err)
+		return err
+	}
+
+	if count == 0 {
+		r.Logger.Warn("User does not have permission to update bill",
+			map[string]interface{}{
+				"billID": billID,
+				"userID": userID,
+			})
+		r.Logger.Error("user does not have permission to update this bill")
+		return errors.New("user does not have permission to update this bill")
+	}
 	result := r.Database.
 		Model(&model.Bill{}).
 		Where("id = ?", billID).
