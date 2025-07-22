@@ -92,7 +92,17 @@ func (r *BillRepository) SearchBills(params *dto.BillQueryParams) ([]model.Bill,
 	searchParams := params.Search
 
 	if searchParams.UserID != 0 {
-		db = db.Where("owner_id = ?", searchParams.UserID)
+		db = db.Where(`
+            owner_id = ? OR 
+            EXISTS (
+                SELECT 1 FROM households h 
+                WHERE h.id = bills.household_id AND h.owner_id = ?
+            ) OR
+            EXISTS (
+                SELECT 1 FROM household_accesses ha 
+                WHERE ha.household_id = bills.household_id AND ha.user_id = ?
+            )
+        `, searchParams.UserID, searchParams.UserID, searchParams.UserID)
 	}
 	if searchParams.Status != "" {
 		db = db.Where("status = ?", searchParams.Status)
@@ -118,7 +128,7 @@ func (r *BillRepository) SearchBills(params *dto.BillQueryParams) ([]model.Bill,
 	offset := (params.Page - 1) * params.PageSize
 	db = db.Offset(offset).Limit(params.PageSize)
 
-	if err := db.Preload("Owner").Preload("Pricelist").Find(&bills).Error; err != nil {
+	if err := db.Preload("Owner").Preload("Pricelist").Preload("Household").Find(&bills).Error; err != nil {
 		r.Logger.Error("Error finding bills with query", err)
 		return nil, 0, err
 	}

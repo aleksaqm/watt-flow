@@ -14,4 +14,5 @@ type Bill struct {
 	OwnerID     uint64    `json:"owner_id"`
 	Status      string    `json:"status"`
 	HouseholdID uint64    `json:"household_id"`
+	Household   Household `gorm:"foreignKey:HouseholdID"`
 }

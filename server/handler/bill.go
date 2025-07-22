@@ -87,13 +87,39 @@ func (h *BillHandler) SearchBills(c *gin.Context) {
 		}
 	}
 
-	loggedInUserID := c.GetUint64("userId")
-	if searchParams.UserID == 0 {
-		searchParams.UserID = loggedInUserID
-	} else if searchParams.UserID != loggedInUserID {
-		c.JSON(http.StatusForbidden, gin.H{"error": "You are not authorized to view these bills"})
+	claims, exists := c.Get("claims")
+	if !exists {
+		h.logger.Error("Claims not found in context, middleware might be missing")
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User claims not found"})
+		c.Abort()
 		return
 	}
+
+	claimsMap, ok := claims.(jwt.MapClaims)
+	if !ok {
+		h.logger.Error("Invalid claims format", zap.Any("claims", claims))
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid user claims format"})
+		c.Abort()
+		return
+	}
+
+	loggedInUserID, ok := claimsMap["id"]
+	if !ok {
+		h.logger.Error("ID not found in claims")
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User ID not found in claims"})
+		c.Abort()
+		return
+	}
+
+	userIDFloat, ok := loggedInUserID.(float64)
+	if !ok {
+		h.logger.Error("Failed to cast user ID to float64")
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid user ID type"})
+		c.Abort()
+		return
+	}
+
+	searchParams.UserID = uint64(userIDFloat)
 
 	params := dto.BillQueryParams{
 		Page:      pageInt,
@@ -134,6 +160,10 @@ func (h *BillHandler) SearchBills(c *gin.Context) {
 				ID:       bill.OwnerID,
 				Username: bill.Owner.Username,
 				Email:    bill.Owner.Email,
+			},
+			Household: dto.HouseholdResultDto{
+				Id:              bill.HouseholdID,
+				CadastralNumber: bill.Household.CadastralNumber,
 			},
 		})
 	}
