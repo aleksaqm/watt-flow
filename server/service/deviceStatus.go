@@ -14,7 +14,8 @@ type IDeviceStatusService interface {
 	Update(deviceStatus *model.DeviceStatus) (*model.DeviceStatus, error)
 	Delete(address string) error
 	QueryStatus(queryParams dto.FluxQueryStatusDto) (*dto.StatusQueryResult, error)
-	QueryConsumption(queryParams dto.FluxQueryConsumptionDto) (*dto.StatusQueryResult, error)
+	QueryConsumption(queryParams dto.FluxQueryConsumptionDto) (*dto.ConsumptionQueryResult, error)
+	QueryCityConsumption(queryParams dto.FluxQueryCityConsumptionDto) (*dto.StatusQueryResult, error)
 }
 
 type DeviceStatusService struct {
@@ -37,8 +38,16 @@ func (service *DeviceStatusService) QueryStatus(queryParams dto.FluxQueryStatusD
 	return result, nil
 }
 
-func (service *DeviceStatusService) QueryConsumption(queryParams dto.FluxQueryConsumptionDto) (*dto.StatusQueryResult, error) {
+func (service *DeviceStatusService) QueryConsumption(queryParams dto.FluxQueryConsumptionDto) (*dto.ConsumptionQueryResult, error) {
 	result, err := service.influxQueryHelper.SendConsumptionQuery(queryParams)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+func (service *DeviceStatusService) QueryCityConsumption(queryParams dto.FluxQueryCityConsumptionDto) (*dto.StatusQueryResult, error) {
+	result, err := service.influxQueryHelper.SendCityConsumptionQuery(queryParams)
 	if err != nil {
 		return nil, err
 	}

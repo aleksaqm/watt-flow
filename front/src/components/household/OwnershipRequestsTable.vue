@@ -212,7 +212,7 @@ async function handleAccept(id: number){
     isLoading.value = true
     const response = await axios.patch(`/api/ownership/accept/` + id)
     console.log(`Request accepteded successfully`, response.data)
-    fetchRequests()
+    await fetchRequests()
     isLoading.value = false
     toast({
       title: 'Request Accepted',
@@ -241,7 +241,7 @@ async function handleDecline(values: any) {
       message: values.declineReason,
     });
 
-    fetchRequests();
+    await fetchRequests();
     isLoading.value = false
     toast({
       title: 'Request Declined',
@@ -335,7 +335,7 @@ async function handleDecline(values: any) {
           <TableHead @click="onSortChange('number')" :orientation="sortOrder.number">Number</TableHead>
           <TableHead @click="onSortChange('floor')" :orientation="sortOrder.floor">Floor</TableHead>
           <TableHead @click="onSortChange('suite')" :orientation="sortOrder.suite">Suite</TableHead>
-          <TableHead @click="onSortChange('username')" :orientation="sortOrder.username">username</TableHead>
+          <TableHead @click="onSortChange('username')" :orientation="sortOrder.username">Username</TableHead>
           <TableHead @click="onSortChange('created_at')" :orientation="sortOrder.created_at">Creation Time</TableHead>
           <TableHead v-if="!isAdmin"click="onSortChange('closed_at')" :orientation="sortOrder.closed_at">Resolved Time</TableHead>
           <TableHead v-if="isAdmin">Documentation</TableHead>

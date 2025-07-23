@@ -54,6 +54,9 @@ var billServiceSet = wire.NewSet(
 	service.NewBillService,
 	wire.Bind(new(service.IBillService), new(*service.BillService)))
 
+var electricityConsumptionServiceSet = wire.NewSet(
+	service.NewElectricityConsumptionService)
+
 var householdAccessServiceSet = wire.NewSet(
 	service.NewHouseholdAccessService,
 	wire.Bind(new(service.IHouseholdAccessService), new(*service.HouseholdAccessService)))
@@ -70,8 +73,8 @@ func InitDeps(env *config.Environment) *Server {
 		repository.NewCityRepository, cityServiceSet, handler.NewCityHandler,
 		repository.NewHouseholdAccessRepository, householdAccessServiceSet, handler.NewHouseholdAccessHandler,
 		repository.NewTimeSlotRepository, repository.NewMeetingRepository, meetingServiceSet, handler.NewMeetingHandler,
+		electricityConsumptionServiceSet, handler.NewElectricityConsumptionHandler,
 		userServiceSet, service.NewRestartService, handler.NewUserHandler,
 		NewServer)
-
 	return &Server{}
 }

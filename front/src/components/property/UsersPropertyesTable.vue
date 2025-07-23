@@ -71,7 +71,7 @@ async function fetchProperties() {
   
   try {
     const userStore = useUserStore()
-    searchQuery.value.ownerId = userStore.id
+    searchQuery.value.ownerId = userStore.id !== null ? userStore.id : undefined
     console.log(searchQuery.value.ownerId)
     const params = {
       page: pagination.value.page,
