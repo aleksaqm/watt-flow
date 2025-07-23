@@ -4,15 +4,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"strconv"
 	"time"
 
+	"gorm.io/gorm"
 	"watt-flow/dto"
 	"watt-flow/model"
 	"watt-flow/repository"
 	"watt-flow/util"
-
-	"gorm.io/gorm"
 )
 
 type IBillService interface {
@@ -24,7 +24,7 @@ type IBillService interface {
 	InitiateBillingOffload(year int, month int) (*model.MonthlyBill, error)
 	WithTrx(trx *gorm.DB) IBillService
 	SearchBills(params *dto.BillQueryParams) ([]model.Bill, int64, error)
-	PayBill(billID uint64, loggedInUserID uint64) error
+	PayBill(billID uint64, loggedInUserID uint64, loggedInUserEmail string) error
 }
 
 type BillService struct {
@@ -61,7 +61,7 @@ func (t *BillService) FindById(id uint64, loggedInUserID uint64) (*model.Bill, e
 	return bill, nil
 }
 
-func (s *BillService) PayBill(billID uint64, loggedInUserID uint64) error {
+func (s *BillService) PayBill(billID uint64, loggedInUserID uint64, loggedInUserEmail string) error {
 	tx := s.billRepository.Database.Begin()
 	if tx.Error != nil {
 		return errors.New("could not start database transaction")
@@ -95,6 +95,17 @@ func (s *BillService) PayBill(billID uint64, loggedInUserID uint64) error {
 	}
 
 	// email
+
+	go func() {
+		err := s.emailSender.SendPaymentConfirmation(
+			loggedInUserEmail,
+			bill.Owner.FirstName,
+			*bill,
+		)
+		if err != nil {
+			log.Printf("ERROR: Failed to send confirmation email for bill %d: %v", billID, err)
+		}
+	}()
 
 	return tx.Commit().Error
 }

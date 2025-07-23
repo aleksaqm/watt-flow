@@ -292,6 +292,14 @@ func (h *BillHandler) PayBill(c *gin.Context) {
 		return
 	}
 
+	loggedInUserEmail, ok := claimsMap["email"]
+	if !ok {
+		h.logger.Error("ID not found in claims")
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User ID not found in claims"})
+		c.Abort()
+		return
+	}
+
 	userIDFloat, ok := loggedInUserID.(float64)
 	if !ok {
 		h.logger.Error("Failed to cast user ID to float64")
@@ -300,7 +308,8 @@ func (h *BillHandler) PayBill(c *gin.Context) {
 		return
 	}
 
-	err = h.service.PayBill(billId, uint64(userIDFloat))
+	h.logger.Info("SENDING EMAIL : ", loggedInUserEmail.(string))
+	err = h.service.PayBill(billId, uint64(userIDFloat), loggedInUserEmail.(string))
 	if err != nil {
 		h.logger.Error("Failed to process payment", err)
 		if err.Error() == "bill not found" {
