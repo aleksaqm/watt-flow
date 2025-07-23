@@ -34,10 +34,6 @@ var deviceStatusServiceSet = wire.NewSet(
 	service.NewDeviceStatusService,
 	wire.Bind(new(service.IDeviceStatusService), new(*service.DeviceStatusService)))
 
-var deviceConsumptionServiceSet = wire.NewSet(
-	service.NewDeviceConsumptionService,
-	wire.Bind(new(service.IDeviceConsumptionService), new(*service.DeviceConsumptionService)))
-
 var addressServiceSet = wire.NewSet(
 	service.NewAddressService,
 	wire.Bind(new(service.IAddressService), new(*service.AddressService)))
@@ -73,7 +69,6 @@ func InitDeps(env *config.Environment) *Server {
 		repository.NewPricelistRepository, pricelistServiceSet, handler.NewPricelistHandler,
 		repository.NewBillRepository, repository.NewMonthlyBillRepository, billServiceSet, handler.NewBillHandler,
 		repository.NewDeviceStatusRepository, deviceStatusServiceSet, handler.NewDeviceStatusHandler,
-		deviceConsumptionServiceSet, handler.NewDeviceConsumptionHandler,
 		repository.NewAddressRepository, addressServiceSet, handler.NewAddressHandler,
 		repository.NewCityRepository, cityServiceSet, handler.NewCityHandler,
 		repository.NewHouseholdAccessRepository, householdAccessServiceSet, handler.NewHouseholdAccessHandler,

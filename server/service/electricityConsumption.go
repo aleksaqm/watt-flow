@@ -15,6 +15,7 @@ type IElectricityConsumptionService interface {
 	GetMonthlyConsumption(householdId string, year int, month int) (*dto.MonthlyConsumptionResult, error)
 	Get12MonthsConsumption(householdId string, endYear int, endMonth int) (*dto.ElectricityConsumptionResponse, error)
 	GetDailyConsumption(householdId string, year int, month int) (*dto.DailyConsumptionResponse, error)
+	QueryConsumption(queryParams dto.FluxQueryConsumptionDto) (*dto.ConsumptionQueryResult, error)
 }
 
 type ElectricityConsumptionService struct {
@@ -150,6 +151,14 @@ func (s *ElectricityConsumptionService) GetDailyConsumption(householdId string, 
 	return &dto.DailyConsumptionResponse{
 		Data: results,
 	}, nil
+}
+
+func (s *ElectricityConsumptionService) QueryConsumption(queryParams dto.FluxQueryConsumptionDto) (*dto.ConsumptionQueryResult, error) {
+	result, err := s.influxHelper.SendConsumptionQuery(queryParams)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
 }
 
 func getDaysInMonth(year, month int) int {

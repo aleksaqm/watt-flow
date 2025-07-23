@@ -43,8 +43,6 @@ func InitDeps(env *config.Environment) *Server {
 	influxQueryHelper := util.NewInfluxQueryHelper(env)
 	deviceStatusService := service.NewDeviceStatusService(deviceStatusRepository, influxQueryHelper)
 	deviceStatusHandler := handler.NewDeviceStatusHandler(deviceStatusService, logger)
-	deviceConsumptionService := service.NewDeviceConsumptionService(influxQueryHelper)
-	deviceConsumptionHandler := handler.NewDeviceConsumptionHandler(deviceConsumptionService, logger)
 	addressRepository := repository.NewAddressRepository(database, logger)
 	addressService := service.NewAddressService(addressRepository)
 	addressHandler := handler.NewAddressHandler(addressService, logger)
@@ -64,7 +62,7 @@ func InitDeps(env *config.Environment) *Server {
 	householdAccessRepository := repository.NewHouseholdAccessRepository(database, logger)
 	householdAccessService := service.NewHouseholdAccessService(householdAccessRepository, householdRepository, userRepository)
 	householdAccessHandler := handler.NewHouseholdAccessHandler(householdAccessService, logger)
-	server := NewServer(logger, userService, authService, restartService, userHandler, propertyService, propertyHandler, householdService, householdHandler, ownershipService, ownershipHandler, deviceStatusService, deviceStatusHandler, deviceConsumptionService, deviceConsumptionHandler, addressService, addressHandler, meetingService, meetingHandler, pricelistService, pricelistHandler, billService, billHandler, cityService, cityHandler, iElectricityConsumptionService, electricityConsumptionHandler, householdAccessService, householdAccessHandler, database)
+	server := NewServer(logger, userService, authService, restartService, userHandler, propertyService, propertyHandler, householdService, householdHandler, ownershipService, ownershipHandler, deviceStatusService, deviceStatusHandler, addressService, addressHandler, meetingService, meetingHandler, pricelistService, pricelistHandler, billService, billHandler, cityService, cityHandler, iElectricityConsumptionService, electricityConsumptionHandler, householdAccessService, householdAccessHandler, database)
 	return server
 }
 
@@ -79,8 +77,6 @@ var householdServiceSet = wire.NewSet(service.NewHouseholdService, wire.Bind(new
 var ownershipServiceSet = wire.NewSet(service.NewOwnershipService, wire.Bind(new(service.IOwnershipService), new(*service.OwnershipService)))
 
 var deviceStatusServiceSet = wire.NewSet(service.NewDeviceStatusService, wire.Bind(new(service.IDeviceStatusService), new(*service.DeviceStatusService)))
-
-var deviceConsumptionServiceSet = wire.NewSet(service.NewDeviceConsumptionService, wire.Bind(new(service.IDeviceConsumptionService), new(*service.DeviceConsumptionService)))
 
 var addressServiceSet = wire.NewSet(service.NewAddressService, wire.Bind(new(service.IAddressService), new(*service.AddressService)))
 

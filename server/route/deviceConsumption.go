@@ -17,7 +17,7 @@ func (r DeviceConsumptionRoute) Register(server *server.Server) {
 
 	api := r.engine.Group("/api").Use(authMid.Handler())
 	{
-		api.POST("/device-consumption/query-consumption", authMid.RoleMiddleware([]string{"Admin", "SuperAdmin", "Regular"}), server.DeviceConsumptionHandler.QueryConsumption)
+		api.POST("/device-consumption/query-consumption", authMid.RoleMiddleware([]string{"Admin", "SuperAdmin", "Regular"}), server.ElectricityConsumptionHandler.QueryConsumption)
 	}
 }
 
