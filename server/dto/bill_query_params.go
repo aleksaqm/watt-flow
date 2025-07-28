@@ -11,6 +11,7 @@ type BillSearchParams struct {
 	MaxPrice    float64 `json:"maxPrice"`
 	Status      string  `json:"status"`
 	BillingDate string  `json:"billingDate"`
+	HouseholdID uint64  `json:"householdId"`
 }
 
 type BillQueryParams struct {
@@ -38,12 +39,13 @@ type PricelistDto struct {
 }
 
 type BillResponseDto struct {
-	ID          uint64       `json:"id"`
-	IssueDate   time.Time    `json:"issue_date"`
-	BillingDate string       `json:"billing_date"`
-	SpentPower  float64      `json:"spent_power"`
-	Price       float64      `json:"price"`
-	Status      string       `json:"status"`
-	Pricelist   PricelistDto `json:"pricelist"`
-	Owner       OwnerDto     `json:"owner"`
+	ID          uint64             `json:"id"`
+	IssueDate   time.Time          `json:"issue_date"`
+	BillingDate string             `json:"billing_date"`
+	SpentPower  float64            `json:"spent_power"`
+	Price       float64            `json:"price"`
+	Status      string             `json:"status"`
+	Pricelist   PricelistDto       `json:"pricelist"`
+	Owner       OwnerDto           `json:"owner"`
+	Household   HouseholdResultDto `json:"household"`
 }

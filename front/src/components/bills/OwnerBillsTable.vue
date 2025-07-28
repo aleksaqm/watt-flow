@@ -346,6 +346,9 @@ const onPay = (bill: number) => {
         <TableHead>
           Owner
         </TableHead>
+        <TableHead>
+          Cadastral number
+        </TableHead>
         <TableHead @click="handleSort('spent_power')" :orientation="sortOrder.spent_power" class="cursor-pointer">
           Power Spent (kWh)
         </TableHead>
@@ -374,6 +377,9 @@ const onPay = (bill: number) => {
         </TableCell>
         <TableCell>
           {{ bill.owner.username }}
+        </TableCell>
+        <TableCell>
+          {{ bill.household.cadastral_number }}
         </TableCell>
         <TableCell clas="text-right">
           {{ bill.spent_power.toFixed(2) }}

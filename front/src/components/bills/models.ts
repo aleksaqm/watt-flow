@@ -24,6 +24,7 @@ export interface SearchBill {
   price: number;
   owner: User;
   status: 'Delivered' | 'Paid'
+  household: Household;
 }
 
 export interface PriceListSearch {
@@ -39,4 +40,9 @@ export interface PriceListSearch {
 export interface User {
   id: number;
   username: string;
+}
+
+export interface Household{
+  id: number,
+  cadastral_number: string,
 }
