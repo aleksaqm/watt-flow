@@ -21,6 +21,7 @@ type IHouseholdService interface {
 	Query(queryParams *dto.HouseholdQueryParams) ([]dto.HouseholdResultDto, int64, error)
 	AcceptHouseholds(tx *gorm.DB, propertyID uint64) error
 	WithTrx(trxHandle *gorm.DB) IHouseholdService
+	FindMyHouseholdById(id uint64, userId uint64) (*dto.HouseholdResultDto, error)
 }
 
 type HouseholdService struct {
@@ -42,6 +43,16 @@ func (s HouseholdService) WithTrx(trxHandle *gorm.DB) IHouseholdService {
 
 func (service *HouseholdService) FindById(id uint64) (*dto.HouseholdResultDto, error) {
 	household, err := service.repository.FindById(id)
+	if err != nil {
+		return nil, err
+	}
+	mappedHousehold, _ := MapToResultDto(household)
+
+	return &mappedHousehold, nil
+}
+
+func (service *HouseholdService) FindMyHouseholdById(id uint64, userId uint64) (*dto.HouseholdResultDto, error) {
+	household, err := service.repository.FindMyHouseholdById(id, userId)
 	if err != nil {
 		return nil, err
 	}

@@ -1,6 +1,10 @@
 package handler
 
 import (
+	"fmt"
+	"github.com/dgrijalva/jwt-go"
+	"go.uber.org/zap"
+	"net/http"
 	"strconv"
 	"watt-flow/dto"
 	"watt-flow/model"
@@ -24,6 +28,56 @@ func (h HouseholdHandler) GetById(c *gin.Context) {
 		return
 	}
 	data, err := h.service.FindById(householdId)
+	if err != nil {
+		h.logger.Error(err)
+		c.JSON(404, gin.H{"error": "Household not found"})
+		return
+	}
+	c.JSON(200, gin.H{"data": data})
+}
+
+func (h HouseholdHandler) GetMyHouseholdById(c *gin.Context) {
+	id := c.Param("id")
+	householdId, err := strconv.ParseUint(id, 10, 64)
+	if err != nil {
+		h.logger.Error(err)
+		c.JSON(400, gin.H{"error": "Invalid household ID"})
+		return
+	}
+
+	claims, exists := c.Get("claims")
+	if !exists {
+		h.logger.Error("Claims not found in context, middleware might be missing")
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User claims not found"})
+		c.Abort()
+		return
+	}
+
+	claimsMap, ok := claims.(jwt.MapClaims)
+	if !ok {
+		h.logger.Error("Invalid claims format", zap.Any("claims", claims))
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid user claims format"})
+		c.Abort()
+		return
+	}
+
+	loggedInUserID, ok := claimsMap["id"]
+	if !ok {
+		h.logger.Error("ID not found in claims")
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User ID not found in claims"})
+		c.Abort()
+		return
+	}
+
+	userIDFloat, ok := loggedInUserID.(float64)
+	if !ok {
+		h.logger.Error("Failed to cast user ID to float64")
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid user ID type"})
+		c.Abort()
+		return
+	}
+
+	data, err := h.service.FindMyHouseholdById(householdId, uint64(userIDFloat))
 	if err != nil {
 		h.logger.Error(err)
 		c.JSON(404, gin.H{"error": "Household not found"})
@@ -63,6 +117,46 @@ func (h HouseholdHandler) Query(c *gin.Context) {
 		Search:    searchParams,
 	}
 	h.logger.Info(params)
+
+	if params.Search.OwnerId != "" {
+		claims, exists := c.Get("claims")
+		if !exists {
+			h.logger.Error("Claims not found in context, middleware might be missing")
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "User claims not found"})
+			c.Abort()
+			return
+		}
+
+		claimsMap, ok := claims.(jwt.MapClaims)
+		if !ok {
+			h.logger.Error("Invalid claims format", zap.Any("claims", claims))
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid user claims format"})
+			c.Abort()
+			return
+		}
+
+		loggedInUserID, ok := claimsMap["id"]
+		if !ok {
+			h.logger.Error("ID not found in claims")
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "User ID not found in claims"})
+			c.Abort()
+			return
+		}
+
+		userIDFloat, ok := loggedInUserID.(float64)
+		if !ok {
+			h.logger.Error("Failed to cast user ID to float64")
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid user ID type"})
+			c.Abort()
+			return
+		}
+		if params.Search.OwnerId != fmt.Sprintf("%.0f", userIDFloat) {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "User id doesnt match with user logged in."})
+			c.Abort()
+			return
+		}
+	}
+
 	households, total, err := h.service.Query(&params)
 	if err != nil {
 		h.logger.Error(err)
