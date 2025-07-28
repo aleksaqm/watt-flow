@@ -2,7 +2,7 @@ package dto
 
 import "time"
 
-type FluxQueryConsumptionDto struct {
+type FluxQueryCityConsumptionDto struct {
 	TimePeriod  string
 	GroupPeriod string
 	City        string

@@ -91,6 +91,10 @@ func (repository *HouseholdRepository) Query(params *dto.HouseholdQueryParams) (
 		baseQuery = baseQuery.Where("households.status = ?", 2)
 	}
 
+	if params.Search.OwnerId != "" {
+		baseQuery = baseQuery.Where("households.owner_id = ?", params.Search.OwnerId)
+	}
+
 	if params.Search.City != "" {
 		baseQuery = baseQuery.Where("city ILIKE ?", "%"+params.Search.City+"%")
 	}

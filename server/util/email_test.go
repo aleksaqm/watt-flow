@@ -1,6 +1,6 @@
 package util_test
 
-import(
+import (
 	"testing"
 	"watt-flow/model"
 	"watt-flow/util"
@@ -17,7 +17,7 @@ func TestGenerateMonthlyBillEmail(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := util.GenerateMonthlyBillEmail(tt.bill)
+			got, _, _ := util.GenerateMonthlyBillEmail(tt.bill)
 			// TODO: update the condition below to compare got with tt.want.
 			if true {
 				t.Errorf("GenerateMonthlyBillEmail() = %v, want %v", got, tt.want)
@@ -25,4 +25,3 @@ func TestGenerateMonthlyBillEmail(t *testing.T) {
 		})
 	}
 }
-

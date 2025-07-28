@@ -244,12 +244,24 @@ func (c *Consumer) processMeasurements(ctx context.Context, msgs <-chan amqp.Del
 				// log.Printf("Successfully written measurement to InfluxDB")
 			}
 
+			// Send consumption WebSocket message for device-specific consumption
+			consumptionMsg, err := json.Marshal(Consumption{
+				DeviceId:    measurement.DeviceID,
+				Consumption: measurement.Value,
+			})
+			if err != nil {
+				log.Printf("Failed marshalling consumption to json!", err)
+			} else {
+				c.wsServer.SendMessage(measurement.DeviceID, consumptionMsg, "consumption")
+				log.Printf("Sent realtime consumption data for device %s: %f kWh", measurement.DeviceID, measurement.Value)
+			}
+
+			// Update Redis for city-level consumption aggregation
 			cityKey := "city:" + measurement.Address.City
-			err := c.redisClient.HIncrByFloat(ctx, cityKey, "value", measurement.Value).Err()
+			err = c.redisClient.HIncrByFloat(ctx, cityKey, "value", measurement.Value).Err()
 			if err != nil {
 				log.Printf("Failed to update Redis: %v", err)
 			}
-
 		case <-c.channel.NotifyClose(make(chan *amqp.Error)):
 			log.Println("Connection to RabbitMQ lost. Reconnecting...")
 			if err := c.reconnectBroker(); err != nil {
@@ -411,8 +423,6 @@ func (c *Consumer) updateStatusInDB(key string, status bool, ctx *context.Contex
 		},
 		time.Now(),
 	)
-
-	// websocket
 
 	msg, err := json.Marshal(Status{
 		DeviceId: key,
