@@ -31,7 +31,7 @@ func NewInfluxQueryHelper(env *config.Environment) *InfluxQueryHelper {
 
 func (inf *InfluxQueryHelper) GetTotalConsumptionForMonth(deviceID string, year int, month int) (float64, error) {
 	queryAPI := inf.client.QueryAPI(inf.organization)
-	startTime := time.Date(year-1, time.Month(month), 1, 0, 0, 0, 0, time.UTC)
+	startTime := time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.UTC)
 	endTime := startTime.AddDate(0, 1, 0) // First day of the next month
 
 	fluxQuery := generateMonthConsumptionQueryString(deviceID, startTime.Format(time.RFC3339), endTime.Format(time.RFC3339))
@@ -54,6 +54,33 @@ func (inf *InfluxQueryHelper) GetTotalConsumptionForMonth(deviceID string, year 
 	}
 
 	return totalConsuption, nil
+}
+
+func (inf *InfluxQueryHelper) GetTotalConsumptionForDay(deviceID string, year int, month int, day int) (float64, error) {
+	queryAPI := inf.client.QueryAPI(inf.organization)
+	startTime := time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC)
+	endTime := startTime.AddDate(0, 0, 1) // Next day
+
+	fluxQuery := generateDayConsumptionQueryString(deviceID, startTime.Format(time.RFC3339), endTime.Format(time.RFC3339))
+
+	result, err := queryAPI.Query(context.Background(), fluxQuery)
+	if err != nil {
+		return -1.0, err
+	}
+	defer result.Close()
+	var totalConsumption float64
+
+	for result.Next() {
+		if value, ok := result.Record().Value().(float64); ok {
+			totalConsumption = value
+		}
+	}
+
+	if result.Err() != nil {
+		return 0, result.Err()
+	}
+
+	return totalConsumption, nil
 }
 
 func (inf *InfluxQueryHelper) SendStatusQuery(queryParams dto.FluxQueryStatusDto) (*dto.StatusQueryResult, error) {
@@ -92,7 +119,6 @@ func (inf *InfluxQueryHelper) SendStatusQuery(queryParams dto.FluxQueryStatusDto
 		case int:
 			floatVal = float64(v)
 		case string:
-			// Try to parse string as float if needed
 			parsed, err := strconv.ParseFloat(v, 64)
 			if err != nil {
 				log.Printf("Error converting string to float: %v", err)
@@ -124,17 +150,85 @@ func (inf *InfluxQueryHelper) SendStatusQuery(queryParams dto.FluxQueryStatusDto
 	return &results, nil
 }
 
-func (inf *InfluxQueryHelper) SendConsumptionQuery(queryParams dto.FluxQueryConsumptionDto) (*dto.StatusQueryResult, error) {
+func (inf *InfluxQueryHelper) SendConsumptionQuery(queryParams dto.FluxQueryConsumptionDto) (*dto.ConsumptionQueryResult, error) {
+	queryAPI := inf.client.QueryAPI(inf.organization)
+	fluxQuery := ""
+
+	if queryParams.Realtime {
+		fluxQuery = generateRealtimeConsumptionQuery(queryParams)
+	} else {
+		if queryParams.TimePeriod == "custom" {
+			fluxQuery = generateRangeConsumptionQueryString(queryParams)
+		} else {
+			fluxQuery = generateConsumptionQueryString(queryParams)
+		}
+	}
+
+	result, err := queryAPI.Query(context.Background(), fluxQuery)
+	if err != nil {
+		return nil, err
+	}
+	defer result.Close()
+
+	results := dto.ConsumptionQueryResult{
+		Rows: []dto.ConsumptionQueryResultRow{},
+	}
+
+	for result.Next() {
+		value := result.Record().Value()
+		var floatVal float64
+
+		switch v := value.(type) {
+		case float64:
+			floatVal = v
+		case int64:
+			floatVal = float64(v)
+		case int:
+			floatVal = float64(v)
+		case string:
+			// Try to parse string as float if needed
+			parsed, err := strconv.ParseFloat(v, 64)
+			if err != nil {
+				log.Printf("Error converting string to float: %v", err)
+				continue
+			}
+			floatVal = parsed
+		case bool:
+			if v {
+				floatVal = 1
+			} else {
+				floatVal = 0
+			}
+		case nil:
+			floatVal = 0
+		default:
+			log.Printf("Unexpected value type: %T", value)
+			continue
+		}
+
+		results.Rows = append(results.Rows, dto.ConsumptionQueryResultRow{
+			TimeField: result.Record().Time(),
+			Value:     floatVal,
+		})
+	}
+	if result.Err() != nil {
+		log.Printf("Query execution error: %v", result.Err())
+		return nil, result.Err()
+	}
+	return &results, nil
+}
+
+func (inf *InfluxQueryHelper) SendCityConsumptionQuery(queryParams dto.FluxQueryCityConsumptionDto) (*dto.StatusQueryResult, error) {
 	queryAPI := inf.client.QueryAPI(inf.organization)
 	fluxQuery := ""
 	log.Print(inf)
 	if queryParams.Realtime {
-		fluxQuery = generateRealtimePowerConsumptionQuery(queryParams)
+		fluxQuery = generateRealtimeCityPowerConsumptionQuery(queryParams)
 	} else {
 		if queryParams.TimePeriod == "custom" {
-			fluxQuery = generatePowerConsumptionRangeQueryString(queryParams)
+			fluxQuery = generateCityPowerConsumptionRangeQueryString(queryParams)
 		} else {
-			fluxQuery = generatePowerConsumptionQuery(queryParams)
+			fluxQuery = generateCityPowerConsumptionQuery(queryParams)
 		}
 	}
 
@@ -160,7 +254,6 @@ func (inf *InfluxQueryHelper) SendConsumptionQuery(queryParams dto.FluxQueryCons
 		case int:
 			floatVal = float64(v)
 		case string:
-			// Try to parse string as float if needed
 			parsed, err := strconv.ParseFloat(v, 64)
 			if err != nil {
 				log.Printf("Error converting string to float: %v", err)
@@ -199,6 +292,17 @@ func generateMonthConsumptionQueryString(deviceID string, startMonth string, end
     |> filter(fn: (r) => r["_measurement"] == "power_consumption" and r.device_id == "%s")
     |> sum(column: "_value")
     `, startMonth, endMonth, deviceID)
+
+	return fluxQuery
+}
+
+func generateDayConsumptionQueryString(deviceID string, startDay string, endDay string) string {
+	fluxQuery := fmt.Sprintf(`
+  from(bucket: "power_measurements")
+    |> range(start: %s, stop: %s)
+    |> filter(fn: (r) => r["_measurement"] == "power_consumption" and r.device_id == "%s")
+    |> sum(column: "_value")
+    `, startDay, endDay, deviceID)
 
 	return fluxQuery
 }
@@ -302,7 +406,41 @@ func generateRealtimeQuery(params dto.FluxQueryStatusDto) string {
 	return fluxQuery
 }
 
-func generatePowerConsumptionQuery(params dto.FluxQueryConsumptionDto) string {
+func generateConsumptionQueryString(params dto.FluxQueryConsumptionDto) string {
+	fluxQuery := fmt.Sprintf(`
+  from(bucket: "power_measurements")
+    |> range(start: -%s)
+    |> filter(fn: (r) => r._measurement == "power_consumption" and r._field == "value" and r.device_id=="%s")
+    |> aggregateWindow(every: %s, fn: mean, createEmpty: false)
+    |> yield(name: "mean")
+    `, params.TimePeriod, params.DeviceId, params.GroupPeriod)
+	return fluxQuery
+}
+
+func generateRangeConsumptionQueryString(params dto.FluxQueryConsumptionDto) string {
+	fluxQuery := fmt.Sprintf(`
+  from(bucket: "power_measurements")
+    |> range(start: %s, stop: %s)
+    |> filter(fn: (r) => r._measurement == "power_consumption" and r._field == "value" and r.device_id=="%s")
+    |> aggregateWindow(every: %s, fn: mean, createEmpty: false)
+    |> yield(name: "mean")
+    `, params.StartDate.Format(time.RFC3339), params.EndDate.Format(time.RFC3339), params.DeviceId, params.GroupPeriod)
+	return fluxQuery
+}
+
+func generateRealtimeConsumptionQuery(params dto.FluxQueryConsumptionDto) string {
+	fluxQuery := fmt.Sprintf(`
+  from(bucket: "power_measurements")
+    |> range(start: -3h)
+    |> filter(fn: (r) => r._measurement == "power_consumption" and r._field == "value" and r.device_id=="%s")
+    |> aggregateWindow(every: 1m, fn: mean, createEmpty: false)
+    |> yield(name: "mean")
+    `, params.DeviceId)
+	return fluxQuery
+}
+
+// City-based consumption queries
+func generateCityPowerConsumptionQuery(params dto.FluxQueryCityConsumptionDto) string {
 	fluxQuery := fmt.Sprintf(`
   import "array"
   import "experimental"
@@ -314,12 +452,12 @@ func generatePowerConsumptionQuery(params dto.FluxQueryConsumptionDto) string {
     |> filter(fn: (r) => r._measurement == "power_consumption" and r._field == "value" and r.city == "%s")
 
   bounds = array.from(rows: [
-    { 
-      _time: startTime, 
+    {
+      _time: startTime,
       _value: 0.0, // Vrednost 0 da ne utiče na sumu
-      _field: "value", 
-      _measurement: "power_consumption", 
-      city: "%s", 
+      _field: "value",
+      _measurement: "power_consumption",
+      city: "%s",
       _start: startTime, // Dodajemo _start i _stop da se poklopi shema
       _stop: now()
     }
@@ -338,7 +476,7 @@ func generatePowerConsumptionQuery(params dto.FluxQueryConsumptionDto) string {
 	return fluxQuery
 }
 
-func generatePowerConsumptionRangeQueryString(params dto.FluxQueryConsumptionDto) string {
+func generateCityPowerConsumptionRangeQueryString(params dto.FluxQueryCityConsumptionDto) string {
 	startDate := params.StartDate.Format(time.RFC3339)
 	endDate := params.EndDate.Format(time.RFC3339)
 	fluxQuery := fmt.Sprintf(`
@@ -374,7 +512,7 @@ func generatePowerConsumptionRangeQueryString(params dto.FluxQueryConsumptionDto
 	return fluxQuery
 }
 
-func generateRealtimePowerConsumptionQuery(params dto.FluxQueryConsumptionDto) string {
+func generateRealtimeCityPowerConsumptionQuery(params dto.FluxQueryCityConsumptionDto) string {
 	fluxQuery := fmt.Sprintf(`
   import "array"
   import "experimental"
