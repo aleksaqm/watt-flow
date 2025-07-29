@@ -271,9 +271,11 @@ const onMapClick = async (event: { latlng: { lat: number, lng: number } }) => {
 
     let matchedCity: string | undefined = undefined;
 
+    const sortedCities = [...cities.value].sort((a, b) => b.length - a.length);
+
     for (const potentialCity of potentialCitiesFromApi) {
-      const foundInList = cities.value.find(
-        (c) => c.toLowerCase() === potentialCity.toLowerCase()
+      const foundInList = sortedCities.find(
+        (c) => potentialCity.toLowerCase().includes(c.toLowerCase())
       );
       
       if (foundInList) {
@@ -413,7 +415,7 @@ const onSubmit = handleSubmit(submitForm);
             <l-tile-layer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" layer-type="base"
               name="OpenStreetMap"></l-tile-layer>
             <l-marker :lat-lng="markerPosition">
-              <l-popup>Marker here</l-popup>
+              <l-popup> {{ street }} {{ streetNumber }}</l-popup>
 
             </l-marker>
           </l-map>
