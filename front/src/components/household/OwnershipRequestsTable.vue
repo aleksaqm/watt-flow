@@ -122,6 +122,7 @@ async function fetchRequests() {
     console.log(response)
     if (response.data) {
         requests.value = response.data.requests.map((request: any) => mapToRequest(request))
+        console.log("VALUE: ", requests.value)
         pagination.value.total = response.data.total
     }
     console.log(response.data.requests)

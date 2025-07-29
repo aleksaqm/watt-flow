@@ -298,6 +298,8 @@ services:
       - ./data/protected_files:/usr/share/nginx/html/protected_files
       - ./data/ownership_images:/usr/share/nginx/html/ownership_images
       - ./data/ownership_documents:/usr/share/nginx/html/ownership_documents
+      - ./data/property_images:/usr/share/nginx/html/property_images
+      - ./data/property_documents:/usr/share/nginx/html/property_documents
 
     networks:
       - watt-flow-network

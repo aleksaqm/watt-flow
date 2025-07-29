@@ -47,6 +47,8 @@ import {
 import Toaster from '@/shad/components/ui/toast/Toaster.vue';
 import { useToast } from '../../shad/components/ui/toast/use-toast'
 
+import ImageDocumentsDisplay from '@/components/household/ImageDocumentsDisplay.vue'
+
 interface Property {
   id: number
   city: string
@@ -56,6 +58,8 @@ interface Property {
   created: string
   floors: number
   households: number
+  images: string[]
+  documents: string[]
 }
 
 
@@ -89,9 +93,10 @@ async function fetchProperties() {
     }
 
     const response = await axios.get('/api/property/query', { params })
-
+    console.log("RESPONSE", response)
     if (response.data && response.data.properties) {
       properties.value = response.data.properties.map((property: any) => mapToProperty(property))
+          console.log("MAPPED: ", properties.value)
       pagination.value.total = response.data.total
     }
   } catch (error) {
@@ -109,6 +114,8 @@ function mapToProperty(data: any): Property {
     created: data.created_at,
     floors: data.floors,
     households: data.household.length,
+    images: data.images,
+    documents: data.documents
   }
 }
 
@@ -256,6 +263,7 @@ watch(searchQuery, (newVal) => {
             <TableHead @click="onSortChange('status')" :orientation="sortOrder.status">Status</TableHead>
             <TableHead @click="onSortChange('created_at')" :orientation="sortOrder.created_at">Creation Time</TableHead>
             <TableHead @click="onSortChange('floors')" :orientation="sortOrder.floors">Floors</TableHead>
+            <TableHead>Documentation</TableHead>
             <TableHead>Households</TableHead>
             <TableHead>Actions</TableHead>
         </TableRow>
@@ -268,6 +276,22 @@ watch(searchQuery, (newVal) => {
           <TableCell>{{ property.status }}</TableCell>
           <TableCell>{{ formatDate(property.created) }}</TableCell>
           <TableCell>{{ property.floors }}</TableCell>
+          <TableCell>
+            <Dialog>
+              <DialogTrigger>
+                <Button class="bg-gray-600 text-white">Details</Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogTitle>Photos & Documents for proof</DialogTitle>
+                <DialogDescription>
+                  Analize documentation for ownership
+                </DialogDescription>
+                <div class="flex justify-center items-center w-full h-full">
+                  <ImageDocumentsDisplay :images="property.images" :documents="property.documents" />
+                </div>
+              </DialogContent>
+            </Dialog>
+          </TableCell>
           <TableCell>{{ property.households }}</TableCell>
           <TableCell>
             <Button class="bg-indigo-500 text-white mr-2 hover:bg-indigo-300" @click="handleAccept(property.id)" v-if="property.status === 'Pending'">Accept</Button>
