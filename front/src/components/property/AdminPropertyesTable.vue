@@ -284,7 +284,7 @@ watch(searchQuery, (newVal) => {
               <DialogContent>
                 <DialogTitle>Photos & Documents for proof</DialogTitle>
                 <DialogDescription>
-                  Analize documentation for ownership
+                  Analize documentation for property
                 </DialogDescription>
                 <div class="flex justify-center items-center w-full h-full">
                   <ImageDocumentsDisplay :images="property.images" :documents="property.documents" />
