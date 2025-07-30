@@ -177,16 +177,11 @@ func (c *Worker) processBills(ctx context.Context, msgs <-chan amqp.Delivery) {
 			}
 
 			// Send Email
-			emailBody, qrCode, err := GenerateMonthlyBillEmail(bill, billTask.Pricelist, billTask.OwnerUsername, billTask.HouseholdCN)
+			err = c.emailSender.SendMonthlyBillPDF(billTask.OwnerEmail, bill, billTask.Pricelist, billTask.OwnerUsername, billTask.HouseholdCN)
 			if err != nil {
-				fmt.Printf("Failed generating email for %s - %s, %s\n", billTask.PowerMeterID, billTask.OwnerUsername, err.Error())
+				fmt.Printf("Failed sending email for %s - %s, %s\n", billTask.PowerMeterID, billTask.OwnerUsername, err.Error())
 				bill.Status = "Not Delivered"
-			} else {
-				err = c.emailSender.SendEmailWithQRCode(billTask.OwnerEmail, "Electricity Bill", emailBody, qrCode)
-				if err != nil {
-					fmt.Printf("Failed sending email for %s - %s, %s\n", billTask.PowerMeterID, billTask.OwnerUsername, err.Error())
-					bill.Status = "Not Delivered"
-				}
+				continue
 			}
 			err = c.InsertBill(ctx, &bill)
 			if err != nil {
