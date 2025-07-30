@@ -17,12 +17,7 @@ const isLoading = ref(true)
 const fetchHousehold = async () => {
   try {
     isLoading.value = true
-    const result = await axios.get(`/api/household/${householdId.value}`)
-    
-    if (result.data.data.owner_id !== userStore.id) {
-      router.push({ name: 'my-households' })
-      return
-    }
+    const result = await axios.get(`/api/household/my/${householdId.value}`)
     
     household.value = result.data.data
     console.log(household.value)

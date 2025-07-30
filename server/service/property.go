@@ -57,7 +57,7 @@ func (service *PropertyService) FindByStatus(status model.PropertyStatus) ([]mod
 func (service *PropertyService) Create(property *model.Property) (*model.Property, error) {
 	UUID := uuid.New()
 	var savedFilePaths []string
-
+	prefix := "/app/data/"
 	if len(property.Images) > 0 {
 		for i, base64String := range property.Images {
 			if strings.HasPrefix(base64String, "data:image/") {
@@ -68,9 +68,8 @@ func (service *PropertyService) Create(property *model.Property) (*model.Propert
 				service.cleanupFiles(savedFilePaths)
 				return nil, fmt.Errorf("failed to save image %d: %v", i, err)
 			}
-			fullPath := filePath + "/" + UUID.String() + "-" + strconv.Itoa(i) + ".jpg"
-			property.Images[i] = fullPath
-			savedFilePaths = append(savedFilePaths, fullPath)
+			property.Images[i] = strings.TrimPrefix(filePath, prefix)
+			savedFilePaths = append(savedFilePaths, filePath)
 		}
 	}
 
@@ -84,9 +83,8 @@ func (service *PropertyService) Create(property *model.Property) (*model.Propert
 				service.cleanupFiles(savedFilePaths)
 				return nil, fmt.Errorf("failed to save document %d: %v", i, err)
 			}
-			fullPath := filePath + "/" + UUID.String() + "-" + strconv.Itoa(i) + ".pdf"
-			property.Documents[i] = fullPath
-			savedFilePaths = append(savedFilePaths, fullPath)
+			property.Documents[i] = strings.TrimPrefix(filePath, prefix)
+			savedFilePaths = append(savedFilePaths, filePath)
 		}
 	}
 

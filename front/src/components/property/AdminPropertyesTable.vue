@@ -46,6 +46,8 @@ import {
 } from '@/shad/components/ui/dialog'
 import Toaster from '@/shad/components/ui/toast/Toaster.vue';
 import { useToast } from '../../shad/components/ui/toast/use-toast'
+import Spinner from '../Spinner.vue'
+import ImageDocumentsDisplay from '@/components/household/ImageDocumentsDisplay.vue'
 
 interface Property {
   id: number
@@ -56,6 +58,8 @@ interface Property {
   created: string
   floors: number
   households: number
+  images: string[]
+  documents: string[]
 }
 
 
@@ -77,6 +81,7 @@ const sortOrder = ref<{ [key: string]: "asc" | "desc" | "" }>({
 })
 const totalPages = computed(() => Math.ceil(pagination.value.total / pagination.value.perPage))
 
+const acceptingPropertyId = ref<number | null>(null);
 
 async function fetchProperties() {
   try {
@@ -89,9 +94,10 @@ async function fetchProperties() {
     }
 
     const response = await axios.get('/api/property/query', { params })
-
+    console.log("RESPONSE", response)
     if (response.data && response.data.properties) {
       properties.value = response.data.properties.map((property: any) => mapToProperty(property))
+          console.log("MAPPED: ", properties.value)
       pagination.value.total = response.data.total
     }
   } catch (error) {
@@ -109,6 +115,8 @@ function mapToProperty(data: any): Property {
     created: data.created_at,
     floors: data.floors,
     households: data.household.length,
+    images: data.images,
+    documents: data.documents
   }
 }
 
@@ -145,6 +153,7 @@ function formatDate(date: string): string {
 }
 
 async function handleAccept(id: number) {
+  acceptingPropertyId.value = id;
   try {
     const response = await axios.put(`/api/property/` + id +`/accept`)
     console.log(`Property accepteded successfully`, response.data)
@@ -156,6 +165,13 @@ async function handleAccept(id: number) {
     });
   } catch (error) {
     console.error(`Failed to accept property with ID ${id}:`, error)
+    toast({
+      title: 'Error',
+      description: 'Failed to accept the property.',
+      variant: "destructive",
+    });
+  } finally {
+    acceptingPropertyId.value = null;
   }
 }
 
@@ -164,10 +180,14 @@ const formSchema = toTypedSchema(z.object({
 }))
 
 async function handleDecline(values: any) {
-  try {
-    if (!currentPropertyId.value) {
+  if (!currentPropertyId.value) {
       throw new Error("No property ID found for declining.");
-    }
+  }
+
+  acceptingPropertyId.value = currentPropertyId.value;
+
+  try {
+    
     console.log(`Declining property with ID: ${currentPropertyId.value}`);
     console.log(`Reason: ${values.declineReason}`);
 
@@ -189,7 +209,8 @@ async function handleDecline(values: any) {
       variant: "destructive",
     });
   } finally {
-    currentPropertyId.value = null; 
+    currentPropertyId.value = null;
+    acceptingPropertyId.value = null;
   }
 }
 
@@ -256,6 +277,7 @@ watch(searchQuery, (newVal) => {
             <TableHead @click="onSortChange('status')" :orientation="sortOrder.status">Status</TableHead>
             <TableHead @click="onSortChange('created_at')" :orientation="sortOrder.created_at">Creation Time</TableHead>
             <TableHead @click="onSortChange('floors')" :orientation="sortOrder.floors">Floors</TableHead>
+            <TableHead>Documentation</TableHead>
             <TableHead>Households</TableHead>
             <TableHead>Actions</TableHead>
         </TableRow>
@@ -268,41 +290,62 @@ watch(searchQuery, (newVal) => {
           <TableCell>{{ property.status }}</TableCell>
           <TableCell>{{ formatDate(property.created) }}</TableCell>
           <TableCell>{{ property.floors }}</TableCell>
+          <TableCell>
+            <Dialog>
+              <DialogTrigger>
+                <Button class="bg-gray-600 text-white">Details</Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogTitle>Photos & Documents for proof</DialogTitle>
+                <DialogDescription>
+                  Analize documentation for property
+                </DialogDescription>
+                <div class="flex justify-center items-center w-full h-full">
+                  <ImageDocumentsDisplay :images="property.images" :documents="property.documents" />
+                </div>
+              </DialogContent>
+            </Dialog>
+          </TableCell>
           <TableCell>{{ property.households }}</TableCell>
           <TableCell>
-            <Button class="bg-indigo-500 text-white mr-2 hover:bg-indigo-300" @click="handleAccept(property.id)" v-if="property.status === 'Pending'">Accept</Button>
-
-            <Form v-slot="{ handleSubmit }" as="" :validation-schema="formSchema">
-                <Dialog>
-                    <DialogTrigger as-child>
-                        <Button class="bg-red-500 text-white" v-if="property.status === 'Pending'" @click="currentPropertyId = property.id">Decline</Button>
-                    </DialogTrigger>
-                    <DialogContent class="sm:max-w-[425px]">
-                        <DialogHeader>
-                            <DialogTitle>Decline reason</DialogTitle>
-                            <DialogDescription>
-                                Reason for declining property request
-                            </DialogDescription>
-                        </DialogHeader>
-                        <form id="dialogForm" @submit="handleSubmit($event, handleDecline)">
-                            <FormField v-slot="{ componentField }" name="declineReason">
-                                <FormItem>
-                                    <FormLabel>Decline reason</FormLabel>
-                                    <FormControl>
-                                        <Input type="text" placeholder="Reason" v-bind="componentField" />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            </FormField>
-                        </form>
-                        <DialogFooter>
-                            <Button type="submit" form="dialogForm">
-                                Submit
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
-            </Form>
+            <div class="flex items-center gap-2 h-4">
+              <Spinner v-if="acceptingPropertyId === property.id"/>
+              <template v-else>
+                
+                <Button class="bg-indigo-500 text-white mr-2 hover:bg-indigo-300" @click="handleAccept(property.id)" v-if="property.status === 'Pending'">Accept</Button>
+                <Form v-slot="{ handleSubmit }" as="" :validation-schema="formSchema">
+                  <Dialog>
+                      <DialogTrigger as-child>
+                          <Button class="bg-red-500 text-white" v-if="property.status === 'Pending'" @click="currentPropertyId = property.id">Decline</Button>
+                      </DialogTrigger>
+                      <DialogContent class="sm:max-w-[425px]">
+                          <DialogHeader>
+                              <DialogTitle>Decline reason</DialogTitle>
+                              <DialogDescription>
+                                  Reason for declining property request
+                              </DialogDescription>
+                          </DialogHeader>
+                          <form id="dialogForm" @submit="handleSubmit($event, handleDecline)">
+                              <FormField v-slot="{ componentField }" name="declineReason">
+                                  <FormItem>
+                                      <FormLabel>Decline reason</FormLabel>
+                                      <FormControl>
+                                          <Input type="text" placeholder="Reason" v-bind="componentField" />
+                                      </FormControl>
+                                      <FormMessage />
+                                  </FormItem>
+                              </FormField>
+                          </form>
+                          <DialogFooter>
+                              <Button type="submit" form="dialogForm">
+                                  Submit
+                              </Button>
+                          </DialogFooter>
+                      </DialogContent>
+                  </Dialog>
+                </Form>
+              </template>
+            </div>
           </TableCell>
         </TableRow>
       </TableBody>

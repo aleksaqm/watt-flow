@@ -56,6 +56,34 @@ func (repository *HouseholdRepository) FindById(id uint64) (*model.Household, er
 	return &household, nil
 }
 
+func (repository *HouseholdRepository) FindMyHouseholdById(id uint64, userId uint64) (*model.Household, error) {
+	var household model.Household
+
+	db := repository.Database.
+		Preload(clause.Associations).
+		Where("id = ?", id).
+		Where(`
+            owner_id = ? OR 
+            EXISTS (
+                SELECT 1 FROM household_accesses ha 
+                WHERE ha.household_id = households.id AND ha.user_id = ?
+            )
+        `, userId, userId)
+
+	err := db.First(&household).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			repository.Logger.Warn("Household not found or user does not have access",
+				map[string]interface{}{"householdID": id, "userID": userId})
+			return nil, gorm.ErrRecordNotFound
+		}
+		repository.Logger.Error("Error finding household by ID with access check", err)
+		return nil, err
+	}
+
+	return &household, nil
+}
+
 func (repository *HouseholdRepository) FindByStatus(status model.HouseholdStatus) ([]model.Household, error) {
 	var households []model.Household
 	result := repository.Database.Where("status = ?", status).Find(&households)
@@ -92,7 +120,13 @@ func (repository *HouseholdRepository) Query(params *dto.HouseholdQueryParams) (
 	}
 
 	if params.Search.OwnerId != "" {
-		baseQuery = baseQuery.Where("households.owner_id = ?", params.Search.OwnerId)
+		baseQuery = baseQuery.Where(`
+            households.owner_id = ? OR 
+            EXISTS (
+                SELECT 1 FROM household_accesses ha 
+                WHERE ha.household_id = households.id AND ha.user_id = ?
+            )
+        `, params.Search.OwnerId, params.Search.OwnerId)
 	}
 
 	if params.Search.City != "" {
