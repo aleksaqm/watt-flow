@@ -106,7 +106,7 @@ const isOwner = computed(() => {
           </CardContent>
         </CardHeader>
 
-        <div class="flex justify-center pb-8">
+        <div class="flex justify-center pb-8" v-if="isOwner">
           <Dialog :key="dialogKey" >
             <DialogTrigger>
               <Button variant="outline" class="border-2">Authorize access</Button>

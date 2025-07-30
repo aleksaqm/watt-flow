@@ -583,6 +583,19 @@ func main() {
 
 	//5-min timer for city consumption aggregation
 	go func() {
+		now := time.Now()
+		next := now.Truncate(5 * time.Minute).Add(5 * time.Minute)
+		firstWait := time.Until(next)
+
+		firstTimer := time.NewTimer(firstWait)
+		defer firstTimer.Stop()
+		select {
+		case <-ctx.Done():
+			return
+		case <-firstTimer.C:
+			consumer.SendAggregatedMeasurements(ctx)
+		}
+
 		ticker := time.NewTicker(5 * time.Minute)
 		defer ticker.Stop()
 

@@ -129,7 +129,9 @@ const city = ref('');
 const streetNumber = ref('');
 const numberOfFloors = ref<number>();
 const propertyImages = ref<File[]>([]);
+const propertyImagePreviews = ref<string[]>([]);
 const documents = ref<File[]>([]);
+const documentPreviews = ref<string[]>([]);
 const lon = ref(0.0)
 const lat = ref(0.0)
 
@@ -157,13 +159,13 @@ const removeHouseholdEntry = (index: number) => {
   householdEntries.value.splice(index, 1);
 };
 
-const selectCity = async (selectedValue: string) => {
-  city.value = city.value === selectedValue ? '' : selectedValue;
-  console.log(city.value);
+const selectCity = async (selectedValue: string, shouldGeocode: boolean = true) => {
+  city.value = selectedValue;
   setFieldValue('city', city.value)
-  if (city.value) {
+  if (city.value && shouldGeocode) {
     const geocodeResult = await geocodeCity(city.value);
-    console.log(geocodeResult);
+    setFieldValue("street", "")
+    setFieldValue("streetNumber", "")
     if (geocodeResult) {
       const { lat, lon } = geocodeResult;
       markerPosition.value = [lat, lon];
@@ -195,20 +197,46 @@ const geocodeCity = async (city: string) => {
   }
 };
 
-const onFileChange = (event: any, type: 'propertyImages' | 'documents') => {
+const onFileChange = (event: Event, type: 'propertyImages' | 'documents') => {
   const target = event.target as HTMLInputElement;
-  const files = target.files ? Array.from(target.files) : [];
+  if (!target.files) return;
+
+  const newFiles = Array.from(target.files);
 
   if (type === 'propertyImages') {
-    propertyImages.value = files;
-    setFieldValue('propertyImages', propertyImages.value)
-  } else {
-    documents.value = files;
-    setFieldValue('documents', documents.value)
+    propertyImages.value.push(...newFiles);
+    propertyImagePreviews.value = propertyImages.value.map(file => URL.createObjectURL(file));
+    setFieldValue('propertyImages', propertyImages.value);
+
+  } else if (type === 'documents') {
+    documents.value.push(...newFiles);
+    documentPreviews.value = documents.value.map(file => file.name);
+    
+    setFieldValue('documents', documents.value);
+  }
+
+  target.value = '';
+};
+
+const removeFile = (index: number, type: 'propertyImages' | 'documents') => {
+  if (type === 'propertyImages') {
+    propertyImages.value.splice(index, 1);
+    propertyImagePreviews.value.splice(index, 1);
+    
+    setFieldValue('propertyImages', propertyImages.value);
+
+  } else if (type === 'documents') {
+    documents.value.splice(index, 1);
+    documentPreviews.value.splice(index, 1);
+    
+    setFieldValue('documents', documents.value);
   }
 };
 
-
+const openFile = (file: File) => {
+  const url = URL.createObjectURL(file);
+  window.open(url, '_blank');
+};
 
 const onMapClick = async (event: { latlng: { lat: number, lng: number } }) => {
   console.log(errors)
@@ -225,17 +253,43 @@ const onMapClick = async (event: { latlng: { lat: number, lng: number } }) => {
     const data = await response.json();
     const fetchedStreet = data.address.road;
     const fetchedStreetNumber = data.address.house_number;
-    setFieldValue('street', street.value);
-    setFieldValue('streetNumber', streetNumber.value);
+    setFieldValue('street', fetchedStreet);
+    setFieldValue('streetNumber', fetchedStreetNumber);
     setFieldValue('lon', event.latlng.lng)
     setFieldValue('lat', event.latlng.lat)
     street.value = fetchedStreet;
     streetNumber.value = fetchedStreetNumber;
     lon.value = event.latlng.lng;
     lat.value = event.latlng.lat;
-    nextTick(() => {
-      console.log('Address:', street.value, streetNumber.value);
-    });
+    console.log("DATA: ", data)
+    const potentialCitiesFromApi = [
+      data.address.city,
+      data.address.town,
+      data.address.village,
+      data.address.municipality,
+    ].filter(Boolean);
+
+    let matchedCity: string | undefined = undefined;
+
+    const sortedCities = [...cities.value].sort((a, b) => b.length - a.length);
+
+    for (const potentialCity of potentialCitiesFromApi) {
+      const foundInList = sortedCities.find(
+        (c) => potentialCity.toLowerCase().includes(c.toLowerCase())
+      );
+      
+      if (foundInList) {
+        matchedCity = foundInList;
+        break; 
+      }
+    }
+    if (matchedCity) {
+      selectCity(matchedCity, false);
+    } else {
+      console.warn(`City "${potentialCitiesFromApi.join(', ')}" from API not found in the predefined city list.`);
+      selectCity(''); 
+    }
+
   } catch (error) {
     console.error('Error fetching address:', error);
   }
@@ -303,15 +357,8 @@ const submitForm = async () => {
       }
     };
 
-    console.log(data);
     const response = await axios.post('/api/property', data);
-    console.log(response);
 
-    toast({
-      title: 'Property Registration Successful',
-      description: 'Your request is now under review.',
-      variant: 'default',
-    });
     router.push("/my-property-request")
   } catch (error) {
     let errorMessage = 'An unexpected error occurred';
@@ -345,7 +392,6 @@ const fetchCities = async () => {
   try {
     const response = await axios.get('/api/cities')
     cities.value = response.data?.data || [];
-    console.log(cities)
   } catch (error) {
     console.log(error)
   }
@@ -363,13 +409,13 @@ const onSubmit = handleSubmit(submitForm);
       <span class="text-gray-800 text-lg">Property Registration</span>
       <form class="w-full space-y-6" @submit="onSubmit">
 
-        <div class="w-full h-64 sm:h-96">
+        <div class="w-full h-64 sm:h-96 ">
           <l-map ref="map" v-model:zoom="zoom" :center="center" @click="onMapClick" :use-global-leaflet="false"
-            class="w-full h-full">
+            class="w-full h-full z-[1]">
             <l-tile-layer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" layer-type="base"
               name="OpenStreetMap"></l-tile-layer>
             <l-marker :lat-lng="markerPosition">
-              <l-popup>Marker here</l-popup>
+              <l-popup> {{ street }} {{ streetNumber }}</l-popup>
 
             </l-marker>
           </l-map>
@@ -409,7 +455,7 @@ const onSubmit = handleSubmit(submitForm);
                   {{ cityLabel }}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent class="w-full p-0">
+              <PopoverContent class="w-full p-0 z-[1000]">
                 <Command>
                   <CommandInput placeholder="Search city..." />
                   <CommandList>
@@ -448,6 +494,33 @@ const onSubmit = handleSubmit(submitForm);
             </FormControl>
             <FormMessage class="absolute -bottom-5 left-0 text-xs" v-if="errors.propertyImages">{{ errors.propertyImages
               }}</FormMessage>
+              <div v-if="propertyImagePreviews.length > 0" class="flex flex-wrap gap-4 mt-4">
+                <div
+                  v-for="(previewUrl, index) in propertyImagePreviews"
+                  :key="index"
+                  class="relative group"
+                >
+                  <img
+                    :src="previewUrl"
+                    alt="Image Preview"
+                    class="w-24 h-24 object-cover rounded-md"
+                  />
+                  <button
+                    type="button"
+                    @click="removeFile(index, 'propertyImages')"
+                    class="absolute -top-2 -right-2 bg-white rounded-full p-0.5 text-red-500 hover:text-red-700 hover:scale-110 transition-transform"
+                    aria-label="Remove image"
+                  >
+                    X
+                  </button>
+                  <div 
+                    class="absolute inset-2 bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer rounded-md"
+                    @click="openFile(propertyImages[index])"
+                  >
+                    <span class="text-white text-xs">Open</span>
+                  </div>
+                </div>
+              </div>
           </FormItem>
 
         </FormField>
@@ -460,6 +533,33 @@ const onSubmit = handleSubmit(submitForm);
             </FormControl>
 
             <FormMessage class="absolute -bottom-5 left-0 text-xs" v-if="errors">{{ errors }}</FormMessage>
+
+            <div v-if="documentPreviews.length > 0" class="mt-4 space-y-2">
+              <p class="text-sm font-medium">Choosen documents:</p>
+              <ul class="list-disc list-inside">
+                <li 
+                  v-for="(docName, index) in documentPreviews" 
+                  :key="index" 
+                  class="text-sm text-gray-700"
+                >
+                  <button 
+                    type="button" 
+                    @click="openFile(documents[index])"
+                    class="text-blue-600 hover:underline"
+                  >
+                    {{ docName }}
+                  </button>
+                  <button
+                    type="button"
+                    @click="removeFile(index, 'documents')"
+                    class="ml-4 text-gray-400 hover:text-red-600"
+                    aria-label="Remove document"
+                  >
+                    x
+                  </button>
+                </li>
+              </ul>
+            </div>
           </FormItem>
         </FormField>
 
