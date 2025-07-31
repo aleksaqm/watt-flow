@@ -67,7 +67,7 @@ const { toast } = useToast()
 
 const properties = ref<Property[]>([])
 
-const currentPropertyId = ref<number | null>(null); 
+const currentPropertyId = ref<number | null>(null);
 const pagination = ref({ page: 1, total: 0, perPage: 5 })
 const searchQuery = ref<{ city?: string; street?: string; number?: string; floors?: number }>({})
 const sortBy = ref("created_at")
@@ -187,7 +187,7 @@ async function handleDecline(values: any) {
   acceptingPropertyId.value = currentPropertyId.value;
 
   try {
-    
+
     console.log(`Declining property with ID: ${currentPropertyId.value}`);
     console.log(`Reason: ${values.declineReason}`);
 
@@ -228,7 +228,7 @@ watch(searchQuery, (newVal) => {
   <div class="p-7 flex flex-col bg-white shadow-lg">
     <div>
       <div class="w-full text-center my-10 text-xl">
-        Search Property
+        Search Property Requests
       </div>
 
       <form class="flex flex-wrap gap-5 items-center border rounded-2xl p-10 mb-10" @submit.prevent="fetchProperties">
@@ -311,7 +311,7 @@ watch(searchQuery, (newVal) => {
             <div class="flex items-center gap-2 h-4">
               <Spinner v-if="acceptingPropertyId === property.id"/>
               <template v-else>
-                
+
                 <Button class="bg-indigo-500 text-white mr-2 hover:bg-indigo-300" @click="handleAccept(property.id)" v-if="property.status === 'Pending'">Accept</Button>
                 <Form v-slot="{ handleSubmit }" as="" :validation-schema="formSchema">
                   <Dialog>

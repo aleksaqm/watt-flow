@@ -178,7 +178,7 @@ function handleRequestSent(){
 <template>
 
   <div class="p-7 flex flex-col bg-white shadow-lg">
-    
+
     <Table class="gap-5 items-center border rounded-2xl border-gray-300 shadow-gray-500 p-10 mb-10">
       <TableHeader>
         <TableRow>
@@ -204,7 +204,7 @@ function handleRequestSent(){
           <TableCell v-if="!isAdmin && props.mode === 'search'">
             <Dialog :key="dialogKey">
               <DialogTrigger>
-                <Button class="bg-indigo-500 hover:bg-gray-600">Ownership</Button>
+                <Button class="bg-indigo-500 hover:bg-gray-600">Claim</Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
