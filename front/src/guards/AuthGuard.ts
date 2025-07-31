@@ -2,6 +2,10 @@ import { useUserStore } from '@/stores/user';
 import type { NavigationGuard } from 'vue-router';
 
 export const authGuard: NavigationGuard = async (to, from, next) => {
+  if (localStorage.getItem("authToken") === null){
+    next('/login');
+    return;
+  }
   const userStore = useUserStore();
   const authMap = {
     "Admin": ['/household/info/:id', '/household/search', '/home', '/properties/requests-manage', '/manage/clerks', '/manage/clerks/new', '/ownership/requests', '/bills/prices', '/bills/send', '/consumption', '/clerk/profile/:id', '/bills/owner',  '/bills/pay/:billId', '/bills/pay/success'],

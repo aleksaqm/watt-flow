@@ -21,9 +21,21 @@ axios.interceptors.request.use((config) => {
     }
     return config
   })
+axios.interceptors.response.use(
+  response => response,
+  error => {
+    if (error.response && error.response.status === 401) {
+      // Handle unauthorized access, e.g., redirect to login
+      console.error('Unauthorized access - redirecting to login')
+      localStorage.removeItem('authToken')
+      window.location.href = '/login'
+    }
+    return Promise.reject(error)
+  }
+)
 const initializeUserStore = () => {
   const userStore = useUserStore();
-  userStore.setRole(getRoleFromToken())  
+  userStore.setRole(getRoleFromToken())
   userStore.setId(getUserIdFromToken())
 };
 
