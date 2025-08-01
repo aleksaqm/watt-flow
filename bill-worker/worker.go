@@ -8,6 +8,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/google/uuid"
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	_ "github.com/lib/pq"
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -36,7 +37,7 @@ func generateMonthConsumptionQueryString(deviceID string, startMonth string, end
 
 func (worker *Worker) GetTotalConsumptionForMonth(deviceID string, year int, month int) (float64, error) {
 	queryAPI := worker.influxClient.QueryAPI(worker.influxOrg)
-	startTime := time.Date(year-1, time.Month(month), 1, 0, 0, 0, 0, time.UTC)
+	startTime := time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.UTC)
 	endTime := startTime.AddDate(0, 1, 0) // First day of the next month
 
 	fluxQuery := generateMonthConsumptionQueryString(deviceID, startTime.Format(time.RFC3339), endTime.Format(time.RFC3339))
@@ -142,6 +143,9 @@ func (c *Worker) processBills(ctx context.Context, msgs <-chan amqp.Delivery) {
 			return
 		case msg := <-msgs:
 			var billTask BillTaskDto
+			if len(msg.Body) == 0 {
+				continue
+			}
 			err := json.Unmarshal(msg.Body, &billTask)
 			if err != nil {
 				fmt.Printf("Error decoding message: %v\n", err)
@@ -166,14 +170,15 @@ func (c *Worker) processBills(ctx context.Context, msgs <-chan amqp.Delivery) {
 
 			// Save Bill to Database
 			bill := Bill{
-				BillingDate: billTask.BillingDate,
-				IssueDate:   billTask.IssueDate,
-				PricelistID: billTask.Pricelist.ID,
-				OwnerID:     billTask.OwnerID,
-				SpentPower:  spentPower,
-				Price:       calculatedPrice,
-				Status:      "Delivered",
-				HouseholdID: billTask.HouseHoldID,
+				BillingDate:      billTask.BillingDate,
+				IssueDate:        billTask.IssueDate,
+				PricelistID:      billTask.Pricelist.ID,
+				OwnerID:          billTask.OwnerID,
+				SpentPower:       spentPower,
+				Price:            calculatedPrice,
+				Status:           "Delivered",
+				HouseholdID:      billTask.HouseHoldID,
+				PaymentReference: uuid.NewString(),
 			}
 
 			// Send Email
