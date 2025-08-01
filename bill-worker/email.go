@@ -99,7 +99,7 @@ func GenerateQRCode(link string) ([]byte, error) {
 
 func GenerateMonthlyBillHTML(bill Bill, pricelist Pricelist, user string, householdCN string) (string, error) {
 	date := time.Time(pricelist.ValidFrom).Format("2006-01")
-	paymentLink := fmt.Sprintf("http://localhost:80/api/pay/%s", "test")
+	paymentLink := fmt.Sprintf("http://localhost:80/bills/pay/%s", bill.PaymentReference)
 
 	// Generate QR code
 	qrCodeBytes, err := GenerateQRCode(paymentLink)

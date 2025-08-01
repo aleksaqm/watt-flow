@@ -26,12 +26,13 @@ type Pricelist struct {
 	Tax          float64   `json:"tax"`
 }
 type Bill struct {
-	BillingDate string
-	IssueDate   time.Time
-	PricelistID uint64
-	OwnerID     uint64
-	SpentPower  float64
-	Price       float64
-	Status      string
-	HouseholdID uint64
+	BillingDate      string
+	IssueDate        time.Time
+	PricelistID      uint64
+	OwnerID          uint64
+	SpentPower       float64
+	Price            float64
+	Status           string
+	HouseholdID      uint64
+	PaymentReference string
 }

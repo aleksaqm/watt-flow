@@ -3,6 +3,7 @@ package db
 import (
 	"fmt"
 	"log"
+
 	"watt-flow/config"
 	"watt-flow/model"
 	"watt-flow/util"
@@ -52,6 +53,7 @@ func (db Database) TruncateAllTables() error {
 			&model.OwnershipRequest{}, // References User and Household
 			&model.Meeting{},          // References User (ClerkID and UserID)
 			&model.TimeSlot{},         // References User (ClerkID)
+			&model.HouseholdAccess{},  // References User and Household
 			&model.Household{},        // References User, DeviceStatus, and Property
 			&model.Property{},         // References User (OwnerID) and Address
 			&model.MonthlyBill{},      // No foreign keys
