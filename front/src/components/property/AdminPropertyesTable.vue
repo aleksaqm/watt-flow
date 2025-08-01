@@ -225,7 +225,7 @@ watch(searchQuery, (newVal) => {
 </script>
 
 <template>
-  <div class="p-7 flex flex-col bg-white shadow-lg">
+  <div class="mx-auto w-10/12 p-7 flex flex-col bg-white shadow-lg">
     <div>
       <div class="w-full text-center my-10 text-xl">
         Search Property
@@ -268,7 +268,7 @@ watch(searchQuery, (newVal) => {
       </form>
     </div>
 
-    <Table class="gap-5 items-center border rounded-2xl border-gray-300 shadow-gray-500 p-10 mb-10">
+    <Table class="w-full border rounded-2xl border-gray-300 shadow-gray-500 p-10 mb-10">
       <TableHeader>
         <TableRow>
             <TableHead @click="onSortChange('city')" :orientation="sortOrder.city">City</TableHead>
