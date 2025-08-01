@@ -209,8 +209,8 @@ func (c *Worker) processBills(ctx context.Context, msgs <-chan amqp.Delivery) {
 }
 
 func (c *Worker) InsertBill(ctx context.Context, bill *Bill) error {
-	query := `INSERT INTO bills (issue_date, billing_date, pricelist_id, spent_power, price, owner_id, status, household_id)
-	          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`
+	query := `INSERT INTO bills (issue_date, billing_date, pricelist_id, spent_power, price, owner_id, status, household_id, payment_reference)
+	          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`
 
 	_, err := c.pgDB.ExecContext(ctx, query,
 		bill.IssueDate,
@@ -221,6 +221,7 @@ func (c *Worker) InsertBill(ctx context.Context, bill *Bill) error {
 		bill.OwnerID,
 		bill.Status,
 		bill.HouseholdID,
+		bill.PaymentReference,
 	)
 	if err != nil {
 		log.Printf("Failed to insert bill: %v", err)
