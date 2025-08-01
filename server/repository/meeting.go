@@ -43,9 +43,9 @@ func (repository *MeetingRepository) CancelMeetingsForClerk(clerkId uint64) erro
 		repository.Logger.Error("Error canceling meetings for clerk", result.Error)
 		return result.Error
 	}
-	if result.RowsAffected == 0 {
-		return fmt.Errorf("no meetings found for clerk with ID %d", clerkId)
-	}
+	//if result.RowsAffected == 0 {
+	//	return fmt.Errorf("no meetings found for clerk with ID %d", clerkId)
+	//}
 	return nil
 
 }

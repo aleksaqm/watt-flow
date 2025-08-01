@@ -44,6 +44,17 @@ import {
   DialogTrigger,
   DialogClose
 } from '@/shad/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/shad/components/ui/alert-dialog'
 import Toaster from '@/shad/components/ui/toast/Toaster.vue';
 import { useToast } from '../../shad/components/ui/toast/use-toast'
 import Spinner from '../Spinner.vue'
@@ -67,7 +78,11 @@ const { toast } = useToast()
 
 const properties = ref<Property[]>([])
 
-const currentPropertyId = ref<number | null>(null);
+const currentPropertyId = ref<number | null>(null); 
+// Accept confirmation dialog state
+const showAcceptConfirmDialog = ref(false);
+const selectedProperty = ref<Property | null>(null);
+
 const pagination = ref({ page: 1, total: 0, perPage: 5 })
 const searchQuery = ref<{ city?: string; street?: string; number?: string; floors?: number }>({})
 const sortBy = ref("created_at")
@@ -151,6 +166,38 @@ function formatDate(date: string): string {
   }
   return new Date(date).toLocaleString('en-US', options)
 }
+
+const showAcceptConfirmationDialog = (property: Property) => {
+  selectedProperty.value = property;
+  showAcceptConfirmDialog.value = true;
+};
+
+const confirmAccept = async () => {
+  if (!selectedProperty.value) return;
+  
+  acceptingPropertyId.value = selectedProperty.value.id;
+  try {
+    const response = await axios.put(`/api/property/` + selectedProperty.value.id +`/accept`)
+    console.log(`Property accepted successfully`, response.data)
+    fetchProperties()
+    toast({
+      title: 'Property Accepted',
+      description: `Property was accepted successfully.`,
+      variant: "default",
+    });
+  } catch (error) {
+    console.error(`Failed to accept property with ID ${selectedProperty.value.id}:`, error)
+    toast({
+      title: 'Error',
+      description: 'Failed to accept the property.',
+      variant: "destructive",
+    });
+  } finally {
+    acceptingPropertyId.value = null;
+    showAcceptConfirmDialog.value = false;
+    selectedProperty.value = null;
+  }
+};
 
 async function handleAccept(id: number) {
   acceptingPropertyId.value = id;
@@ -311,8 +358,8 @@ watch(searchQuery, (newVal) => {
             <div class="flex items-center gap-2 h-4">
               <Spinner v-if="acceptingPropertyId === property.id"/>
               <template v-else>
-
-                <Button class="bg-indigo-500 text-white mr-2 hover:bg-indigo-300" @click="handleAccept(property.id)" v-if="property.status === 'Pending'">Accept</Button>
+                
+                <Button class="bg-indigo-500 text-white mr-2 hover:bg-indigo-300" @click="showAcceptConfirmationDialog(property)" v-if="property.status === 'Pending'">Accept</Button>
                 <Form v-slot="{ handleSubmit }" as="" :validation-schema="formSchema">
                   <Dialog>
                       <DialogTrigger as-child>
@@ -384,5 +431,35 @@ watch(searchQuery, (newVal) => {
         </div>
     </div>
   </div>
+  
+  <!-- Accept Confirmation Dialog -->
+  <AlertDialog :open="showAcceptConfirmDialog" @update:open="showAcceptConfirmDialog = $event">
+    <AlertDialogContent>
+      <AlertDialogHeader>
+        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+        <AlertDialogDescription>
+          Are you sure you want to accept this property request?
+          <br><br>
+          <strong>Property Details:</strong><br>
+          • Address: {{ selectedProperty?.street }} {{ selectedProperty?.number }}, {{ selectedProperty?.city }}<br>
+          • Floors: {{ selectedProperty?.floors }}<br>
+          • Households: {{ selectedProperty?.households }}<br>
+          • Status: {{ selectedProperty?.status }}<br>
+          <br>
+          This action will approve the property and make it available for ownership requests.
+        </AlertDialogDescription>
+      </AlertDialogHeader>
+      <AlertDialogFooter>
+        <AlertDialogCancel>No, cancel</AlertDialogCancel>
+        <AlertDialogAction 
+          @click="confirmAccept"
+          class="bg-indigo-500 hover:bg-gray-600"
+        >
+          Yes, accept property
+        </AlertDialogAction>
+      </AlertDialogFooter>
+    </AlertDialogContent>
+  </AlertDialog>
+  
   <Toaster />
 </template>

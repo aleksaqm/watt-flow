@@ -241,7 +241,7 @@ const cancelMeeting = () => {
           <p>Are you sure you want to schedule meeting </p>
           <p>with {{ username }} on {{ dateValue }} at {{ hourValue }}:{{ minuteValue }}?</p>
           <div class="mt-4 flex justify-center gap-4">
-            <button class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600" @click="confirmMeeting">
+            <button class="px-4 py-2 bg-indigo-500 text-white rounded-md hover:bg-gray-600" @click="confirmMeeting">
               Yes
             </button>
             <button class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400" @click="cancelMeeting">

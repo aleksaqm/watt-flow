@@ -1,8 +1,6 @@
 package repository
 
 import (
-	"fmt"
-
 	"watt-flow/db"
 	"watt-flow/model"
 	"watt-flow/util"
@@ -43,9 +41,9 @@ func (repository *TimeSlotRepository) DeleteSlotsForClerk(clerkId uint64) error 
 		repository.Logger.Error("Error deleting time slots for clerk", result.Error)
 		return result.Error
 	}
-	if result.RowsAffected == 0 {
-		return fmt.Errorf("no slots found for clerk with ID %d", clerkId)
-	}
+	//if result.RowsAffected == 0 {
+	//	return fmt.Errorf("no slots found for clerk with ID %d", clerkId)
+	//}
 	return nil
 }
 
