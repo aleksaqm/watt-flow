@@ -94,7 +94,7 @@ function getButtonStyle(isSelected: boolean) {
 
 
 <template>
-  <div class="w-1/2 p-7 flex flex-col justify-center items-center bg-white shadow-lg">
+  <div class="mx-auto w-10/12 p-7 flex flex-col justify-center items-center bg-white shadow-lg">
     <Spinner v-if="loading" />
     <div v-if="!loading" class="flex flex-col justify-center items-center gap-5 w-full">
       <span class="text-gray-800 text-2xl">Admins</span>
@@ -109,7 +109,7 @@ function getButtonStyle(isSelected: boolean) {
           <NewUserForm url="/api/user/admin" role="Admin" @userCreated="handleUserCreated" />
         </DialogContent>
       </Dialog>
-      <Table>
+      <Table class="w-full border rounded-2xl border-gray-300 shadow-gray-500 p-10 mb-10">
         <TableHeader>
           <TableRow>
             <TableHead class="w-[100px]">ID</TableHead>

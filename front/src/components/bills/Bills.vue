@@ -118,9 +118,9 @@ onMounted(() => {
 
 <template>
 
-  <div class="p-7 flex flex-col bg-white shadow-lg gap-10 mt-10">
+  <div class="mx-auto w-full p-7 flex flex-col bg-white shadow-lg gap-10 mt-10">
     <Spinner v-if="loading" />
-    <Table v-if="!loading" class=" gap-5 items-center border rounded-2xl border-gray-300 shadow-gray-500 p-10 mb-10">
+    <Table v-if="!loading" class="w-full border rounded-2xl border-gray-300 shadow-gray-500 p-10 mb-10">
       <TableHeader>
         <TableRow>
           <TableHead @click="onSortChange('billing_date')" :orientation="sortOrder.billing_date">Month</TableHead>
