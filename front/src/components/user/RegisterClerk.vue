@@ -74,7 +74,7 @@ const convertToBase64 = (file: File): Promise<string> => {
   })
 }
 
-const submitForm = async (formData: { username: string; jmbg: string; email: string }) => {
+const submitForm = async (formData: { username: string; firstName: string, lastName: string, jmbg: string; email: string }) => {
   try {
     let profileImageBase64 = ''
     if (profilePicture.value) {
