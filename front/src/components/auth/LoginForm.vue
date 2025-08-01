@@ -45,7 +45,7 @@ const submitForm = async (formData: { username: string; password: string }) => {
     const userStore = useUserStore();
     const role = getRoleFromToken()
     userStore.setRole(role)
-    userStore.setId(getUserIdFromToken())
+    userStore.setId(getUserIdFromToken() ?? null)
     if (role == "Admin" || role == "SuperAdmin") {
       router.push({ path: '/properties/requests-manage' })
     } else {

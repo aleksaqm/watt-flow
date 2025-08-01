@@ -13,7 +13,7 @@ const app = createApp(App)
 app.use(createPinia())
 app.use(router)
 app.config.globalProperties.$axios = axios
-axios.defaults.baseURL = 'http://localhost:8080'
+axios.defaults.baseURL = 'http://localhost:80'
 axios.interceptors.request.use((config) => {
     const token = localStorage.getItem('authToken')
     if (token) {
@@ -35,7 +35,7 @@ axios.interceptors.response.use(
 )
 const initializeUserStore = () => {
   const userStore = useUserStore();
-  userStore.setRole(getRoleFromToken())  
+  userStore.setRole(getRoleFromToken())
   userStore.setId(getUserIdFromToken() ?? null)
 };
 
