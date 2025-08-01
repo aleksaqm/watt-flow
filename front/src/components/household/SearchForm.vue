@@ -85,10 +85,6 @@ onMounted(()=>{
       </Button>
     </form>
 
-
-    <div class="w-full my-7 text-lg">
-      Results:
-    </div>
   </div>
 </template>
 <style scoped></style>

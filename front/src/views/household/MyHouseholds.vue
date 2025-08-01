@@ -18,14 +18,16 @@ onMounted(() => {
 <template>
   <main>
     <div class="w-10/12 h-screen wrapper">
-      <div class="w-full text-center my-10 text-xl">
-        My Households
+      <div class="mx-auto w-full p-7 flex flex-col bg-white shadow-lg">
+        <div class="w-full text-center my-10 text-xl">
+          My Households
+        </div>
+        <SearchResult 
+          :query="searchQuery" 
+          :trigger-search="triggerSearch"
+          mode="my-households"
+        ></SearchResult>
       </div>
-      <SearchResult 
-        :query="searchQuery" 
-        :trigger-search="triggerSearch"
-        mode="my-households"
-      ></SearchResult>
     </div>
   </main>
 </template>

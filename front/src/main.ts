@@ -35,8 +35,8 @@ axios.interceptors.response.use(
 )
 const initializeUserStore = () => {
   const userStore = useUserStore();
-  userStore.setRole(getRoleFromToken())
-  userStore.setId(getUserIdFromToken())
+  userStore.setRole(getRoleFromToken())  
+  userStore.setId(getUserIdFromToken() ?? null)
 };
 
 initializeUserStore();

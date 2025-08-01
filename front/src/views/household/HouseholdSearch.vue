@@ -16,8 +16,13 @@ const onSearch = (query: any) => {
 <template>
   <main>
     <div class="w-10/12 h-screen wrapper">
-      <SearchForm @search=onSearch></SearchForm>
-      <SearchResult :query="searchQuery" :trigger-search="triggerSearch"></SearchResult>
+      <div class="mx-auto w-full p-7 flex flex-col bg-white shadow-lg">
+        <SearchForm @search=onSearch></SearchForm>
+        <div class="w-full my-7 text-lg">
+          Results:
+        </div>
+        <SearchResult :query="searchQuery" :trigger-search="triggerSearch"></SearchResult>
+      </div>
     </div>
   </main>
 </template>
