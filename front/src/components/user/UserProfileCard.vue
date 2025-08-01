@@ -32,21 +32,21 @@ const props = defineProps({
         </h2>
 
         <div class="space-y-5">
-          <div class="grid grid-cols-2 gap-2 items-center">
-            <Label class="text-lg text-left">First Name:</Label>
-            <Label class="text-xl font-medium">{{ props.firstName }}</Label>
+          <div class="flex flex-wrap justify-center items-center gap-2">
+            <Label class="text-lg font-semibold">First Name:</Label>
+            <Label class="text-xl font-medium break-words">{{ props.firstName }}</Label>
           </div>
-          <div class="grid grid-cols-2 gap-2 items-center">
-            <Label class="text-lg text-left">Last Name:</Label>
-            <Label class="text-xl font-medium">{{ props.lastName }}</Label>
+          <div class="flex flex-wrap justify-center items-center gap-2">
+            <Label class="text-lg font-semibold">Last Name:</Label>
+            <Label class="text-xl font-medium break-words">{{ props.lastName }}</Label>
           </div>
-          <div class="grid grid-cols-2 gap-2 items-center">
-            <Label class="text-lg text-left">Email:</Label>
-            <Label class="text-xl font-medium">{{ props.email }}</Label>
+          <div class="flex flex-wrap justify-center items-center gap-2">
+            <Label class="text-lg font-semibold">Email:</Label>
+            <Label class="text-xl font-medium break-words break-all">{{ props.email }}</Label>
           </div>
-          <div class="grid grid-cols-2 gap-2 items-center">
-            <Label class="text-lg text-left">Role:</Label>
-            <Label class="text-xl font-medium">{{ props.role }}</Label>
+          <div class="flex flex-wrap justify-center items-center gap-2">
+            <Label class="text-lg font-semibold">Role:</Label>
+            <Label class="text-xl font-medium break-words">{{ props.role }}</Label>
           </div>
         </div>
       </div>
