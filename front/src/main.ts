@@ -24,7 +24,7 @@ axios.interceptors.request.use((config) => {
 const initializeUserStore = () => {
   const userStore = useUserStore();
   userStore.setRole(getRoleFromToken())  
-  userStore.setId(getUserIdFromToken())
+  userStore.setId(getUserIdFromToken() ?? null)
 };
 
 initializeUserStore();

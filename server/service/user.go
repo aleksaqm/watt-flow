@@ -173,6 +173,8 @@ func (service *UserService) Register(registrationDto *dto.RegistrationDto) (*dto
 	user := model.User{}
 	user.Username = registrationDto.Username
 	user.Email = registrationDto.Email
+	user.FirstName = registrationDto.FirstName
+	user.LastName = registrationDto.LastName
 	user.Password = util.HashPassword(registrationDto.Password)
 	user.Role = model.Regular
 	user.Status = model.Inactive

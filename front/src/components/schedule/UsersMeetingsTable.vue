@@ -158,7 +158,7 @@ watch(searchQuery, (newVal) => {
 
 <template>
   
-  <div class="p-7 flex flex-col bg-white shadow-lg w-1/2">
+  <div class="mx-auto w-10/12 p-7 flex flex-col bg-white shadow-lg">
     <div>
       <div class="w-full text-center my-10 text-xl">
         My meetings
@@ -184,7 +184,7 @@ watch(searchQuery, (newVal) => {
       </form>
 
     </div>
-    <Table class="gap-5 items-center border rounded-2xl border-gray-300 shadow-gray-500 p-10 mb-10">
+    <Table class="w-full border rounded-2xl border-gray-300 shadow-gray-500 p-10 mb-10">
       <TableHeader>
         <TableRow>
           <TableHead @click="onSortChange('clerk')" :orientation="sortOrder.clerk">Clerk</TableHead>

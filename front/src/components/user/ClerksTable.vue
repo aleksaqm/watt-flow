@@ -149,9 +149,9 @@ const changeAccountStatus = async (id: number, status: string) => {
 </script>
 
 <template>
-  <div class="p-7 flex flex-col bg-white w-10/12 shadow-lg">
+  <div class="mx-auto w-full p-7 flex flex-col bg-white shadow-lg">
     <Table
-      class="gap-5 items-center border rounded-2xl border-gray-300 shadow-gray-500 p-10 mb-10"
+      class="w-full border rounded-2xl border-gray-300 shadow-gray-500 p-10 mb-10"
     >
       <TableHeader>
         <TableRow>
