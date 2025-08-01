@@ -60,7 +60,7 @@ func (repository *MonthlyBillRepository) FindBillsBetweenDates(date1 time.Time, 
 	startKey := fmt.Sprintf("%d-%02d", date1.Year(), date1.Month())
 	endKey := fmt.Sprintf("%d-%02d", date2.Year(), date2.Month())
 
-	err := repository.Database.Where("billing_date BETWEEN ? AND ?", startKey, endKey).Find(&bills).Error
+	err := repository.Database.Where("billing_date BETWEEN ? AND ? AND status = 'Completed'", startKey, endKey).Find(&bills).Error
 	if err != nil {
 		return nil, err
 	}
