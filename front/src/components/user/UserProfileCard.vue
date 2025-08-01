@@ -19,7 +19,7 @@ const props = defineProps({
       <!-- Profile Picture -->
       <div class="absolute top-[-70px] left-1/2 transform -translate-x-1/2">
         <img
-          :src="`http://localhost:8080/profile_pictures/${props.username}.jpg`"
+          :src="`http://localhost:80/profile_pictures/${props.username}.jpg`"
           alt="User Profile"
           class="w-40 h-40 rounded-full border-4 border-white shadow-md object-cover"
         />

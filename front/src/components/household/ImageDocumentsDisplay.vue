@@ -12,7 +12,7 @@ const api = ref<CarouselApi>()
 const totalCount = ref(0)
 const current = ref(0)
 
-const baseURL = "http://localhost:8080/"
+const baseURL = "http://localhost:80/"
 
 const imageSources = computed(() => props.images.map(image => baseURL + image))
 const documentSources = computed(() => props.documents.map(document => baseURL + document))

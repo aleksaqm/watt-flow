@@ -234,7 +234,7 @@ async function handleDecline(values: any) {
   acceptingPropertyId.value = currentPropertyId.value;
 
   try {
-    
+
     console.log(`Declining property with ID: ${currentPropertyId.value}`);
     console.log(`Reason: ${values.declineReason}`);
 
@@ -275,7 +275,7 @@ watch(searchQuery, (newVal) => {
   <div class="mx-auto w-10/12 p-7 flex flex-col bg-white shadow-lg">
     <div>
       <div class="w-full text-center my-10 text-xl">
-        Search Property
+        Search Property Requests
       </div>
 
       <form class="flex flex-wrap gap-5 items-center border rounded-2xl p-10 mb-10" @submit.prevent="fetchProperties">

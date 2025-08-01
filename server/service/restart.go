@@ -3,6 +3,7 @@ package service
 import (
 	"log"
 	"os"
+
 	"watt-flow/db"
 )
 
@@ -34,6 +35,8 @@ func (service RestartService) InitSuperAdmin() error {
 	if err3 != nil {
 		return err3
 	}
+	// insert default pricelist valid from one year in the past
+	service.database.DB.Exec("INSERT INTO pricelists (valid_from, blue_zone, red_zone, green_zone, billing_power, tax, is_active) VALUES (CURRENT_DATE - INTERVAL '1 year', 0.15, 0.20, 0.10, 5.0, 10, TRUE) ON CONFLICT DO NOTHING")
 	return nil
 }
 

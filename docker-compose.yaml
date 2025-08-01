@@ -169,7 +169,7 @@ services:
         condition: service_healthy
       consumer:
         condition: service_started
-    
+
 
   simulator-2:
     build: ./simulator/
@@ -291,7 +291,7 @@ services:
     depends_on:
       - server
     ports:
-      - "8080:80"
+      - "80:80"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf
       - ./data/profile_pictures:/usr/share/nginx/html/profile_pictures
@@ -300,6 +300,7 @@ services:
       - ./data/ownership_documents:/usr/share/nginx/html/ownership_documents
       - ./data/property_images:/usr/share/nginx/html/property_images
       - ./data/property_documents:/usr/share/nginx/html/property_documents
+      - ./front/dist:/usr/share/nginx/html/frontend
 
     networks:
       - watt-flow-network
