@@ -201,7 +201,7 @@ function handleRequestSent(){
           <TableCell v-if="!isAdmin && props.mode === 'search'">
             <Dialog :key="dialogKey">
               <DialogTrigger>
-                <Button class="bg-indigo-500 hover:bg-gray-600">Ownership</Button>
+                <Button class="bg-indigo-500 hover:bg-gray-600">Claim</Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
