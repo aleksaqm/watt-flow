@@ -40,6 +40,17 @@ import {
   DialogTrigger,
   DialogClose
 } from '@/shad/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/shad/components/ui/alert-dialog'
 import Input from '@/shad/components/ui/input/Input.vue';
 import { useUserStore } from '@/stores/user';
 import { getUserIdFromToken } from '@/utils/jwtDecoder'
@@ -75,6 +86,10 @@ const currentReqyestId = ref<number | null>(null);
 const isDialogOpen = ref<boolean>(false);
 const dialogsOpen = ref<boolean[]>([])
 
+// Accept confirmation dialog state
+const showAcceptConfirmDialog = ref(false);
+const selectedRequest = ref<OwnershipRequest | null>(null);
+
 const pagination = ref({ page: 1, total: 0, perPage: 5 })
 const searchQuery = ref<{ city?: string; street?: string; number?: string; floor?: number, suite?: string}>({})
 
@@ -88,6 +103,7 @@ const sortOrder = ref<{ [key: string]: "asc" | "desc" | "" }>({
   closed_at: "",
   floor: "",
   suite: "",
+  status: "",
 })
 const totalPages = computed(() => Math.ceil(pagination.value.total / pagination.value.perPage))
 
@@ -173,7 +189,7 @@ function onSortChange(field: string) {
   sortOrder.value.closed_at = ""
   sortOrder.value.floor = ""
   sortOrder.value.suite = ""
-//   sortOrder.value.status = ""
+  sortOrder.value.status = ""
   sortOrder.value[field] = temp === "asc" ? "desc" : "asc"
   console.log(sortOrder.value)
   sortBy.value = field
@@ -208,11 +224,20 @@ watch(searchQuery, (newVal) => {
   })
 }, { deep: true })
 
-async function handleAccept(id: number){
+const showAcceptConfirmationDialog = (request: OwnershipRequest) => {
+  console.log('Opening confirmation dialog for request:', request.id);
+  selectedRequest.value = request;
+  showAcceptConfirmDialog.value = true;
+  console.log('Dialog state:', showAcceptConfirmDialog.value);
+};
+
+const confirmAccept = async () => {
+  if (!selectedRequest.value) return;
+  
   try {
     isLoading.value = true
-    const response = await axios.patch(`/api/ownership/accept/` + id)
-    console.log(`Request accepteded successfully`, response.data)
+    const response = await axios.patch(`/api/ownership/accept/` + selectedRequest.value.id)
+    console.log(`Request accepted successfully`, response.data)
     await fetchRequests()
     isLoading.value = false
     toast({
@@ -222,9 +247,13 @@ async function handleAccept(id: number){
     });
   } catch (error) {
     isLoading.value = false
-    console.error(`Failed to accept request with ID ${id}:`, error)
+    console.error(`Failed to accept request with ID ${selectedRequest.value.id}:`, error)
+  } finally {
+    showAcceptConfirmDialog.value = false;
+    selectedRequest.value = null;
   }
-}
+};
+
 const formSchema = toTypedSchema(z.object({
   declineReason: z.string().min(2).max(50),
 }))
@@ -266,7 +295,7 @@ async function handleDecline(values: any) {
 
 <template>
   
-  <div class="mx-auto w-10/12 p-7 flex flex-col bg-white shadow-lg">
+  <div class="mx-auto w-11/12 p-7 flex flex-col bg-white shadow-lg">
     <div>
       <div class="w-full text-center my-10 text-xl">
         Ownership Requests
@@ -337,6 +366,7 @@ async function handleDecline(values: any) {
           <TableHead @click="onSortChange('floor')" :orientation="sortOrder.floor">Floor</TableHead>
           <TableHead @click="onSortChange('suite')" :orientation="sortOrder.suite">Suite</TableHead>
           <TableHead @click="onSortChange('username')" :orientation="sortOrder.username">Username</TableHead>
+          <TableHead v-if="!isAdmin">Status</TableHead>
           <TableHead @click="onSortChange('created_at')" :orientation="sortOrder.created_at">Creation Time</TableHead>
           <TableHead v-if="!isAdmin"click="onSortChange('closed_at')" :orientation="sortOrder.closed_at">Resolved Time</TableHead>
           <TableHead v-if="isAdmin">Documentation</TableHead>
@@ -353,6 +383,7 @@ async function handleDecline(values: any) {
           <TableCell>{{ request.floor }}</TableCell>
           <TableCell>{{ request.suite }}</TableCell>
           <TableCell>{{ request.username }}</TableCell>
+          <TableCell v-if="!isAdmin">{{ request.status }}</TableCell>
           <TableCell>{{ formatDate(request.created_at) }}</TableCell>
           <TableCell v-if="!isAdmin">{{ formatDate(request.closed_at) }}</TableCell>
           <TableCell v-if="isAdmin">
@@ -373,7 +404,7 @@ async function handleDecline(values: any) {
           </TableCell>
             
           <TableCell v-if="isAdmin">
-            <Button class="bg-indigo-700 text-white mr-2 hover:bg-indigo-300" @click="handleAccept(request.id)">Accept</Button>
+            <Button class="bg-indigo-700 text-white mr-2 hover:bg-indigo-300" @click="showAcceptConfirmationDialog(request)">Accept</Button>
             <Form v-slot="{ handleSubmit }" as="" :validation-schema="formSchema">
                 <Dialog>
                     <DialogTrigger as-child>
@@ -443,5 +474,31 @@ async function handleDecline(values: any) {
         </div>
     </div>
   </div>
+  
+  <!-- Accept Confirmation Dialog -->
+  <AlertDialog :open="showAcceptConfirmDialog" @update:open="showAcceptConfirmDialog = $event">
+    <AlertDialogContent>
+      <AlertDialogHeader>
+        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+        <AlertDialogDescription>
+          Are you sure you want to accept this ownership request for 
+          <strong>{{ selectedRequest?.city }}, {{ selectedRequest?.street }} {{ selectedRequest?.number }}</strong>
+          {{ selectedRequest?.floor ? `, Floor ${selectedRequest.floor}` : '' }}{{ selectedRequest?.suite ? `, Suite ${selectedRequest.suite}` : '' }}?
+          <br><br>
+          This action will grant ownership access to <strong>{{ selectedRequest?.username }}</strong>.
+        </AlertDialogDescription>
+      </AlertDialogHeader>
+      <AlertDialogFooter>
+        <AlertDialogCancel>No, cancel</AlertDialogCancel>
+        <AlertDialogAction 
+          @click="confirmAccept"
+          class="bg-indigo-500 hover:bg-gray-600"
+        >
+          Yes, accept request
+        </AlertDialogAction>
+      </AlertDialogFooter>
+    </AlertDialogContent>
+  </AlertDialog>
+  
   <Toaster />
 </template>

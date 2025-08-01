@@ -19,6 +19,17 @@ import {
   FormMessage,
 } from '@/shad/components/ui/form'
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/shad/components/ui/alert-dialog'
+import {
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -139,6 +150,9 @@ const center = ref<[number, number]>([45.254242348610845, 19.843728661762427]);
 
 const zoom = ref(6);
 const markerPosition = ref<[number, number]>([45.254242348610845, 19.843728661762427]);
+
+// Confirmation dialog state
+const showConfirmDialog = ref(false);
 
 const householdEntries = ref<{ floor: string; suite: string; area: number; identifier: string }[]>([]);
 
@@ -359,7 +373,16 @@ const submitForm = async () => {
 
     const response = await axios.post('/api/property', data);
 
-    router.push("/my-property-request")
+    toast({
+      title: 'Property Registration Successful',
+      description: 'Your property request has been submitted successfully and will be reviewed by administrators.',
+      variant: 'default',
+    });
+
+    // Small delay to ensure toast is shown and state is reset before navigation
+    setTimeout(() => {
+      router.replace("/my-property-request");
+    }, 100);
   } catch (error) {
     let errorMessage = 'An unexpected error occurred';
 
@@ -400,7 +423,16 @@ const fetchCities = async () => {
 
 onMounted(fetchCities)
 
-const onSubmit = handleSubmit(submitForm);
+const showConfirmationDialog = () => {
+  showConfirmDialog.value = true;
+};
+
+const confirmSubmit = async () => {
+  showConfirmDialog.value = false;
+  await submitForm();
+};
+
+const onSubmit = handleSubmit(showConfirmationDialog);
 </script>
 
 <template>
@@ -626,6 +658,37 @@ const onSubmit = handleSubmit(submitForm);
       </form>
     </div>
   </div>
+  
+  <!-- Submit Confirmation Dialog -->
+  <AlertDialog :open="showConfirmDialog" @update:open="showConfirmDialog = $event">
+    <AlertDialogContent>
+      <AlertDialogHeader>
+        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+        <AlertDialogDescription>
+          Are you sure you want to submit this property request?
+          <br><br>
+          <strong>Property Details:</strong><br>
+          • Address: {{ street }} {{ streetNumber }}, {{ city }}<br>
+          • Number of Floors: {{ numberOfFloors }}<br>
+          • Households: {{ householdEntries.length }}<br>
+          • Property Images: {{ propertyImages.length }}<br>
+          • Documents: {{ documents.length }}<br>
+          <br>
+          Once submitted, your request will be reviewed by administrators.
+        </AlertDialogDescription>
+      </AlertDialogHeader>
+      <AlertDialogFooter>
+        <AlertDialogCancel>No, let me review</AlertDialogCancel>
+        <AlertDialogAction 
+          @click="confirmSubmit"
+          class="bg-indigo-500 hover:bg-gray-600"
+        >
+          Yes, submit request
+        </AlertDialogAction>
+      </AlertDialogFooter>
+    </AlertDialogContent>
+  </AlertDialog>
+  
   <Toaster />
 </template>
 
