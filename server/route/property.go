@@ -1,6 +1,9 @@
 package route
 
 import (
+	cache "github.com/chenyahui/gin-cache"
+	"github.com/chenyahui/gin-cache/persist"
+	"time"
 	"watt-flow/middleware"
 	"watt-flow/server"
 
@@ -9,6 +12,7 @@ import (
 
 type PropertyRoute struct {
 	engine *gin.Engine
+	store  persist.CacheStore
 }
 
 func (r PropertyRoute) Register(server *server.Server) {
@@ -22,14 +26,15 @@ func (r PropertyRoute) Register(server *server.Server) {
 		// api.PUT("/property/:id", server.PropertyHandler.Update)
 		// api.GET("/properties", server.PropertyHandler.FindByStatus)
 		// api.DELETE("/property/:id", server.PropertyHandler.Delete)
-		api.GET("/property/query", authMid.RoleMiddleware([]string{"Regular", "Admin", "SuperAdmin", "Clerk"}), server.PropertyHandler.TableQuery)
+		api.GET("/property/query", authMid.RoleMiddleware([]string{"Regular", "Admin", "SuperAdmin", "Clerk"}), cache.CacheByRequestURI(r.store, 2*time.Second), server.PropertyHandler.TableQuery)
 		api.PUT("/property/:id/accept", authMid.RoleMiddleware([]string{"Admin", "SuperAdmin"}), server.PropertyHandler.AcceptProperty)
 		api.PUT("/property/:id/decline", authMid.RoleMiddleware([]string{"Admin", "SuperAdmin"}), server.PropertyHandler.DeclineProperty)
 	}
 }
 
-func NewPropertyRoute(engine *gin.Engine) *PropertyRoute {
+func NewPropertyRoute(engine *gin.Engine, store persist.CacheStore) *PropertyRoute {
 	return &PropertyRoute{
 		engine: engine,
+		store:  store,
 	}
 }
