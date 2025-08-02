@@ -1,6 +1,7 @@
 package route
 
 import (
+	"github.com/chenyahui/gin-cache/persist"
 	"watt-flow/middleware"
 	"watt-flow/server"
 
@@ -9,6 +10,7 @@ import (
 
 type OwnershipRoute struct {
 	engine *gin.Engine
+	store  persist.CacheStore
 }
 
 func (r OwnershipRoute) Register(server *server.Server) {
@@ -25,8 +27,9 @@ func (r OwnershipRoute) Register(server *server.Server) {
 	}
 }
 
-func NewOwnershipRoute(engine *gin.Engine) *OwnershipRoute {
+func NewOwnershipRoute(engine *gin.Engine, store persist.CacheStore) *OwnershipRoute {
 	return &OwnershipRoute{
 		engine: engine,
+		store:  store,
 	}
 }
