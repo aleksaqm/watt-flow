@@ -1,6 +1,9 @@
 package route
 
 import (
+	cache "github.com/chenyahui/gin-cache"
+	"github.com/chenyahui/gin-cache/persist"
+	"time"
 	"watt-flow/middleware"
 	"watt-flow/server"
 
@@ -9,6 +12,7 @@ import (
 
 type HouseholdRoute struct {
 	engine *gin.Engine
+	store  persist.CacheStore
 }
 
 func (r HouseholdRoute) Register(server *server.Server) {
@@ -17,17 +21,19 @@ func (r HouseholdRoute) Register(server *server.Server) {
 
 	api := r.engine.Group("/api").Use(authMid.Handler())
 	{
-		api.GET("/household/:id", authMid.RoleMiddleware([]string{"Admin", "Clerk", "Regular", "SuperAdmin"}), server.HouseholdHandler.GetById)
+		api.GET("/household/:id", authMid.RoleMiddleware([]string{"Admin", "SuperAdmin", "Regular"}), cache.CacheByRequestURI(r.store, 2*time.Minute), server.HouseholdHandler.GetById)
 		api.POST("/household/query", authMid.RoleMiddleware([]string{"Admin", "SuperAdmin", "Regular"}), server.HouseholdHandler.Query)
 
-		api.GET("/household/:id/consumption/monthly", authMid.RoleMiddleware([]string{"Regular"}), server.ElectricityConsumptionHandler.GetMonthlyConsumption)
-		api.GET("/household/:id/consumption/12months", authMid.RoleMiddleware([]string{"Regular"}), server.ElectricityConsumptionHandler.Get12MonthsConsumption)
-		api.GET("/household/:id/consumption/daily", authMid.RoleMiddleware([]string{"Regular"}), server.ElectricityConsumptionHandler.GetDailyConsumption)
+		api.GET("/household/:id/consumption/monthly", authMid.RoleMiddleware([]string{"Regular"}), cache.CacheByRequestURI(r.store, 2*time.Minute), server.ElectricityConsumptionHandler.GetMonthlyConsumption)
+		api.GET("/household/:id/consumption/12months", authMid.RoleMiddleware([]string{"Regular"}), cache.CacheByRequestURI(r.store, 2*time.Minute), server.ElectricityConsumptionHandler.Get12MonthsConsumption)
+		api.GET("/household/:id/consumption/daily", authMid.RoleMiddleware([]string{"Regular"}), cache.CacheByRequestURI(r.store, 2*time.Minute), server.ElectricityConsumptionHandler.GetDailyConsumption)
+
 	}
 }
 
-func NewHouseholdRoute(engine *gin.Engine) *HouseholdRoute {
+func NewHouseholdRoute(engine *gin.Engine, store persist.CacheStore) *HouseholdRoute {
 	return &HouseholdRoute{
 		engine: engine,
+		store:  store,
 	}
 }
