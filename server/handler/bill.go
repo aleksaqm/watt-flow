@@ -12,6 +12,7 @@ import (
 	"watt-flow/util"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 type BillHandler struct {
@@ -309,7 +310,8 @@ func (h *BillHandler) PayBill(c *gin.Context) {
 	}
 
 	h.logger.Info("SENDING EMAIL : ", loggedInUserEmail.(string))
-	err = h.service.PayBill(billId, uint64(userIDFloat), loggedInUserEmail.(string))
+	trxHandle := c.MustGet("db_trx").(*gorm.DB)
+	err = h.service.WithTrx(trxHandle).PayBill(billId, uint64(userIDFloat), loggedInUserEmail.(string))
 	if err != nil {
 		h.logger.Error("Failed to process payment", err)
 		if err.Error() == "bill not found" {
@@ -380,7 +382,8 @@ func (h *BillHandler) InitiateBilling(c *gin.Context) {
 		return
 	}
 
-	data, err := h.service.InitiateBillingOffload(year, month)
+	trxHandle := c.MustGet("db_trx").(*gorm.DB)
+	data, err := h.service.WithTrx(trxHandle).InitiateBillingOffload(year, month)
 	if err != nil {
 		h.logger.Error(err)
 		c.JSON(500, gin.H{"error": "Failed to send bills for specified month!"})

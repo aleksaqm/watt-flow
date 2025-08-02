@@ -4,6 +4,8 @@ import (
 	"watt-flow/db"
 	"watt-flow/model"
 	"watt-flow/util"
+
+	"gorm.io/gorm"
 )
 
 type CityRepository struct {
@@ -20,6 +22,15 @@ func NewCityRepository(db db.Database, logger util.Logger) CityRepository {
 		database: db,
 		logger:   logger,
 	}
+}
+
+func (r CityRepository) WithTrx(trxHandle *gorm.DB) CityRepository {
+	if trxHandle == nil {
+		r.logger.Error("Transaction Database not found in gin context. ")
+		return r
+	}
+	r.database.DB = trxHandle
+	return r
 }
 
 func (repository *CityRepository) GetAllCities() ([]string, error) {

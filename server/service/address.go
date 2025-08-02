@@ -3,6 +3,8 @@ package service
 import (
 	"watt-flow/model"
 	"watt-flow/repository"
+
+	"gorm.io/gorm"
 )
 
 type IAddressService interface {
@@ -11,6 +13,7 @@ type IAddressService interface {
 	FindAll() ([]model.Address, error)
 	Update(address *model.Address) (*model.Address, error)
 	Delete(id uint64) error
+	WithTrx(trxHandle *gorm.DB) IAddressService
 }
 
 type AddressService struct {
@@ -21,6 +24,11 @@ func NewAddressService(repository repository.AddressRepository) *AddressService 
 	return &AddressService{
 		repository: repository,
 	}
+}
+
+func (s AddressService) WithTrx(trxHandle *gorm.DB) IAddressService {
+	s.repository = s.repository.WithTrx(trxHandle)
+	return &s
 }
 
 func (service *AddressService) Create(address *model.Address) (*model.Address, error) {

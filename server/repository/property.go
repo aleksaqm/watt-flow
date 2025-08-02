@@ -8,7 +8,6 @@ import (
 	"watt-flow/util"
 
 	"gorm.io/gorm"
-
 	"gorm.io/gorm/clause"
 )
 
@@ -26,6 +25,15 @@ func NewPropertyRepository(db db.Database, logger util.Logger) PropertyRepositor
 		Database: db,
 		Logger:   logger,
 	}
+}
+
+func (r PropertyRepository) WithTrx(trxHandle *gorm.DB) PropertyRepository {
+	if trxHandle == nil {
+		r.Logger.Error("Transaction Database not found in gin context. ")
+		return r
+	}
+	r.Database.DB = trxHandle
+	return r
 }
 
 func (repository *PropertyRepository) Create(property *model.Property) (model.Property, error) {
