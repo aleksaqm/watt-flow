@@ -1,4 +1,4 @@
-package main
+package simulator
 
 import (
 	"math"
@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-type Household struct {
+type HouseholdSim struct {
 	rng            *rand.Rand
 	address        *Location
 	baseLoad       float64
@@ -20,7 +20,7 @@ type Location struct {
 	Number string
 }
 
-func newLocation(city string, street string, number string) *Location {
+func NewLocation(city string, street string, number string) *Location {
 	return &Location{
 		City:   city,
 		Street: street,
@@ -28,9 +28,9 @@ func newLocation(city string, street string, number string) *Location {
 	}
 }
 
-func newHousehold(seed int64, location *Location) *Household {
+func NewHousehold(seed int64, location *Location) *HouseholdSim {
 	rng := rand.New(rand.NewSource(seed))
-	return &Household{
+	return &HouseholdSim{
 		rng:            rng,
 		baseLoad:       0.7 + (rng.Float64() * 0.6),
 		peakMultiplier: 2.5 + rng.Float64(),
@@ -39,7 +39,7 @@ func newHousehold(seed int64, location *Location) *Household {
 	}
 }
 
-func (hs *Household) calculateDailyPattern(hour float64) float64 {
+func (hs *HouseholdSim) calculateDailyPattern(hour float64) float64 {
 	// Morning peak (7-9 AM)
 	if hour >= 7 && hour <= 9 {
 		return hs.peakMultiplier * 0.8
@@ -60,7 +60,7 @@ func (hs *Household) calculateDailyPattern(hour float64) float64 {
 	return 1.2
 }
 
-func (hs *Household) calculateSeasonalFactor(month time.Month) float64 {
+func (hs *HouseholdSim) calculateSeasonalFactor(month time.Month) float64 {
 	monthAngle := float64(month-1) * (2 * math.Pi / 12)
 	// Create a sinusoidal pattern with peak in winter (December/January)
 	// and trough in summer (June/July)
@@ -68,7 +68,7 @@ func (hs *Household) calculateSeasonalFactor(month time.Month) float64 {
 	return seasonalVariation
 }
 
-func (hs *Household) SimulateConsumption(timestamp time.Time) float64 {
+func (hs *HouseholdSim) SimulateConsumption(timestamp time.Time) float64 {
 	// Time-of-day factor
 	hour := float64(timestamp.Hour())
 	dailyPattern := hs.calculateDailyPattern(hour)
