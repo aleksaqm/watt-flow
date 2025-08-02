@@ -2,9 +2,11 @@ package main
 
 import (
 	"database/sql"
+	"encoding/csv"
 	"fmt"
 	"log"
 	"math/rand"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -127,6 +129,54 @@ type DeviceStatus struct {
 	HouseholdID sql.NullInt64
 }
 
+func writeSimulatorsToCSV(statuses []DeviceStatus, count int) error {
+	if count > len(statuses) {
+		count = len(statuses)
+		log.Printf("Warning: Requested %d simulators, but only %d are available. Exporting all.", count, len(statuses))
+	}
+	if count == 0 {
+		return nil
+	}
+
+	rand.Shuffle(len(statuses), func(i, j int) {
+		statuses[i], statuses[j] = statuses[j], statuses[i]
+	})
+
+	selectedStatuses := statuses[:count]
+
+	fileName := "simulators.csv"
+	file, err := os.Create(fileName)
+	if err != nil {
+		return fmt.Errorf("failed to create CSV file: %w", err)
+	}
+	defer file.Close()
+
+	writer := csv.NewWriter(file)
+	defer writer.Flush()
+
+	header := []string{"device_id", "city"}
+	if err := writer.Write(header); err != nil {
+		return fmt.Errorf("failed to write CSV header: %w", err)
+	}
+
+	for _, status := range selectedStatuses {
+		parts := strings.Split(status.Address, ",")
+		var city string
+		if len(parts) > 0 {
+			city = strings.TrimSpace(parts[1])
+		} else {
+			city = "Unknown"
+		}
+
+		row := []string{status.DeviceID, city}
+		if err := writer.Write(row); err != nil {
+			log.Printf("Warning: failed to write row for device %s: %v", status.DeviceID, err)
+		}
+	}
+
+	return nil
+}
+
 func main() {
 	rand.Seed(time.Now().UnixNano())
 
@@ -153,6 +203,12 @@ func main() {
 	insertProperties(db, properties)
 	insertHouseholds(db, households)
 	updateDeviceStatusHouseholdIDs(db)
+
+	fmt.Println("\nPhase 3: Exporting 1000 random simulators to CSV file...")
+	if err := writeSimulatorsToCSV(deviceStatuses, 1000); err != nil {
+		log.Fatalf("Fatal error while writing simulators to CSV: %v", err)
+	}
+	fmt.Println("Successfully wrote simulator data to simulators.csv")
 
 	fmt.Println("\nDatabase population completed successfully!")
 }
