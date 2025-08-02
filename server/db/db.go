@@ -3,7 +3,7 @@ package db
 import (
 	"fmt"
 	"log"
-
+	"time"
 	"watt-flow/config"
 	"watt-flow/model"
 	"watt-flow/util"
@@ -30,6 +30,13 @@ func NewDatabase(env *config.Environment, logger util.Logger) Database {
 		fmt.Println(err)
 	}
 
+	sqlDB, err := db.DB()
+	if err != nil {
+		log.Fatal("Failed to get database instance:", err)
+	}
+	sqlDB.SetMaxIdleConns(10)
+	sqlDB.SetMaxOpenConns(50)
+	sqlDB.SetConnMaxLifetime(5 * time.Minute)
 	err = db.AutoMigrate(&model.User{})
 	if err != nil {
 		log.Fatal("Failed to migrate database:", err)
@@ -78,4 +85,11 @@ func (db Database) TruncateAllTables() error {
 
 		return nil
 	})
+}
+
+func (db Database) GetConnectionStats() {
+	sqlDB, _ := db.DB.DB()
+	stats := sqlDB.Stats()
+	log.Printf("Open connections: %d, In use: %d, Idle: %d",
+		stats.OpenConnections, stats.InUse, stats.Idle)
 }

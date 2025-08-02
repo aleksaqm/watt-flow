@@ -30,13 +30,15 @@ func (sender *EmailSender) SendEmail(receiver string, subject string, body strin
 	message.SetHeader("Subject", subject)
 	message.SetBody("text/html", body)
 
-	dialer := gomail.NewDialer("smtp.gmail.com", 587, "wattflow12@gmail.com", sender.emailSecret)
-
-	if err := dialer.DialAndSend(message); err != nil {
-		return err
-	} else {
-		return nil
-	}
+	println("message")
+	return nil
+	//dialer := gomail.NewDialer("smtp.gmail.com", 587, "wattflow12@gmail.com", sender.emailSecret)
+	//
+	//if err := dialer.DialAndSend(message); err != nil {
+	//	return err
+	//} else {
+	//	return nil
+	//}
 }
 
 func (sender *EmailSender) SendEmailWithQRCode(receiver, subject, body string, qrCodeBytes []byte) error {
@@ -55,11 +57,12 @@ func (sender *EmailSender) SendEmailWithQRCode(receiver, subject, body string, q
 
 	message.SetBody("text/html", body)
 
-	dialer := gomail.NewDialer("smtp.gmail.com", 587, "wattflow12@gmail.com", sender.emailSecret)
-
-	if err := dialer.DialAndSend(message); err != nil {
-		return err
-	}
+	//dialer := gomail.NewDialer("smtp.gmail.com", 587, "wattflow12@gmail.com", sender.emailSecret)
+	//
+	//if err := dialer.DialAndSend(message); err != nil {
+	//	return err
+	//}
+	println("message")
 	return nil
 }
 
@@ -104,11 +107,12 @@ func (sender *EmailSender) SendPaymentConfirmation(userEmail, userName string, b
 		"Content-ID": {fmt.Sprintf("<%s>", "pdf")},
 	}))
 
-	dialer := gomail.NewDialer("smtp.gmail.com", 587, "wattflow12@gmail.com", sender.emailSecret)
-
-	if err := dialer.DialAndSend(m); err != nil {
-		return err
-	}
+	//dialer := gomail.NewDialer("smtp.gmail.com", 587, "wattflow12@gmail.com", sender.emailSecret)
+	//
+	//if err := dialer.DialAndSend(m); err != nil {
+	//	return err
+	//}
+	println("poslao mejl")
 	return nil
 
 }
