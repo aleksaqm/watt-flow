@@ -40,42 +40,22 @@ func NewDatabase(env *config.Environment, logger util.Logger) Database {
 }
 
 func (db Database) TruncateAllTables() error {
-	return db.Transaction(func(tx *gorm.DB) error {
-		// Disable foreign key checks during truncation
-		if err := tx.Exec("SET CONSTRAINTS ALL DEFERRED").Error; err != nil {
-			return err
-		}
-
-		// List of all tables in order considering foreign key dependencies
-		// Delete child tables first (those with foreign keys) before parent tables
-		tables := []interface{}{
-			&model.Bill{},             // References Pricelist and User
-			&model.OwnershipRequest{}, // References User and Household
-			&model.Meeting{},          // References User (ClerkID and UserID)
-			&model.TimeSlot{},         // References User (ClerkID)
-			&model.HouseholdAccess{},  // References User and Household
-			&model.Household{},        // References User, DeviceStatus, and Property
-			&model.Property{},         // References User (OwnerID) and Address
-			&model.MonthlyBill{},      // No foreign keys
-			&model.DeviceStatus{},     // No foreign keys
-			&model.Pricelist{},        // No foreign keys
-			&model.User{},             // Referenced by many tables
-			&model.Address{},          // Embedded in Property
-			&model.City{},             // No foreign keys
-		}
-
-		// Truncate each table
-		for _, table := range tables {
-			if err := tx.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(table).Error; err != nil {
-				return err
-			}
-		}
-
-		// Re-enable foreign key checks
-		if err := tx.Exec("SET CONSTRAINTS ALL IMMEDIATE").Error; err != nil {
-			return err
-		}
-
-		return nil
-	})
+	truncateQuery := `
+        TRUNCATE TABLE
+            public.household_accesses,
+            public.bills,
+            public.ownership_requests,
+            public.meetings,
+            public.time_slots,
+            public.device_status,
+            public.households,
+            public.properties,
+            public.users,
+            public.pricelists,
+            public.monthly_bills,
+            public.cities,
+            public.addresses
+        RESTART IDENTITY CASCADE;
+    `
+	return db.Exec(truncateQuery).Error
 }
