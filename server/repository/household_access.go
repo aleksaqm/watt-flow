@@ -24,6 +24,15 @@ func NewHouseholdAccessRepository(db db.Database, logger util.Logger) HouseholdA
 	}
 }
 
+func (r HouseholdAccessRepository) WithTrx(trxHandle *gorm.DB) HouseholdAccessRepository {
+	if trxHandle == nil {
+		r.Logger.Error("Transaction Database not found in gin context. ")
+		return r
+	}
+	r.Database.DB = trxHandle
+	return r
+}
+
 func (r HouseholdAccessRepository) Create(access *model.HouseholdAccess) error {
 	result := r.Database.Create(access)
 	if result.Error != nil {

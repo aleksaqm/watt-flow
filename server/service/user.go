@@ -59,28 +59,13 @@ func (service *UserService) FindById(id uint64) (*dto.UserDto, error) {
 }
 
 func (service *UserService) SuspendClerk(id uint64) error {
-	tx := service.repository.Database.Begin()
-	defer func() {
-		if r := recover(); r != nil {
-			tx.Rollback()
-		}
-	}()
-	userServ := service.WithTrx(tx)
-	meetingServ := service.meetingService.WithTrx(tx)
-
-	err := userServ.Suspend(id)
+	err := service.Suspend(id)
 	if err != nil {
-		tx.Rollback()
 		return err
 	}
-	err = meetingServ.CancelMeetingsForClerk(id)
+	err = service.meetingService.CancelMeetingsForClerk(id)
 	if err != nil {
-		tx.Rollback()
 		return err
-	}
-
-	if err := tx.Commit().Error; err != nil {
-		return fmt.Errorf("transaction commit failed: %w", err)
 	}
 	return nil
 }

@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"io"
 	"strconv"
+	"strings"
 	"time"
+
 	"watt-flow/config"
 	"watt-flow/model"
 
@@ -24,19 +26,24 @@ func NewEmailSender(env *config.Environment) *EmailSender {
 }
 
 func (sender *EmailSender) SendEmail(receiver string, subject string, body string) error {
+	testEmail := strings.Split(receiver, "@")
+	if len(testEmail) < 2 || testEmail[1] == "testemail.com" {
+		return nil // Skip sending email for test emails
+	}
 	message := gomail.NewMessage()
 	message.SetHeader("From", "wattflow12@gmail.com")
 	message.SetHeader("To", receiver)
 	message.SetHeader("Subject", subject)
 	message.SetBody("text/html", body)
 
-	dialer := gomail.NewDialer("smtp.gmail.com", 587, "wattflow12@gmail.com", sender.emailSecret)
+	// dialer := gomail.NewDialer("smtp.gmail.com", 587, "wattflow12@gmail.com", sender.emailSecret)
 
-	if err := dialer.DialAndSend(message); err != nil {
-		return err
-	} else {
-		return nil
-	}
+	// if err := dialer.DialAndSend(message); err != nil {
+	// 	return err
+	// } else {
+	// 	return nil
+	// }
+	return nil
 }
 
 func (sender *EmailSender) SendEmailWithQRCode(receiver, subject, body string, qrCodeBytes []byte) error {
@@ -110,7 +117,6 @@ func (sender *EmailSender) SendPaymentConfirmation(userEmail, userName string, b
 		return err
 	}
 	return nil
-
 }
 
 func GenerateSLipBody(bill model.Bill) (string, error) {
@@ -126,7 +132,7 @@ func GenerateSLipBody(bill model.Bill) (string, error) {
     <tr>
       <td style="padding: 20px 0;">
         <table align="center" border="0" cellpadding="0" cellspacing="0" width="600" style="border-collapse: collapse; background-color: #ffffff; border: 1px solid #cccccc;">
-          
+
           <tr>
             <td align="center" style="padding: 40px 0 30px 0; background-color: #004d99; color: #ffffff;">
               <h1 style="font-size: 24px; margin: 0;">Payment Successful!</h1>
@@ -142,7 +148,7 @@ func GenerateSLipBody(bill model.Bill) (string, error) {
               <p style="margin: 0; font-size: 16px; line-height: 1.5; color: #555555;">
                 Attached to this email you will find a PDF document with payment details and a completed payment slip.
               </p>
-              
+
               <table border="0" cellpadding="0" cellspacing="0" width="100%%" style="margin-top: 30px; border-top: 1px solid #eeeeee;">
                 <tr>
                   <td style="padding: 15px 0; font-size: 16px; color: #555555; width: 50%%;">Payment Amount:</td>
@@ -285,7 +291,7 @@ func GenerateMonthlyBillEmail(bill *model.Bill) (string, []byte, error) {
 		<body style="font-family: Arial, sans-serif; background: #f4f4f4; color: #333; padding: 40px; text-align: center;">
 			<div style="background: white; max-width: 600px; margin: 0 auto; padding: 40px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); text-align: left;">
 				<h2 style="color: #1d1e26; text-align: center;">Electricity Bill - %s</h2>
-				
+
 				<table style="width: 100%%; border-collapse: collapse; margin-top: 20px;">
 					<tr>
 						<th style="text-align: left; padding: 10px; background: #1d1e26; color: white;">Bill Details</th>

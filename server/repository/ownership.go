@@ -27,6 +27,15 @@ func NewOwnershipRepository(db db.Database, logger util.Logger) OwnershipReposit
 	}
 }
 
+func (r OwnershipRepository) WithTrx(trxHandle *gorm.DB) OwnershipRepository {
+	if trxHandle == nil {
+		r.Logger.Error("Transaction Database not found in gin context. ")
+		return r
+	}
+	r.Database.DB = trxHandle
+	return r
+}
+
 func (repository *OwnershipRepository) Create(ownershipRequest *model.OwnershipRequest) (model.OwnershipRequest, error) {
 	result := repository.Database.Create(ownershipRequest)
 	if result.Error != nil {

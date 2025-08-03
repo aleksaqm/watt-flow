@@ -4,6 +4,8 @@ import (
 	"watt-flow/db"
 	"watt-flow/model"
 	"watt-flow/util"
+
+	"gorm.io/gorm"
 )
 
 type DeviceStatusRepository struct {
@@ -20,6 +22,15 @@ func NewDeviceStatusRepository(db db.Database, logger util.Logger) DeviceStatusR
 		database: db,
 		logger:   logger,
 	}
+}
+
+func (r DeviceStatusRepository) WithTrx(trxHandle *gorm.DB) DeviceStatusRepository {
+	if trxHandle == nil {
+		r.logger.Error("Transaction Database not found in gin context. ")
+		return r
+	}
+	r.database.DB = trxHandle
+	return r
 }
 
 func (repository *DeviceStatusRepository) Create(deviceStatus *model.DeviceStatus) (model.DeviceStatus, error) {

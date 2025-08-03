@@ -13,6 +13,7 @@ import (
 	"watt-flow/util"
 
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 type IOwnershipService interface {
@@ -21,6 +22,7 @@ type IOwnershipService interface {
 	AcceptOwnershipRequest(id uint64) error
 	DeclineOwnershipRequest(id uint64, reason string) error
 	GetPendingRequests(params *dto.OwnershipQueryParams) ([]dto.OwnershipResponseDto, int64, error)
+	WithTrx(trxHandle *gorm.DB) IOwnershipService
 }
 
 type OwnershipService struct {
@@ -35,6 +37,12 @@ func NewOwnershipService(householdRepository repository.HouseholdRepository, own
 		ownershipRepository: ownershipRepository,
 		emailSender:         emailSender,
 	}
+}
+
+func (s OwnershipService) WithTrx(trxHandle *gorm.DB) IOwnershipService {
+	s.householdRepository = s.householdRepository.WithTrx(trxHandle)
+	s.ownershipRepository = s.ownershipRepository.WithTrx(trxHandle)
+	return &s
 }
 
 func (service *OwnershipService) CreateOwnershipRequest(ownershipRequestDto dto.OwnershipRequestDto) (*dto.OwnershipRequestDto, error) {
@@ -119,45 +127,35 @@ func (service *OwnershipService) GetPendingRequests(params *dto.OwnershipQueryPa
 }
 
 func (service *OwnershipService) AcceptOwnershipRequest(id uint64) error {
-	tx := service.ownershipRepository.Database.Begin()
-	if tx.Error != nil {
-		service.ownershipRepository.Logger.Error("Error starting transaction", tx.Error)
-		return tx.Error
-	}
 	request, err := service.ownershipRepository.FindById(id)
 	if err != nil {
-		tx.Rollback()
-		service.ownershipRepository.Logger.Error("Error finding request", tx.Error)
+		service.ownershipRepository.Logger.Error("Error finding request", err)
 		return err
 	}
 
 	if request.Status != 0 {
-		service.ownershipRepository.Logger.Error("Error request isn't pending", tx.Error)
-		tx.Rollback()
+		service.ownershipRepository.Logger.Error("Error request isn't pending")
 		return errors.New("request isn't pending")
 	}
 
-	err = service.ownershipRepository.AcceptRequest(tx, id)
+	err = service.ownershipRepository.AcceptRequest(service.ownershipRepository.Database.DB, id)
 	if err != nil {
-		tx.Rollback()
-		service.ownershipRepository.Logger.Error("Error accepting request", tx.Error)
+		service.ownershipRepository.Logger.Error("Error accepting request", err)
 		return err
 	}
 
-	emailForDenial, err := service.ownershipRepository.DeclineAllForHousehold(tx, request.HouseholdID)
+	emailForDenial, err := service.ownershipRepository.DeclineAllForHousehold(service.ownershipRepository.Database.DB, request.HouseholdID)
 	if err != nil {
-		tx.Rollback()
-		service.ownershipRepository.Logger.Error("Error accepting request", tx.Error)
+		service.ownershipRepository.Logger.Error("Error accepting request", err)
 		return err
 	}
 
-	err = service.householdRepository.AddOwnerToHousehold(tx, request.HouseholdID, request.OwnerID)
+	err = service.householdRepository.AddOwnerToHousehold(service.householdRepository.Database.DB, request.HouseholdID, request.OwnerID)
 	if err != nil {
-		tx.Rollback()
-		service.householdRepository.Logger.Error("Error adding owner to household", tx.Error)
+		service.householdRepository.Logger.Error("Error adding owner to household", err)
 		return err
 	}
-	tx.Commit()
+	
 	emailBody := util.GenerateOwnershipApprovalEmailBody(request.Household.Property.Address.City+", "+request.Household.Property.Address.Street+" "+request.Household.Property.Address.Number+" suite: "+request.Household.Suite,
 		"http://localhost:5173/")
 
@@ -173,30 +171,22 @@ func (service *OwnershipService) AcceptOwnershipRequest(id uint64) error {
 }
 
 func (service *OwnershipService) DeclineOwnershipRequest(id uint64, reason string) error {
-	tx := service.ownershipRepository.Database.Begin()
-	if tx.Error != nil {
-		service.ownershipRepository.Logger.Error("Error starting transaction", tx.Error)
-		return tx.Error
-	}
 	request, err := service.ownershipRepository.FindById(id)
 	if err != nil {
-		tx.Rollback()
-		service.ownershipRepository.Logger.Error("Error finding request", tx.Error)
+		service.ownershipRepository.Logger.Error("Error finding request", err)
 		return err
 	}
 	if request.Status != 0 {
-		service.ownershipRepository.Logger.Error("Error request isn't pending", tx.Error)
-		tx.Rollback()
+		service.ownershipRepository.Logger.Error("Error request isn't pending")
 		return errors.New("request isn't pending")
 	}
 
-	err = service.ownershipRepository.DeclineRequest(tx, id, reason)
+	err = service.ownershipRepository.DeclineRequest(service.ownershipRepository.Database.DB, id, reason)
 	if err != nil {
-		tx.Rollback()
-		service.ownershipRepository.Logger.Error("Error accepting request", tx.Error)
+		service.ownershipRepository.Logger.Error("Error accepting request", err)
 		return err
 	}
-	tx.Commit()
+	
 	emailBody := util.GenerateOwnershipDenialEmailBody(request.Household.Property.Address.City+", "+request.Household.Property.Address.Street+" "+request.Household.Property.Address.Number+" suite: "+request.Household.Suite, reason,
 		"http://localhost:5173/")
 	err = service.emailSender.SendEmail(request.Owner.Email, "Ownership declined", emailBody)
