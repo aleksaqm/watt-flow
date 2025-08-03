@@ -8,6 +8,7 @@ import (
 	"watt-flow/util"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 type UserHandler struct {
@@ -91,7 +92,8 @@ func (u *UserHandler) SuspendClerk(c *gin.Context) {
 		c.JSON(400, gin.H{"error": err.Error()})
 		return
 	}
-	err = u.service.SuspendClerk(userId)
+	trxHandle := c.MustGet("db_trx").(*gorm.DB)
+	err = u.service.WithTrx(trxHandle).SuspendClerk(userId)
 	if err != nil {
 		c.JSON(400, gin.H{"error": err.Error()})
 		return

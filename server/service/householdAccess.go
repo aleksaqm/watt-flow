@@ -12,6 +12,7 @@ type IHouseholdAccessService interface {
 	GrantAccess(householdID uint64, userIDToGrant uint64, currentUserID uint64) error
 	RevokeAccess(householdID uint64, userIDToRevoke uint64, currentUserID uint64) error
 	GetUsersWithAccess(householdID uint64, currentUserID uint64) ([]dto.UserDto, error)
+	WithTrx(trxHandle *gorm.DB) IHouseholdAccessService
 }
 
 type HouseholdAccessService struct {
@@ -26,6 +27,13 @@ func NewHouseholdAccessService(accessRepo repository.HouseholdAccessRepository, 
 		householdRepository:       householdRepo,
 		userRepository:            userRepo,
 	}
+}
+
+func (s HouseholdAccessService) WithTrx(trxHandle *gorm.DB) IHouseholdAccessService {
+	s.householdAccessRepository = s.householdAccessRepository.WithTrx(trxHandle)
+	s.householdRepository = s.householdRepository.WithTrx(trxHandle)
+	s.userRepository = s.userRepository.WithTrx(trxHandle)
+	return &s
 }
 
 func (s *HouseholdAccessService) GrantAccess(householdID uint64, userIDToGrant uint64, currentUserID uint64) error {

@@ -3,6 +3,7 @@ package db
 import (
 	"fmt"
 	"log"
+	"time"
 
 	"watt-flow/config"
 	"watt-flow/model"
@@ -29,6 +30,14 @@ func NewDatabase(env *config.Environment, logger util.Logger) Database {
 	if err != nil {
 		fmt.Println(err)
 	}
+	sqlDB, err := db.DB()
+	if err != nil {
+		log.Fatal("Failed to get database instance:", err)
+	}
+	sqlDB.SetMaxOpenConns(90)
+	sqlDB.SetMaxIdleConns(20)
+	sqlDB.SetConnMaxLifetime(1 * time.Minute)
+	sqlDB.SetConnMaxIdleTime(30 * time.Second)
 
 	err = db.AutoMigrate(&model.User{})
 	if err != nil {

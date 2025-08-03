@@ -9,6 +9,7 @@ import (
 	"watt-flow/util"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 type OwnershipHandler struct {
@@ -128,7 +129,8 @@ func (h OwnershipHandler) AcceptOwnershipRequest(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid property ID"})
 		return
 	}
-	err = h.service.AcceptOwnershipRequest(id)
+	trxHandle := c.MustGet("db_trx").(*gorm.DB)
+	err = h.service.WithTrx(trxHandle).AcceptOwnershipRequest(id)
 	if err != nil {
 		c.JSON(400, gin.H{"error": "Failed to accept ownership request"})
 		return
@@ -150,7 +152,8 @@ func (h OwnershipHandler) DeclineOwnershipRequest(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
-	err = h.service.DeclineOwnershipRequest(id, requestBody.Message)
+	trxHandle := c.MustGet("db_trx").(*gorm.DB)
+	err = h.service.WithTrx(trxHandle).DeclineOwnershipRequest(id, requestBody.Message)
 	if err != nil {
 		c.JSON(400, gin.H{"error": "Failed to decline ownership request"})
 		return

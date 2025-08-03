@@ -17,6 +17,5 @@ func RegisterMiddlewares(
 ) {
 
 	// registering middlewares
-	NewDatabaseTrx(engine, server.Logger, server.Db).Register()
 	NewCorsMiddleware(engine, server.Logger).Register()
 }

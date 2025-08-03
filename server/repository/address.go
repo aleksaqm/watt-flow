@@ -4,6 +4,8 @@ import (
 	"watt-flow/db"
 	"watt-flow/model"
 	"watt-flow/util"
+
+	"gorm.io/gorm"
 )
 
 type AddressRepository struct {
@@ -20,6 +22,15 @@ func NewAddressRepository(db db.Database, logger util.Logger) AddressRepository 
 		database: db,
 		logger:   logger,
 	}
+}
+
+func (r AddressRepository) WithTrx(trxHandle *gorm.DB) AddressRepository {
+	if trxHandle == nil {
+		r.logger.Error("Transaction Database not found in gin context. ")
+		return r
+	}
+	r.database.DB = trxHandle
+	return r
 }
 
 func (repository *AddressRepository) Create(address *model.Address) (*model.Address, error) {

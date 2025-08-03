@@ -9,6 +9,8 @@ import (
 	"watt-flow/model"
 	"watt-flow/repository"
 	"watt-flow/util"
+
+	"gorm.io/gorm"
 )
 
 type IElectricityConsumptionService interface {
@@ -16,6 +18,7 @@ type IElectricityConsumptionService interface {
 	Get12MonthsConsumption(householdId string, endYear int, endMonth int) (*dto.ElectricityConsumptionResponse, error)
 	GetDailyConsumption(householdId string, year int, month int) (*dto.DailyConsumptionResponse, error)
 	QueryConsumption(queryParams dto.FluxQueryConsumptionDto) (*dto.ConsumptionQueryResult, error)
+	WithTrx(trxHandle *gorm.DB) IElectricityConsumptionService
 }
 
 type ElectricityConsumptionService struct {
@@ -29,6 +32,11 @@ func NewElectricityConsumptionService(env *config.Environment, householdReposito
 		influxHelper:        influxHelper,
 		householdRepository: householdRepository,
 	}
+}
+
+func (s ElectricityConsumptionService) WithTrx(trxHandle *gorm.DB) IElectricityConsumptionService {
+	s.householdRepository = s.householdRepository.WithTrx(trxHandle)
+	return &s
 }
 
 func (s *ElectricityConsumptionService) GetMonthlyConsumption(householdId string, year int, month int) (*dto.MonthlyConsumptionResult, error) {

@@ -5,6 +5,8 @@ import (
 	"watt-flow/model"
 	"watt-flow/repository"
 	"watt-flow/util"
+
+	"gorm.io/gorm"
 )
 
 type IDeviceStatusService interface {
@@ -16,6 +18,7 @@ type IDeviceStatusService interface {
 	QueryStatus(queryParams dto.FluxQueryStatusDto) (*dto.StatusQueryResult, error)
 	QueryConsumption(queryParams dto.FluxQueryConsumptionDto) (*dto.ConsumptionQueryResult, error)
 	QueryCityConsumption(queryParams dto.FluxQueryCityConsumptionDto) (*dto.StatusQueryResult, error)
+	WithTrx(trxHandle *gorm.DB) IDeviceStatusService
 }
 
 type DeviceStatusService struct {
@@ -28,6 +31,11 @@ func NewDeviceStatusService(repository repository.DeviceStatusRepository, influx
 		repository:        repository,
 		influxQueryHelper: influx,
 	}
+}
+
+func (s DeviceStatusService) WithTrx(trxHandle *gorm.DB) IDeviceStatusService {
+	s.repository = s.repository.WithTrx(trxHandle)
+	return &s
 }
 
 func (service *DeviceStatusService) QueryStatus(queryParams dto.FluxQueryStatusDto) (*dto.StatusQueryResult, error) {
