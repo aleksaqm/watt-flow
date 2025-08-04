@@ -7,6 +7,103 @@ import json
 
 logging.basicConfig(level=logging.INFO)
 
+class PropertySearchUser(HttpUser):
+    wait_time = between(1, 3)
+    token = None
+    user_id = None
+    
+    user_credentials = {"username": "vladimir", "password": "password"}
+
+    def on_start(self):
+        try:
+            response = self.client.post("/api/login", json={
+                "username": "vladimir",
+                "password": "password"
+            })
+            response.raise_for_status()
+            self.token = response.json().get("token")
+            logging.info(f"User logged in successfully. Token acquired.")
+        except Exception as e:
+            self.token = None
+            logging.error(f"Login failed: {e}")
+            self.environment.runner.quit() 
+
+    def get_auth_headers(self):
+        return {"Authorization": f"Bearer {self.token}"} if self.token else {}
+
+    @task(10)
+    def list_my_properties(self):
+        if not self.token: return
+
+        search_params = {
+            "ownerId": self.user_id
+        }
+        
+        params = {
+            "page": 1,
+            "pageSize": 5,
+            "sortBy": "created_at",
+            "sortOrder": "desc",
+            "search": json.dumps(search_params)
+        }
+        
+        self.client.get(
+            "/api/property/query",
+            params=params,
+            headers=self.get_auth_headers(),
+            name="/api/property/query"
+        )
+
+    @task(5)
+    def filter_by_city(self):
+        if not self.token: return
+        
+        search_params = {
+            "ownerId": self.user_id,
+            "city": random.choice(["Novi Sad", "Beograd", "Užice"])
+        }
+        
+        params = {
+            "page": 1,
+            "pageSize": 5,
+            "sortBy": "street",
+            "sortOrder": "asc",
+            "search": json.dumps(search_params)
+        }
+        
+        self.client.get(
+            "/api/property/query",
+            params=params,
+            headers=self.get_auth_headers(),
+            name="/api/property/query"
+        )
+        
+    @task(2)
+    def complex_search(self):
+        if not self.token: return
+
+        search_params = {
+            "ownerId": self.user_id,
+            "city": "Novi Sad",
+            "street": random.choice(["Bulevar", "Gogoljeva", "Test"]),
+            "withoutOwner": False
+        }
+        
+        params = {
+            "page": 1,
+            "pageSize": 10,
+            "sortBy": "number",
+            "sortOrder": "asc",
+            "search": json.dumps(search_params)
+        }
+        
+        self.client.get(
+            "/api/property/query",
+            params=params,
+            headers=self.get_auth_headers(),
+            name="/api/property/query"
+        )
+
 class PropertyRegistrationUser(HttpUser):
     wait_time = between(2, 5)
     token = None
@@ -596,6 +693,69 @@ class ConsumptionQueryUser(HttpUser):
         self._send_consumption_query("1y", city, "/api/consumption?period=1y")
 
 
+
+class BillDetailsViewer(HttpUser):
+    wait_time = between(1, 2)
+    token = None
+    
+    user_credentials = {"username": "vladimir", "password": "password"}
+    my_bill_ids = []
+    
+    def on_start(self):
+        try:
+            with self.client.post("/api/login", json=self.user_credentials, name="/api/login") as response:
+                response.raise_for_status()
+                self.token = response.json().get("token")
+                if not self.token: raise Exception("Token not found")
+            
+            search_params = {}
+            params = {
+                "page": 1,
+                "pageSize": 500,
+                "search": json.dumps(search_params)
+            }
+            with self.client.get(
+                "/api/bills/search",
+                params=params,
+                headers=self.get_auth_headers(),
+                name="/api/bills/search"
+            ) as response:
+                response.raise_for_status()
+                response_data = response.json()
+                
+                bills = response_data.get("bills")
+                if isinstance(bills, list):
+                    self.my_bill_ids = [bill['payment_reference'] for bill in bills]
+                
+                if not self.my_bill_ids:
+                    logging.warning("Logged-in user has no bills to view. Test may not run tasks.")
+                else:
+                    logging.info(f"Fetched {len(self.my_bill_ids)} bill IDs for user to test with.")
+
+        except Exception as e:
+            logging.error(f"Setup failed for BillDetailsViewer: {e}")
+            self.environment.runner.quit()
+
+    def get_auth_headers(self):
+        return {"Authorization": f"Bearer {self.token}"} if self.token else {}
+
+    @task
+    def get_bill_details(self):
+        if not self.token or not self.my_bill_ids:
+            return
+
+        bill_id = random.choice(self.my_bill_ids)
+        
+        params = {
+            "id": bill_id
+        }
+        
+        self.client.get(
+            "/api/bills",
+            params=params,
+            headers=self.get_auth_headers(),
+            name="/api/bills?id=[billId]"
+        )
 
 class BillSearchUser(HttpUser):
     wait_time = between(1, 3)
