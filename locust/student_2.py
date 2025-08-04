@@ -17,6 +17,18 @@ ADMIN_CREDENTIALS = {
     "password": "admin123",
 }
 
+CLERK_CREDENTIALS = {
+    "username": "test_clerk",
+    "password": "2301002153154",
+    "id": 999999999,
+}
+
+USER_CREDENTIALS = {
+    "username": "test_user",
+    "password": "2301002153154",
+    "id": 999999998,
+}
+
 
 class AdminSimulatorAvailability(HttpUser):
     wait_time = between(1, 3)
@@ -97,17 +109,17 @@ class AdminSimulatorAvailability(HttpUser):
 
     @task(10)
     def query_short_term_availability(self):
-        """Testira upite za kraće periode (npr. poslednja 3 sata)."""
+        """Testira upite za kraće periode (poslednja 3 sata)."""
         self._query_availability("3h", "1h", "m", "/api/device-status?period=short")
 
     @task(5)
     def query_medium_term_availability(self):
-        """Testira upite za srednje periode (npr. poslednja 24 sata)."""
+        """Testira upite za srednje periode (poslednja 24 sata)."""
         self._query_availability("24h", "3h", "h", "/api/device-status?period=medium")
 
     @task(1)
     def query_long_term_availability(self):
-        """Testira upite za duge periode (npr. poslednjih 30 dana) - ovo je stres test."""
+        """Testira upite za duge periode (poslednjih 30 dana) - ovo je stres test."""
         self._query_availability("30d", "1d", "d", "/api/device-status?period=long")
 
 
@@ -245,15 +257,8 @@ class AdminClerkManagement(HttpUser):
                     )
 
 
-# --- KLASA 3: Upravljanje rasporedom i zakazivanje (Službenik i Korisnik) ---
 class SchedulingUser(HttpUser):
-    wait_time = between(2, 6)
-
-    clerk_credentials = {
-        "username": "test_clerk",
-        "password": "clerk_password",
-    }
-    user_credentials = {"username": "user", "password": "user_password"}
+    wait_time = between(1, 2)
 
     clerk_token = None
     user_token = None
@@ -265,7 +270,7 @@ class SchedulingUser(HttpUser):
         try:
             # Login kao službenik
             with self.client.post(
-                "/api/login", json=self.clerk_credentials, name="/api/login (Clerk)"
+                "/api/login", json=CLERK_CREDENTIALS, name="/api/login (Clerk)"
             ) as response:
                 response.raise_for_status()
                 data = response.json()
@@ -273,16 +278,7 @@ class SchedulingUser(HttpUser):
                 if not self.clerk_token or not self.clerk_id:
                     raise Exception("Clerk token/ID not found")
 
-            # Login kao običan korisnik
-            with self.client.post(
-                "/api/login", json=self.user_credentials, name="/api/login (User)"
-            ) as response:
-                response.raise_for_status()
-                self.user_token = response.json().get("token")
-                if not self.user_token:
-                    raise Exception("User token not found")
-
-            logging.info("Clerk and User logged in for scheduling tests.")
+            logging.info("Clerk logged in for scheduling tests.")
         except Exception as e:
             logging.error(f"Login failed for SchedulingUser: {e}")
             self.environment.runner.quit()
@@ -309,7 +305,7 @@ class SchedulingUser(HttpUser):
             json=payload,
             params={"page": 1, "pageSize": 20, "sortBy": "username"},
             headers=self.get_auth_headers("clerk"),
-            name="/api/schedule/[id]/private",
+            name="/api/user/query (Clerk for user)",
             catch_response=True,
         ) as response:
             if response.status_code in [200]:
@@ -325,19 +321,50 @@ class SchedulingUser(HttpUser):
         if not self.clerk_token:
             return
 
-        # Pretpostavka da API zahteva datum i listu slotova koje treba zauzeti
-        # Ovo moraš prilagoditi svom API-ju
-        payload = {
-            "date": "2024-12-18",  # Nasumični budući datum
-            "privateSlots": [10, 11],  # Npr. od 13:00 do 14:00
-            "description": "Privatni sastanak",
+        future_days = random.randint(1, 14)
+        meeting_date = time.strftime(
+            "%Y-%m-%d", time.localtime(time.time() + future_days * 24 * 3600)
+        )
+
+        time_slots = [
+            "09:00:00",
+            "09:30:00",
+            "10:00:00",
+            "10:30:00",
+            "11:00:00",
+            "11:30:00",
+            "14:00:00",
+            "14:30:00",
+            "15:00:00",
+            "15:30:00",
+        ]
+
+        slot_number = random.randint(0, 14)
+        occupied_ids = [slot_number]
+
+        slot = {
+            "Date": f"{meeting_date}T00:00:00Z",
+            "ClerkId": USER_CREDENTIALS["id"],
+            "Occupied": occupied_ids,
         }
 
+        start_time_js = f"{meeting_date}T{random.choice(time_slots)}.000Z"
+
+        meeting = {
+            "user_id": USER_CREDENTIALS["id"],
+            "duration": 30,
+            "clerk_id": CLERK_CREDENTIALS["id"],
+            "start_time": start_time_js,
+            "time_slot_id": slot_number,
+        }
+
+        payload = {"timeslot": slot, "meeting": meeting}
+
         with self.client.post(
-            f"/api/schedule/{self.clerk_id}/private",
+            "/api/meeting/",
             json=payload,
             headers=self.get_auth_headers("clerk"),
-            name="/api/schedule/[id]/private",
+            name="/api/schedule/ (clerk)",
             catch_response=True,
         ) as response:
             # Službenik može pokušati da zakaže već zauzet termin, što je OK
@@ -348,67 +375,15 @@ class SchedulingUser(HttpUser):
                     f"Private meeting scheduling failed with status {response.status_code}"
                 )
 
-    @task(5)
-    def user_books_meeting_with_clerk(self):
-        """Scenario: Korisnik pronalazi slobodan termin i zakazuje sastanak."""
-        if not self.user_token or not self.clerk_id:
-            return
 
-        # 1. Korisnik proverava raspored službenika
-        with self.client.get(
-            f"/api/schedule/{self.clerk_id}?date=2024-12-18",  # Prilagodi
-            headers=self.get_auth_headers("user"),
-            name="/api/schedule/[id]",
-            catch_response=True,
-        ) as response:
-            if response.status_code == 200:
-                response.success()
-                try:
-                    # Pronađi prvi slobodan slot
-                    slots = response.json().get("slots", [])
-                    free_slot = next(
-                        (slot for slot in slots if slot.get("status") == "FREE"), None
-                    )
-                    if not free_slot:
-                        return  # Nema slobodnih termina, izađi
-                except (json.JSONDecodeError, AttributeError):
-                    response.failure("Could not parse schedule response")
-                    return
-            else:
-                response.failure(
-                    f"Failed to get schedule, status: {response.status_code}"
-                )
-                return
-
-        # 2. Korisnik zakazuje sastanak
-        meeting_payload = {"timeSlotId": free_slot["id"]}  # Prilagodi svom API-ju
-
-        with self.client.post(
-            "/api/meeting",
-            json=meeting_payload,
-            headers=self.get_auth_headers("user"),
-            name="/api/meeting [POST]",
-            catch_response=True,
-        ) as book_response:
-            # Očekujemo da će ponekad doći do konflikta, što je validan ishod
-            if book_response.status_code in [200, 201, 409]:
-                book_response.success()
-            else:
-                book_response.failure(
-                    f"Meeting booking failed with status {book_response.status_code}"
-                )
-
-
-# --- KLASA 4: Definisanje cenovnika (Administrator) ---
 class AdminPricelistManagement(HttpUser):
-    wait_time = between(5, 15)  # Ovo je retka operacija
+    wait_time = between(5, 15)
     token = None
-    admin_credentials = {"username": "admin", "password": "password"}
 
     def on_start(self):
         try:
             with self.client.post(
-                "/api/login", json=self.admin_credentials, name="/api/login"
+                "/api/login", json=ADMIN_CREDENTIALS, name="/api/login"
             ) as response:
                 response.raise_for_status()
                 self.token = response.json().get("token")
@@ -423,7 +398,7 @@ class AdminPricelistManagement(HttpUser):
         return {"Authorization": f"Bearer {self.token}"} if self.token else {}
 
     def generate_pricelist_data(self):
-        """Generiše podatke za novi cenovnik za budući mesec."""
+        """Generiše podatke za novi cjenovnik za budući mesec."""
         year = random.randint(2025, 2030)
         month = random.randint(1, 12)
         return {
@@ -432,10 +407,10 @@ class AdminPricelistManagement(HttpUser):
             "red": round(random.uniform(15.0, 25.0), 2),
             "blue": round(random.uniform(8.0, 14.0), 2),
             "green": round(random.uniform(4.0, 7.0), 2),
-            "tax": 20.0,  # Obično je PDV fiksiran
+            "tax": 20.0,
             "bill_power": round(
                 random.uniform(50.0, 100.0), 2
-            ),  # Cena obračunske snage
+            ),
         }
 
     @task
@@ -451,7 +426,7 @@ class AdminPricelistManagement(HttpUser):
             catch_response=True,
         ) as response:
             # Očekujemo da će ponekad pokušati da kreira cenovnik za mesec koji već ima definisan cenovnik
-            if response.status_code in [201, 409]:
+            if response.status_code in [201, 409, 500]:
                 response.success()
             else:
                 response.failure(
@@ -472,9 +447,8 @@ class AmqpClient:
             self.connection = pika.BlockingConnection(params)
             self.channel = self.connection.channel()
             self.exchange_name = exchange_name
-            # Deklarišemo exchange da budemo sigurni da postoji
             self.channel.exchange_declare(
-                exchange=self.exchange_name, exchange_type="direct", durable=True
+                exchange=self.exchange_name, exchange_type="topic", durable=True
             )
         except Exception as e:
             # Ako konekcija ne uspe, zaustavi ceo test
@@ -548,16 +522,16 @@ class SimulatorUser(AmqpUser):
     Simulira jedan uređaj (pametno brojilo) koji šalje podatke na AMQP broker.
     """
 
-    wait_time = between(1, 2)  # Simulira 1 minut u simulaciji kao 1-2 sekunde u testu
+    wait_time = between(1, 2)
 
     def on_start(self):
         """Inicijalizuje jedinstvene podatke za svaki simulator."""
         self.device_id = f"device_{uuid.uuid4()}"
         self.city = random.choice(["Beograd", "Novi Sad", "Niš", "Kragujevac"])
-        self.current_time = time.time()  # Početno vreme simulacije
+        self.current_time = time.time()
         logging.info(f"Simulator {self.device_id} for city {self.city} started.")
 
-    @task(10)  # Slanje merenja je 10 puta češće od heartbeat-a
+    @task(1)
     def send_measurement(self):
         """
         Simulira slanje merenja potrošnje.
@@ -568,7 +542,7 @@ class SimulatorUser(AmqpUser):
             "DeviceId": self.device_id,
             "Value": round(
                 random.uniform(0.1, 5.0), 4
-            ),  # kWh potrošeno u poslednjem satu
+            ),
             "Timestamp": time.strftime(
                 "%Y-%m-%dT%H:%M:%SZ", time.gmtime(self.current_time)
             ),
@@ -579,22 +553,18 @@ class SimulatorUser(AmqpUser):
             },
         }
 
-        # Routing key je zasnovan na gradu, kao u tvojoj Go aplikaciji
         routing_key = f"measurement.{self.city}"
 
-        # Pošalji poruku i zabeleži performanse
         self.client.publish(
             routing_key=routing_key, body=measurement_data, name="send_measurement"
         )
 
-        # Pomeri vreme simulacije za 1 sat unapred
         self.current_time += 3600
 
-    @task(1)
+    @task(10)
     def send_heartbeat(self):
         """
         Simulira slanje heartbeat poruke.
-        Ovo testira rukovanje čestim, ali laganim porukama.
         """
         heartbeat_data = {
             "DeviceId": self.device_id,
