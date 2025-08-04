@@ -23,7 +23,7 @@ func main() {
 	engine := gin.New()
 
 	engine.Use(gin.Recovery())
-	// engine.Use(gin.Logger())
+	engine.Use(gin.Logger())
 
 	middleware.RegisterMiddlewares(engine, dependencies)
 	route.RegisterRoutes(engine, dependencies)
