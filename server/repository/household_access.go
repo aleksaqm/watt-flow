@@ -58,8 +58,6 @@ func (r HouseholdAccessRepository) FindByHouseholdID(householdID uint64) ([]mode
 	if result.Error != nil {
 		return nil, result.Error
 	}
-	r.Logger.Info("Existing user with access: ", access[0].User.Id, access[0].User.Username)
-	r.Logger.Info("Existing household access: ", &access)
 	return access, nil
 }
 

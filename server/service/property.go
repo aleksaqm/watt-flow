@@ -139,7 +139,7 @@ func (service *PropertyService) TableQuery(params *dto.PropertyQueryParams) ([]m
 }
 
 func (service *PropertyService) AcceptProperty(id uint64) error {
-	property, err := service.FindById(id)
+	_, err := service.FindById(id)
 	if err != nil {
 		service.propertyRepository.Logger.Error("Error finding property ", err)
 		return err
@@ -159,10 +159,10 @@ func (service *PropertyService) AcceptProperty(id uint64) error {
 
 	service.propertyRepository.Logger.Info(fmt.Sprintf("Property and its households updated to status for property ID %d", id))
 
-	emailBody := util.GeneratePropertyApprovalEmailBody(property.Address.City+", "+property.Address.Street+" "+property.Address.Number,
-		"http://localhost:5173/")
-
-	err = service.emailSender.SendEmail(property.Owner.Email, "Property approved", emailBody)
+	//emailBody := util.GeneratePropertyApprovalEmailBody(property.Address.City+", "+property.Address.Street+" "+property.Address.Number,
+	//	"http://localhost:5173/")
+	//
+	//err = service.emailSender.SendEmail(property.Owner.Email, "Property approved", emailBody)
 	return err
 }
 
