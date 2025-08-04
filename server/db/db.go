@@ -38,9 +38,9 @@ func NewDatabase(env *config.Environment, logger util.Logger) Database {
 		log.Fatal("Failed to get database instance:", err)
 	}
 	sqlDB.SetMaxOpenConns(90)
-	sqlDB.SetMaxIdleConns(20)
-	sqlDB.SetConnMaxLifetime(1 * time.Minute)
-	sqlDB.SetConnMaxIdleTime(30 * time.Second)
+	sqlDB.SetMaxIdleConns(45)
+	sqlDB.SetConnMaxLifetime(5 * time.Minute)
+	sqlDB.SetConnMaxIdleTime(2 * time.Minute)
 
 	err = db.AutoMigrate(&model.User{})
 	if err != nil {
