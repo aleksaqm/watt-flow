@@ -31,7 +31,7 @@ USER_CREDENTIALS = {
 
 
 class AdminSimulatorAvailability(HttpUser):
-    wait_time = between(1, 3)
+    wait_time = between(1, 5)
     token = None
     admin_credentials = ADMIN_CREDENTIALS
 
@@ -124,7 +124,7 @@ class AdminSimulatorAvailability(HttpUser):
 
 
 class AdminClerkManagement(HttpUser):
-    wait_time = between(2, 5)
+    wait_time = between(1, 5)
     token = None
     admin_credentials = {"username": "admin", "password": "admin123"}
     created_clerk_ids = []
@@ -142,7 +142,6 @@ class AdminClerkManagement(HttpUser):
                 logging.info("Admin logged in for clerk management.")
         except Exception as e:
             logging.error(f"Login failed for AdminClerkManagement: {e}")
-            self.environment.runner.quit()
 
     def get_auth_headers(self):
         return {"Authorization": f"Bearer {self.token}"} if self.token else {}
@@ -258,7 +257,7 @@ class AdminClerkManagement(HttpUser):
 
 
 class SchedulingUser(HttpUser):
-    wait_time = between(1, 2)
+    wait_time = between(1, 5)
 
     clerk_token = None
     user_token = None
@@ -281,7 +280,6 @@ class SchedulingUser(HttpUser):
             logging.info("Clerk logged in for scheduling tests.")
         except Exception as e:
             logging.error(f"Login failed for SchedulingUser: {e}")
-            self.environment.runner.quit()
 
     def get_auth_headers(self, user_type="clerk"):
         token = self.clerk_token if user_type == "clerk" else self.user_token
@@ -377,7 +375,7 @@ class SchedulingUser(HttpUser):
 
 
 class AdminPricelistManagement(HttpUser):
-    wait_time = between(5, 15)
+    wait_time = between(1, 5)
     token = None
 
     def on_start(self):
@@ -392,7 +390,6 @@ class AdminPricelistManagement(HttpUser):
                 logging.info("Admin logged in for pricelist management.")
         except Exception as e:
             logging.error(f"Login failed for AdminPricelistManagement: {e}")
-            self.environment.runner.quit()
 
     def get_auth_headers(self):
         return {"Authorization": f"Bearer {self.token}"} if self.token else {}
