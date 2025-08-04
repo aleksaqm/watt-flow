@@ -22,20 +22,22 @@ type IDeviceStatusService interface {
 }
 
 type DeviceStatusService struct {
-	repository        repository.DeviceStatusRepository
+	repository        *repository.DeviceStatusRepository
 	influxQueryHelper *util.InfluxQueryHelper
 }
 
-func NewDeviceStatusService(repository repository.DeviceStatusRepository, influx *util.InfluxQueryHelper) *DeviceStatusService {
+func NewDeviceStatusService(repository *repository.DeviceStatusRepository, influx *util.InfluxQueryHelper) *DeviceStatusService {
 	return &DeviceStatusService{
 		repository:        repository,
 		influxQueryHelper: influx,
 	}
 }
 
-func (s DeviceStatusService) WithTrx(trxHandle *gorm.DB) IDeviceStatusService {
-	s.repository = s.repository.WithTrx(trxHandle)
-	return &s
+func (s *DeviceStatusService) WithTrx(trxHandle *gorm.DB) IDeviceStatusService {
+	return &DeviceStatusService{
+		repository:        s.repository.WithTrx(trxHandle),
+		influxQueryHelper: s.influxQueryHelper,
+	}
 }
 
 func (service *DeviceStatusService) QueryStatus(queryParams dto.FluxQueryStatusDto) (*dto.StatusQueryResult, error) {

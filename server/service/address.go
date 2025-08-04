@@ -17,18 +17,19 @@ type IAddressService interface {
 }
 
 type AddressService struct {
-	repository repository.AddressRepository
+	repository *repository.AddressRepository
 }
 
-func NewAddressService(repository repository.AddressRepository) *AddressService {
+func NewAddressService(repository *repository.AddressRepository) *AddressService {
 	return &AddressService{
 		repository: repository,
 	}
 }
 
-func (s AddressService) WithTrx(trxHandle *gorm.DB) IAddressService {
-	s.repository = s.repository.WithTrx(trxHandle)
-	return &s
+func (s *AddressService) WithTrx(trxHandle *gorm.DB) IAddressService {
+	return &AddressService{
+		repository: s.repository.WithTrx(trxHandle),
+	}
 }
 
 func (service *AddressService) Create(address *model.Address) (*model.Address, error) {

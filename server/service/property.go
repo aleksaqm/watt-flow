@@ -27,12 +27,12 @@ type IPropertyService interface {
 }
 
 type PropertyService struct {
-	propertyRepository repository.PropertyRepository
+	propertyRepository *repository.PropertyRepository
 	householdService   IHouseholdService
 	emailSender        *util.EmailSender
 }
 
-func NewPropertyService(propertyRepository repository.PropertyRepository, householdService IHouseholdService, emailSender *util.EmailSender) *PropertyService {
+func NewPropertyService(propertyRepository *repository.PropertyRepository, householdService IHouseholdService, emailSender *util.EmailSender) *PropertyService {
 	return &PropertyService{
 		propertyRepository: propertyRepository,
 		householdService:   householdService,
@@ -40,10 +40,12 @@ func NewPropertyService(propertyRepository repository.PropertyRepository, househ
 	}
 }
 
-func (s PropertyService) WithTrx(trxHandle *gorm.DB) IPropertyService {
-	s.propertyRepository = s.propertyRepository.WithTrx(trxHandle)
-	s.householdService = s.householdService.WithTrx(trxHandle)
-	return &s
+func (s *PropertyService) WithTrx(trxHandle *gorm.DB) IPropertyService {
+	return &PropertyService{
+		propertyRepository: s.propertyRepository.WithTrx(trxHandle),
+		householdService:   s.householdService.WithTrx(trxHandle),
+		emailSender:        s.emailSender,
+	}
 }
 
 func (service *PropertyService) FindById(id uint64) (*model.Property, error) {

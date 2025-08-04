@@ -8,11 +8,12 @@ import (
 	"strconv"
 	"time"
 
-	"gorm.io/gorm"
 	"watt-flow/dto"
 	"watt-flow/model"
 	"watt-flow/repository"
 	"watt-flow/util"
+
+	"gorm.io/gorm"
 )
 
 type IBillService interface {
@@ -28,15 +29,15 @@ type IBillService interface {
 }
 
 type BillService struct {
-	billRepository        repository.BillRepository
-	monthlyBillRepository repository.MonthlyBillRepository
+	billRepository        *repository.BillRepository
+	monthlyBillRepository *repository.MonthlyBillRepository
 	householdService      IHouseholdService
 	pricelistService      IPricelistService
 	influxQueryHelper     *util.InfluxQueryHelper
 	emailSender           *util.EmailSender
 }
 
-func NewBillService(billRepository repository.BillRepository, monthlyBillRepository repository.MonthlyBillRepository, householdService IHouseholdService, pricelistService IPricelistService, influxQueryHelper *util.InfluxQueryHelper, emailSender *util.EmailSender) *BillService {
+func NewBillService(billRepository *repository.BillRepository, monthlyBillRepository *repository.MonthlyBillRepository, householdService IHouseholdService, pricelistService IPricelistService, influxQueryHelper *util.InfluxQueryHelper, emailSender *util.EmailSender) *BillService {
 	return &BillService{
 		billRepository:        billRepository,
 		monthlyBillRepository: monthlyBillRepository,
@@ -47,12 +48,15 @@ func NewBillService(billRepository repository.BillRepository, monthlyBillReposit
 	}
 }
 
-func (s BillService) WithTrx(trxHandle *gorm.DB) IBillService {
-	s.billRepository = s.billRepository.WithTrx(trxHandle)
-	s.monthlyBillRepository = s.monthlyBillRepository.WithTrx(trxHandle)
-	s.householdService = s.householdService.WithTrx(trxHandle)
-	s.pricelistService = s.pricelistService.WithTrx(trxHandle)
-	return &s
+func (s *BillService) WithTrx(trxHandle *gorm.DB) IBillService {
+	return &BillService{
+		billRepository:        s.billRepository.WithTrx(trxHandle),
+		monthlyBillRepository: s.monthlyBillRepository.WithTrx(trxHandle),
+		householdService:      s.householdService.WithTrx(trxHandle),
+		pricelistService:      s.pricelistService.WithTrx(trxHandle),
+		influxQueryHelper:     s.influxQueryHelper,
+		emailSender:           s.emailSender,
+	}
 }
 
 func (t *BillService) FindById(id uint64, loggedInUserID uint64) (*model.Bill, error) {

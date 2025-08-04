@@ -22,18 +22,19 @@ type IPricelistService interface {
 }
 
 type PricelistService struct {
-	pricelistRepository repository.PricelistRepository
+	pricelistRepository *repository.PricelistRepository
 }
 
-func NewPricelistService(pricelistRepository repository.PricelistRepository) *PricelistService {
+func NewPricelistService(pricelistRepository *repository.PricelistRepository) *PricelistService {
 	return &PricelistService{
 		pricelistRepository: pricelistRepository,
 	}
 }
 
-func (s PricelistService) WithTrx(trxHandle *gorm.DB) IPricelistService {
-	s.pricelistRepository = s.pricelistRepository.WithTrx(trxHandle)
-	return &s
+func (s *PricelistService) WithTrx(trxHandle *gorm.DB) IPricelistService {
+	return &PricelistService{
+		pricelistRepository: s.pricelistRepository.WithTrx(trxHandle),
+	}
 }
 
 func (t *PricelistService) FindById(id uint64) (*model.Pricelist, error) {
