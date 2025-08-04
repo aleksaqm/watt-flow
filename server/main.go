@@ -20,7 +20,10 @@ func main() {
 	env := config.Init()
 	dependencies := server.InitDeps(env)
 	gin.DefaultWriter = dependencies.Logger.GetGinLogger()
-	engine := gin.Default()
+	engine := gin.New()
+
+	engine.Use(gin.Recovery())
+	// engine.Use(gin.Logger())
 
 	middleware.RegisterMiddlewares(engine, dependencies)
 	route.RegisterRoutes(engine, dependencies)
