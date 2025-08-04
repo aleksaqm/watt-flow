@@ -1,6 +1,9 @@
 package route
 
 import (
+	cache "github.com/chenyahui/gin-cache"
+	"github.com/chenyahui/gin-cache/persist"
+	"time"
 	"watt-flow/middleware"
 	"watt-flow/server"
 
@@ -9,6 +12,7 @@ import (
 
 type DeviceStatusRoute struct {
 	engine *gin.Engine
+	store  persist.CacheStore
 }
 
 func (r DeviceStatusRoute) Register(server *server.Server) {
@@ -19,13 +23,14 @@ func (r DeviceStatusRoute) Register(server *server.Server) {
 	{
 		// api.GET("/device-status/:address", server.DeviceStatusHandler.GetByAddress)
 		// api.GET("/device-status/household/:household_id", server.DeviceStatusHandler.GetByHouseholdID)
-		api.POST("/device-status/query-status", authMid.RoleMiddleware([]string{"Admin", "SuperAdmin"}), server.DeviceStatusHandler.QueryStatus)
-		api.POST("/device-status/query-consumption", authMid.RoleMiddleware([]string{"Admin", "SuperAdmin"}), server.DeviceStatusHandler.QueryConsumption)
+		api.POST("/device-status/query-status", authMid.RoleMiddleware([]string{"Admin", "SuperAdmin"}), cache.CacheByRequestURI(r.store, 2*time.Second), server.DeviceStatusHandler.QueryStatus)
+		api.POST("/device-status/query-consumption", authMid.RoleMiddleware([]string{"Admin", "SuperAdmin"}), cache.CacheByRequestURI(r.store, 2*time.Second), server.DeviceStatusHandler.QueryConsumption)
 	}
 }
 
-func NewDeviceStatusRoute(engine *gin.Engine) *DeviceStatusRoute {
+func NewDeviceStatusRoute(engine *gin.Engine, store persist.CacheStore) *DeviceStatusRoute {
 	return &DeviceStatusRoute{
 		engine: engine,
+		store:  store,
 	}
 }
