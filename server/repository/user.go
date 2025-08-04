@@ -171,3 +171,25 @@ func (repository *UserRepository) ChangeStatus(userId uint64, status int) error 
 	}
 	return nil
 }
+
+func (repository *UserRepository) FindForLogin(usernameOrEmail string) (*model.User, error) {
+	var user model.User
+
+	query := `
+		SELECT id, username, first_name, last_name, password, email, profile_image, status, role 
+		FROM users 
+		WHERE (username = ? OR (email = ? AND status = 0))
+		LIMIT 1`
+
+	result := repository.Database.Raw(query, usernameOrEmail, usernameOrEmail).Scan(&user)
+	if result.Error != nil {
+		repository.Logger.Error("Error finding user for login", result.Error)
+		return nil, result.Error
+	}
+
+	if result.RowsAffected == 0 {
+		return nil, gorm.ErrRecordNotFound
+	}
+
+	return &user, nil
+}
