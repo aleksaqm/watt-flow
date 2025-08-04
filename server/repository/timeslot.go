@@ -31,8 +31,10 @@ func (r *TimeSlotRepository) WithTrx(trxHandle *gorm.DB) *TimeSlotRepository {
 		r.Logger.Error("Transaction Database not found in gin context. ")
 		return r
 	}
-	r.Database.DB = trxHandle
-	return r
+	return &TimeSlotRepository{
+		Database: db.Database{DB: trxHandle},
+		Logger:   r.Logger,
+	}
 }
 
 func (repository *TimeSlotRepository) DeleteSlotsForClerk(clerkId uint64) error {

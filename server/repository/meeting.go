@@ -33,8 +33,10 @@ func (r *MeetingRepository) WithTrx(trxHandle *gorm.DB) *MeetingRepository {
 		r.Logger.Error("Transaction Database not found in gin context. ")
 		return r
 	}
-	r.Database.DB = trxHandle
-	return r
+	return &MeetingRepository{
+		Database: db.Database{DB: trxHandle},
+		Logger:   r.Logger,
+	}
 }
 
 func (repository *MeetingRepository) CancelMeetingsForClerk(clerkId uint64) error {

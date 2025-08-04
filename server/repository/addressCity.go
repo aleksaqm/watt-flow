@@ -29,8 +29,10 @@ func (r *CityRepository) WithTrx(trxHandle *gorm.DB) *CityRepository {
 		r.logger.Error("Transaction Database not found in gin context. ")
 		return r
 	}
-	r.database.DB = trxHandle
-	return r
+	return &CityRepository{
+		database: db.Database{DB: trxHandle},
+		logger:   r.logger,
+	}
 }
 
 func (repository *CityRepository) GetAllCities() ([]string, error) {

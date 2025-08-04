@@ -29,8 +29,10 @@ func (r *AddressRepository) WithTrx(trxHandle *gorm.DB) *AddressRepository {
 		r.logger.Error("Transaction Database not found in gin context. ")
 		return r
 	}
-	r.database.DB = trxHandle
-	return r
+	return &AddressRepository{
+		database: db.Database{DB: trxHandle},
+		logger:   r.logger,
+	}
 }
 
 func (repository *AddressRepository) Create(address *model.Address) (*model.Address, error) {

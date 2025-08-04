@@ -29,8 +29,10 @@ func (r *DeviceStatusRepository) WithTrx(trxHandle *gorm.DB) *DeviceStatusReposi
 		r.logger.Error("Transaction Database not found in gin context. ")
 		return r
 	}
-	r.database.DB = trxHandle
-	return r
+	return &DeviceStatusRepository{
+		database: db.Database{DB: trxHandle},
+		logger:   r.logger,
+	}
 }
 
 func (repository *DeviceStatusRepository) Create(deviceStatus *model.DeviceStatus) (model.DeviceStatus, error) {
