@@ -1,13 +1,17 @@
 package route
 
 import (
+	cache "github.com/chenyahui/gin-cache"
+	"github.com/chenyahui/gin-cache/persist"
 	"github.com/gin-gonic/gin"
+	"time"
 	"watt-flow/middleware"
 	"watt-flow/server"
 )
 
 type HouseholdAccessRoute struct {
 	engine *gin.Engine
+	store  persist.CacheStore
 }
 
 func (r HouseholdAccessRoute) Register(server *server.Server) {
@@ -18,12 +22,13 @@ func (r HouseholdAccessRoute) Register(server *server.Server) {
 	{
 		api.POST("/household/:id/access", authMid.RoleMiddleware([]string{"Admin", "Clerk", "Regular", "SuperAdmin"}), server.HouseholdAccessHandler.GrantAccess)
 		api.DELETE("/household/:householdId/access/revoke/:userId", authMid.RoleMiddleware([]string{"Admin", "Clerk", "Regular", "SuperAdmin"}), server.HouseholdAccessHandler.RevokeAccess)
-		api.GET("/household/access/:householdId", authMid.RoleMiddleware([]string{"Admin", "Clerk", "Regular", "SuperAdmin"}), server.HouseholdAccessHandler.ListAccess)
+		api.GET("/household/access/:householdId", authMid.RoleMiddleware([]string{"Admin", "Clerk", "Regular", "SuperAdmin"}), cache.CacheByRequestURI(r.store, 2*time.Second), server.HouseholdAccessHandler.ListAccess)
 	}
 }
 
-func NewHouseholdAccessRoute(engine *gin.Engine) *HouseholdAccessRoute {
+func NewHouseholdAccessRoute(engine *gin.Engine, store persist.CacheStore) *HouseholdAccessRoute {
 	return &HouseholdAccessRoute{
 		engine: engine,
+		store:  store,
 	}
 }

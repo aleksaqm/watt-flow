@@ -12,6 +12,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/datatypes"
+	"gorm.io/gorm"
 )
 
 type MeetingHandler struct {
@@ -149,7 +150,10 @@ func (h MeetingHandler) CreateNewMeeting(c *gin.Context) {
 	timeslotDto := meeting.TimeSlot
 	meetingDto := meeting.Meeting
 
-	newMeeting, err := h.service.CreateMeeting(&meetingDto)
+	trxHandle := c.MustGet("db_trx").(*gorm.DB)
+	meetingService := h.service.WithTrx(trxHandle)
+
+	newMeeting, err := meetingService.CreateMeeting(&meetingDto)
 	if err != nil {
 		h.logger.Error(err)
 		c.JSON(500, gin.H{"error": "Failed to create meeting"})
@@ -157,7 +161,7 @@ func (h MeetingHandler) CreateNewMeeting(c *gin.Context) {
 	}
 
 	timeslotDto.MeetingId = newMeeting.ID
-	_, err = h.service.CreateOrUpdate(&timeslotDto)
+	_, err = meetingService.CreateOrUpdate(&timeslotDto)
 	if err != nil {
 		h.logger.Error(err)
 		c.JSON(500, gin.H{"error": "Failed to create or update timeslot"})

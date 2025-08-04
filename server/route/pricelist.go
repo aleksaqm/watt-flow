@@ -1,6 +1,9 @@
 package route
 
 import (
+	cache "github.com/chenyahui/gin-cache"
+	"github.com/chenyahui/gin-cache/persist"
+	"time"
 	"watt-flow/middleware"
 	"watt-flow/server"
 
@@ -9,6 +12,7 @@ import (
 
 type PricelistRoute struct {
 	engine *gin.Engine
+	store  persist.CacheStore
 }
 
 func (r PricelistRoute) Register(server *server.Server) {
@@ -17,13 +21,14 @@ func (r PricelistRoute) Register(server *server.Server) {
 	api := r.engine.Group("/api").Use(authMid.Handler())
 	{
 		api.POST("/pricelist", authMid.RoleMiddleware([]string{"Admin", "SuperAdmin"}), server.PricelistHandler.CreatePricelist)
-		api.GET("/pricelist/query", authMid.RoleMiddleware([]string{"Admin", "SuperAdmin"}), server.PricelistHandler.Query)
+		api.GET("/pricelist/query", authMid.RoleMiddleware([]string{"Admin", "SuperAdmin"}), cache.CacheByRequestURI(r.store, 2*time.Second), server.PricelistHandler.Query)
 		api.DELETE("/pricelist/:id", authMid.RoleMiddleware([]string{"Admin", "SuperAdmin"}), server.PricelistHandler.Delete)
 	}
 }
 
-func NewPricelistRoute(engine *gin.Engine) *PricelistRoute {
+func NewPricelistRoute(engine *gin.Engine, store persist.CacheStore) *PricelistRoute {
 	return &PricelistRoute{
 		engine: engine,
+		store:  store,
 	}
 }

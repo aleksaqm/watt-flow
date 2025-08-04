@@ -20,6 +20,8 @@ services:
       INFLUX_URL: "http://influxdb2:8086"
       RESTART: ${RESTART}
       INFLUX_TOKEN: ${INFLUX_TOKEN}
+      REDIS_ADDR: "redis:6379"
+      REDIS_PASSWORD: "password"
     depends_on:
       postgres:
         condition: service_healthy
@@ -28,6 +30,7 @@ services:
 
   postgres:
     image: postgres:13
+    command: -c 'max_connections=500'
     environment:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASS}

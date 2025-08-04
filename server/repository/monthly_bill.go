@@ -17,24 +17,26 @@ type MonthlyBillRepository struct {
 	Logger   util.Logger
 }
 
-func NewMonthlyBillRepository(db db.Database, logger util.Logger) MonthlyBillRepository {
+func NewMonthlyBillRepository(db db.Database, logger util.Logger) *MonthlyBillRepository {
 	err := db.AutoMigrate(&model.MonthlyBill{})
 	if err != nil {
 		logger.Error("Error migrating monthly bill repo", err)
 	}
-	return MonthlyBillRepository{
+	return &MonthlyBillRepository{
 		Database: db,
 		Logger:   logger,
 	}
 }
 
-func (r MonthlyBillRepository) WithTrx(trxHandle *gorm.DB) MonthlyBillRepository {
+func (r *MonthlyBillRepository) WithTrx(trxHandle *gorm.DB) *MonthlyBillRepository {
 	if trxHandle == nil {
 		r.Logger.Error("Transaction Database not found in gin context. ")
 		return r
 	}
-	r.Database.DB = trxHandle
-	return r
+	return &MonthlyBillRepository{
+		Database: db.Database{DB: trxHandle},
+		Logger:   r.Logger,
+	}
 }
 
 func (repository *MonthlyBillRepository) Create(bill *model.MonthlyBill) (model.MonthlyBill, error) {

@@ -22,10 +22,11 @@ func main() {
 	gin.DefaultWriter = dependencies.Logger.GetGinLogger()
 	engine := gin.New()
 
+	engine.Use(gin.Recovery())
+	// engine.Use(gin.Logger())
+
 	middleware.RegisterMiddlewares(engine, dependencies)
 	route.RegisterRoutes(engine, dependencies)
-	engine.Use(gin.Recovery())
-	engine.Use(gin.Logger())
 
 	if env.Restart {
 		err := dependencies.RestartService.ResetDatabase()
@@ -58,7 +59,7 @@ func main() {
 }
 
 func monitorDBConnections(ctx context.Context, dependencies *server.Server, logger util.Logger) {
-	ticker := time.NewTicker(2 * time.Second)
+	ticker := time.NewTicker(5 * time.Second)
 	defer ticker.Stop()
 
 	for {

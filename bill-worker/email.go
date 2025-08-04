@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io"
+	"strings"
 	"time"
 
 	"github.com/skip2/go-qrcode"
@@ -22,6 +23,11 @@ func NewEmailSender(secret string) *EmailSender {
 }
 
 func (sender *EmailSender) SendEmail(receiver string, subject string, body string) error {
+	mailCheck := strings.Split(receiver, "@")
+	if len(mailCheck) < 2 || mailCheck[1] == "example.com" {
+		println("Skipping email sending to example.com address")
+		return nil
+	}
 	message := gomail.NewMessage()
 	message.SetHeader("From", "wattflow12@gmail.com")
 	message.SetHeader("To", receiver)

@@ -4,6 +4,8 @@ import (
 	"watt-flow/db"
 	"watt-flow/model"
 	"watt-flow/util"
+
+	"gorm.io/gorm"
 )
 
 type AddressRepository struct {
@@ -11,14 +13,25 @@ type AddressRepository struct {
 	logger   util.Logger
 }
 
-func NewAddressRepository(db db.Database, logger util.Logger) AddressRepository {
+func NewAddressRepository(db db.Database, logger util.Logger) *AddressRepository {
 	err := db.AutoMigrate(&model.Address{})
 	if err != nil {
 		logger.Error("Error migrating address", err)
 	}
-	return AddressRepository{
+	return &AddressRepository{
 		database: db,
 		logger:   logger,
+	}
+}
+
+func (r *AddressRepository) WithTrx(trxHandle *gorm.DB) *AddressRepository {
+	if trxHandle == nil {
+		r.logger.Error("Transaction Database not found in gin context. ")
+		return r
+	}
+	return &AddressRepository{
+		database: db.Database{DB: trxHandle},
+		logger:   r.logger,
 	}
 }
 

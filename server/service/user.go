@@ -34,15 +34,19 @@ type IUserService interface {
 }
 
 type UserService struct {
-	repository     repository.UserRepository
+	repository     *repository.UserRepository
 	meetingService IMeetingService
 	emailSender    *util.EmailSender
 	authService    *AuthService
 }
 
-func (service UserService) WithTrx(trxHandle *gorm.DB) IUserService {
-	service.repository = service.repository.WithTrx(trxHandle)
-	return &service
+func (service *UserService) WithTrx(trxHandle *gorm.DB) IUserService {
+	return &UserService{
+		repository:     service.repository.WithTrx(trxHandle),
+		meetingService: service.meetingService.WithTrx(trxHandle),
+		emailSender:    service.emailSender,
+		authService:    service.authService,
+	}
 }
 
 func (service *UserService) FindById(id uint64) (*dto.UserDto, error) {
@@ -59,28 +63,13 @@ func (service *UserService) FindById(id uint64) (*dto.UserDto, error) {
 }
 
 func (service *UserService) SuspendClerk(id uint64) error {
-	tx := service.repository.Database.Begin()
-	defer func() {
-		if r := recover(); r != nil {
-			tx.Rollback()
-		}
-	}()
-	userServ := service.WithTrx(tx)
-	meetingServ := service.meetingService.WithTrx(tx)
-
-	err := userServ.Suspend(id)
+	err := service.Suspend(id)
 	if err != nil {
-		tx.Rollback()
 		return err
 	}
-	err = meetingServ.CancelMeetingsForClerk(id)
+	err = service.meetingService.CancelMeetingsForClerk(id)
 	if err != nil {
-		tx.Rollback()
 		return err
-	}
-
-	if err := tx.Commit().Error; err != nil {
-		return fmt.Errorf("transaction commit failed: %w", err)
 	}
 	return nil
 }
@@ -397,7 +386,7 @@ func MapToDto(user *model.User) (dto.UserDto, error) {
 	return response, nil
 }
 
-func NewUserService(repository repository.UserRepository, authService *AuthService, emailSender *util.EmailSender, meetingService IMeetingService) *UserService {
+func NewUserService(repository *repository.UserRepository, authService *AuthService, emailSender *util.EmailSender, meetingService IMeetingService) *UserService {
 	return &UserService{
 		repository:     repository,
 		authService:    authService,
