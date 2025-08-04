@@ -17,12 +17,12 @@ type BillRepository struct {
 	Logger   util.Logger
 }
 
-func NewBillRepository(db db.Database, logger util.Logger) BillRepository {
+func NewBillRepository(db db.Database, logger util.Logger) *BillRepository {
 	err := db.AutoMigrate(&model.Bill{})
 	if err != nil {
 		logger.Error("Error migrating bill repo", err)
 	}
-	return BillRepository{
+	return &BillRepository{
 		Database: db,
 		Logger:   logger,
 	}
@@ -128,13 +128,15 @@ func (r *BillRepository) UpdateStatusToPaid(billID uint64, userID uint64) error 
 	return nil
 }
 
-func (r BillRepository) WithTrx(trxHandle *gorm.DB) BillRepository {
+func (r *BillRepository) WithTrx(trxHandle *gorm.DB) *BillRepository {
 	if trxHandle == nil {
 		r.Logger.Error("Transaction Database not found in gin context. ")
 		return r
 	}
-	r.Database.DB = trxHandle
-	return r
+	return &BillRepository{
+		Database: db.Database{DB: trxHandle},
+		Logger:   r.Logger,
+	}
 }
 
 func (repository *BillRepository) Update(bill *model.Bill) (model.Bill, error) {

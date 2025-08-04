@@ -13,18 +13,18 @@ type CityRepository struct {
 	logger   util.Logger
 }
 
-func NewCityRepository(db db.Database, logger util.Logger) CityRepository {
+func NewCityRepository(db db.Database, logger util.Logger) *CityRepository {
 	err := db.AutoMigrate(&model.City{})
 	if err != nil {
 		logger.Error("Error migrating city table", err)
 	}
-	return CityRepository{
+	return &CityRepository{
 		database: db,
 		logger:   logger,
 	}
 }
 
-func (r CityRepository) WithTrx(trxHandle *gorm.DB) CityRepository {
+func (r *CityRepository) WithTrx(trxHandle *gorm.DB) *CityRepository {
 	if trxHandle == nil {
 		r.logger.Error("Transaction Database not found in gin context. ")
 		return r

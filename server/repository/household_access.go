@@ -1,11 +1,12 @@
 package repository
 
 import (
-	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 	"watt-flow/db"
 	"watt-flow/model"
 	"watt-flow/util"
+
+	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type HouseholdAccessRepository struct {
@@ -13,24 +14,26 @@ type HouseholdAccessRepository struct {
 	Logger   util.Logger
 }
 
-func NewHouseholdAccessRepository(db db.Database, logger util.Logger) HouseholdAccessRepository {
+func NewHouseholdAccessRepository(db db.Database, logger util.Logger) *HouseholdAccessRepository {
 	err := db.AutoMigrate(&model.HouseholdAccess{})
 	if err != nil {
 		logger.Error("Error migrating household_access", err)
 	}
-	return HouseholdAccessRepository{
+	return &HouseholdAccessRepository{
 		Database: db,
 		Logger:   logger,
 	}
 }
 
-func (r HouseholdAccessRepository) WithTrx(trxHandle *gorm.DB) HouseholdAccessRepository {
+func (r *HouseholdAccessRepository) WithTrx(trxHandle *gorm.DB) *HouseholdAccessRepository {
 	if trxHandle == nil {
 		r.Logger.Error("Transaction Database not found in gin context. ")
 		return r
 	}
-	r.Database.DB = trxHandle
-	return r
+	return &HouseholdAccessRepository{
+		Database: db.Database{DB: trxHandle},
+		Logger:   r.Logger,
+	}
 }
 
 func (r HouseholdAccessRepository) Create(access *model.HouseholdAccess) error {

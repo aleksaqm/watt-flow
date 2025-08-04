@@ -17,18 +17,18 @@ type MeetingRepository struct {
 	Logger   util.Logger
 }
 
-func NewMeetingRepository(db db.Database, logger util.Logger) MeetingRepository {
+func NewMeetingRepository(db db.Database, logger util.Logger) *MeetingRepository {
 	err := db.AutoMigrate(&model.Meeting{})
 	if err != nil {
 		logger.Error("Error migrating meeting repo", err)
 	}
-	return MeetingRepository{
+	return &MeetingRepository{
 		Database: db,
 		Logger:   logger,
 	}
 }
 
-func (r MeetingRepository) WithTrx(trxHandle *gorm.DB) MeetingRepository {
+func (r *MeetingRepository) WithTrx(trxHandle *gorm.DB) *MeetingRepository {
 	if trxHandle == nil {
 		r.Logger.Error("Transaction Database not found in gin context. ")
 		return r
