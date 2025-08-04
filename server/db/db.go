@@ -38,7 +38,7 @@ func NewDatabase(env *config.Environment, logger util.Logger) Database {
 		log.Fatal("Failed to get database instance:", err)
 	}
 	sqlDB.SetMaxOpenConns(90)
-	sqlDB.SetMaxIdleConns(45)
+	sqlDB.SetMaxIdleConns(15)
 	sqlDB.SetConnMaxLifetime(5 * time.Minute)
 	sqlDB.SetConnMaxIdleTime(2 * time.Minute)
 
