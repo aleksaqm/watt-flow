@@ -62,7 +62,8 @@ var householdAccessServiceSet = wire.NewSet(
 	wire.Bind(new(service.IHouseholdAccessService), new(*service.HouseholdAccessService)))
 
 func InitDeps(env *config.Environment) *Server {
-	wire.Build(db.NewDatabase, util.NewLogger, util.NewEmailSender, util.NewInfluxQueryHelper, repository.NewUserRepository, service.NewAuthService,
+	wire.Build(db.NewDatabase, util.NewLogger, util.NewEmailSender, util.NewInfluxQueryHelper,
+		repository.NewUserRepository, service.NewAuthService,
 		repository.NewPropertyRepository, propertyServiceSet, handler.NewPropertyHandler,
 		repository.NewHouseholdRepository, householdServiceSet, handler.NewHouseholdHandler,
 		repository.NewOwnershipRepository, ownershipServiceSet, handler.NewOwnershipHandler,

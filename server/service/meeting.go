@@ -25,21 +25,22 @@ type IMeetingService interface {
 }
 
 type MeetingService struct {
-	slotRepository    repository.TimeSlotRepository
-	meetingRepository repository.MeetingRepository
+	slotRepository    *repository.TimeSlotRepository
+	meetingRepository *repository.MeetingRepository
 }
 
-func NewMeetingService(timeslotRepository repository.TimeSlotRepository, meetingRepository repository.MeetingRepository) *MeetingService {
+func NewMeetingService(timeslotRepository *repository.TimeSlotRepository, meetingRepository *repository.MeetingRepository) *MeetingService {
 	return &MeetingService{
 		slotRepository:    timeslotRepository,
 		meetingRepository: meetingRepository,
 	}
 }
 
-func (t MeetingService) WithTrx(trxHandle *gorm.DB) IMeetingService {
-	t.slotRepository = t.slotRepository.WithTrx(trxHandle)
-	t.meetingRepository = t.meetingRepository.WithTrx(trxHandle)
-	return &t
+func (t *MeetingService) WithTrx(trxHandle *gorm.DB) IMeetingService {
+	return &MeetingService{
+		slotRepository:    t.slotRepository.WithTrx(trxHandle),
+		meetingRepository: t.meetingRepository.WithTrx(trxHandle),
+	}
 }
 
 func (t *MeetingService) FindByDate(date datatypes.Date) (*dto.TimeSlotDto, error) {

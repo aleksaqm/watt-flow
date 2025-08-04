@@ -34,15 +34,19 @@ type IUserService interface {
 }
 
 type UserService struct {
-	repository     repository.UserRepository
+	repository     *repository.UserRepository
 	meetingService IMeetingService
 	emailSender    *util.EmailSender
 	authService    *AuthService
 }
 
-func (service UserService) WithTrx(trxHandle *gorm.DB) IUserService {
-	service.repository = service.repository.WithTrx(trxHandle)
-	return &service
+func (service *UserService) WithTrx(trxHandle *gorm.DB) IUserService {
+	return &UserService{
+		repository:     service.repository.WithTrx(trxHandle),
+		meetingService: service.meetingService.WithTrx(trxHandle),
+		emailSender:    service.emailSender,
+		authService:    service.authService,
+	}
 }
 
 func (service *UserService) FindById(id uint64) (*dto.UserDto, error) {
@@ -382,7 +386,7 @@ func MapToDto(user *model.User) (dto.UserDto, error) {
 	return response, nil
 }
 
-func NewUserService(repository repository.UserRepository, authService *AuthService, emailSender *util.EmailSender, meetingService IMeetingService) *UserService {
+func NewUserService(repository *repository.UserRepository, authService *AuthService, emailSender *util.EmailSender, meetingService IMeetingService) *UserService {
 	return &UserService{
 		repository:     repository,
 		authService:    authService,

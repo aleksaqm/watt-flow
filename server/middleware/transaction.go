@@ -77,6 +77,7 @@ func (m *TransactionMiddleware) Handler() gin.HandlerFunc {
 				if rollbackErr := txHandle.Rollback().Error; rollbackErr != nil {
 					m.logger.Error("Failed to rollback after commit error", rollbackErr)
 				}
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Transaction commit failed"})
 			}
 			txClosed = true
 		} else {
@@ -84,8 +85,9 @@ func (m *TransactionMiddleware) Handler() gin.HandlerFunc {
 			m.logger.Info("Transaction ROLLBACK", zap.String("path", c.Request.URL.Path), zap.Int("status", status))
 			if err := txHandle.Rollback().Error; err != nil {
 				m.logger.Error("Transaction rollback error", err)
+			} else {
+				txClosed = true
 			}
-			txClosed = true
 		}
 	}
 }
