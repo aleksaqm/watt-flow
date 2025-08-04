@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import AdminsTable from '@/components/user/AdminsTable.vue';
+import Button from '@/shad/components/ui/button/Button.vue';
+import { RouterLink } from 'vue-router';
 
 
 </script>
 
 
 <template>
-    <main class="flex-1 flex justify-center items-center">
+    <main>
         <AdminsTable></AdminsTable>
     </main>
 </template>

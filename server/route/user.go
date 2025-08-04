@@ -18,6 +18,7 @@ type UserRoute struct {
 func (r UserRoute) Register(server *server.Server) {
 	server.Logger.Info("Setting up user routes")
 	authMid := middleware.NewAuthMiddleware(server.AuthService, server.Logger)
+	txMid := middleware.NewTransactionMiddleware(server.Logger, server.Db)
 	api := r.engine.Group("/api").Use(authMid.Handler())
 	{
 		api.GET("/user/:id", cache.CacheByRequestURI(r.store, 2*time.Second), server.UserHandler.GetById)
@@ -27,7 +28,7 @@ func (r UserRoute) Register(server *server.Server) {
 		api.GET("/user/admins", cache.CacheByRequestURI(r.store, 2*time.Second), authMid.RoleMiddleware([]string{"SuperAdmin"}), server.UserHandler.FindAdmins)
 		api.POST("/user/admin", authMid.RoleMiddleware([]string{"SuperAdmin"}), server.UserHandler.Create)
 		api.GET("/user/suspend/:id", authMid.RoleMiddleware([]string{"SuperAdmin", "Admin"}), server.UserHandler.Suspend)
-		api.GET("/user/suspend-clerk/:id", authMid.RoleMiddleware([]string{"SuperAdmin", "Admin"}), server.UserHandler.SuspendClerk)
+		api.GET("/user/suspend-clerk/:id", authMid.RoleMiddleware([]string{"SuperAdmin", "Admin"}), txMid.Handler(), server.UserHandler.SuspendClerk)
 		api.GET("/user/unsuspend/:id", authMid.RoleMiddleware([]string{"SuperAdmin", "Admin"}), server.UserHandler.Unsuspend)
 	}
 }

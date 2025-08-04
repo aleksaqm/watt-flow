@@ -187,6 +187,16 @@ const updateRealtimeChart = () => {
   console.log("Updated chart from last value!")
 }
 
+const roundDateToNearestInterval = (date: Date, intervalMinutes: number): Date => {
+  const intervalMillis = intervalMinutes * 60 * 1000;
+  
+  const timeMillis = date.getTime();
+  
+  const roundedMillis = Math.round(timeMillis / intervalMillis) * intervalMillis;
+  
+  return new Date(roundedMillis);
+};
+
 const handleStatusUpdate = (event: any) => {
   const data = JSON.parse(event.data)
   console.log(data)
@@ -194,7 +204,7 @@ const handleStatusUpdate = (event: any) => {
   if (isRealtimeSelected.value){
     chartData.data.push(
       {
-        "time": xFormatter(new Date()),
+        "time": xFormatter(roundDateToNearestInterval(new Date(), 5)),
         "value": data.Value,
       }
     )
@@ -306,6 +316,7 @@ const handleFetch = () => {
 }
 
 const formatRealtimeData = (data: any[]) => {
+  data = data.slice(0, -1)
   chartData.data = []
   const length = data.length
   for (let i = 0; i < length; i++) {

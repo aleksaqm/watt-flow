@@ -20,6 +20,8 @@ import { ref } from 'vue'
 
 const formSchema = toTypedSchema(z.object({
   username: z.string().min(2, { message: "Username must be at least 2 characters" }).max(50, { message: "Username cannot exceed 50 characters" }),
+  firstName: z.string().min(1, { message: "First name is required" }).max(50, { message: "First name cannot exceed 50 characters" }),
+  lastName: z.string().min(1, { message: "Last name is required" }).max(50, { message: "Last name cannot exceed 50 characters" }),
   password: z.string().min(6, { message: "Password must be at least 6 characters" }),
   confirmPassword: z.string().min(6, { message: "Password must be at least 6 characters" }),
   email: z.string().email(),
@@ -72,7 +74,7 @@ const convertToBase64 = (file: File): Promise<string> => {
   })
 }
 
-const submitForm = async (formData: { username: string; password: string; email: string }) => {
+const submitForm = async (formData: { username: string; firstName: string; lastName: string; password: string; email: string }) => {
   try {
     loading.value = true
     let profileImageBase64 = ''
@@ -82,6 +84,8 @@ const submitForm = async (formData: { username: string; password: string; email:
 
     const data = {
       username: formData.username,
+      first_name: formData.firstName,
+      last_name: formData.lastName,
       password: formData.password,
       email: formData.email,
       profile_image: profileImageBase64,
@@ -129,6 +133,27 @@ const onSubmit = handleSubmit((values) => {
     <div class="flex flex-col justify-center items-center gap-5 w-full">
       <span class="text-gray-800 text-2xl">Sign Up</span>
       <form class="w-full space-y-6" @submit="onSubmit">
+        
+        <FormField name="firstName" v-slot="{ field }">
+          <FormItem class="relative pb-2">
+            <FormLabel>First Name</FormLabel>
+            <FormControl>
+              <Input type="text" v-bind="field" placeholder="Enter your first name" />
+            </FormControl>
+            <FormMessage class="absolute -bottom-2 left-0 text-xs" v-if="errors.firstName">{{ errors.firstName }}
+            </FormMessage>
+          </FormItem>
+        </FormField>
+        <FormField name="lastName" v-slot="{ field }">
+          <FormItem class="relative pb-2">
+            <FormLabel>Last Name</FormLabel>
+            <FormControl>
+              <Input type="text" v-bind="field" placeholder="Enter your last name" />
+            </FormControl>
+            <FormMessage class="absolute -bottom-2 left-0 text-xs" v-if="errors.lastName">{{ errors.lastName }}
+            </FormMessage>
+          </FormItem>
+        </FormField>
         <FormField name="username" v-slot="{ field }">
           <FormItem class="relative pb-2">
             <FormLabel>Username</FormLabel>
@@ -139,7 +164,6 @@ const onSubmit = handleSubmit((values) => {
             </FormMessage>
           </FormItem>
         </FormField>
-
         <FormField name="password" v-slot="{ field }">
           <FormItem class="relative pb-2">
             <FormLabel>Password</FormLabel>

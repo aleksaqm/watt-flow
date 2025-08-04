@@ -8,7 +8,6 @@ import (
 	"watt-flow/util"
 
 	"gorm.io/gorm"
-
 	"gorm.io/gorm/clause"
 )
 
@@ -17,14 +16,25 @@ type PropertyRepository struct {
 	Logger   util.Logger
 }
 
-func NewPropertyRepository(db db.Database, logger util.Logger) PropertyRepository {
+func NewPropertyRepository(db db.Database, logger util.Logger) *PropertyRepository {
 	err := db.AutoMigrate(&model.Property{})
 	if err != nil {
 		logger.Error("Error migrating property", err)
 	}
-	return PropertyRepository{
+	return &PropertyRepository{
 		Database: db,
 		Logger:   logger,
+	}
+}
+
+func (r *PropertyRepository) WithTrx(trxHandle *gorm.DB) *PropertyRepository {
+	if trxHandle == nil {
+		r.Logger.Error("Transaction Database not found in gin context. ")
+		return r
+	}
+	return &PropertyRepository{
+		Database: db.Database{DB: trxHandle},
+		Logger:   r.Logger,
 	}
 }
 

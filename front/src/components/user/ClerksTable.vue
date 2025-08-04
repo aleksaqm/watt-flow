@@ -11,6 +11,17 @@ import {
 } from "@/shad/components/ui/table";
 import { Button } from "@/shad/components/ui/button";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/shad/components/ui/alert-dialog";
+import {
   Pagination,
   PaginationEllipsis,
   PaginationFirst,
@@ -49,6 +60,11 @@ watch(
 const clerks = ref<Clerk[]>([]);
 
 const pagination = ref({ page: 1, total: 0, perPage: 10 });
+
+// Dialog state
+const showConfirmDialog = ref(false);
+const selectedClerk = ref<Clerk | null>(null);
+const pendingAction = ref<string>("");
 
 const { toast } = useToast();
 
@@ -107,7 +123,7 @@ function onSortChange(field: string) {
   sortOrder.value.firstName = "";
   sortOrder.value.lastName = "";
   sortOrder.value.username = "";
-  sortOrder.value.statsu = "";
+  sortOrder.value.status = "";
   sortOrder.value[field] = temp === "asc" ? "desc" : "asc";
   sortBy.value = field;
   fetchClerks();
@@ -121,10 +137,18 @@ function viewClerk(id: number) {
   router.push({ name: "clerk-profile", params: { id: id } });
 }
 
-const changeAccountStatus = async (id: number, status: string) => {
+const showConfirmationDialog = (clerk: Clerk) => {
+  selectedClerk.value = clerk;
+  pendingAction.value = clerk.status === "Active" ? "suspend" : "unsuspend";
+  showConfirmDialog.value = true;
+};
+
+const confirmAction = async () => {
+  if (!selectedClerk.value) return;
+  
   try {
-    const action = status === "Active" ? "suspend-clerk" : "unsuspend";
-    const response = await axios.get("/api/user/" + action + "/" + id);
+    const action = pendingAction.value === "suspend" ? "suspend-clerk" : "unsuspend";
+    const response = await axios.get("/api/user/" + action + "/" + selectedClerk.value.id);
     if (response.status == 200) {
       if (action === "suspend-clerk") {
         toast({
@@ -143,15 +167,20 @@ const changeAccountStatus = async (id: number, status: string) => {
       fetchClerks();
     }
   } catch (error) {
-    console.error("Failed to fetch users:", error);
+    console.error("Failed to update user status:", error);
+  } finally {
+    showConfirmDialog.value = false;
+    selectedClerk.value = null;
+    pendingAction.value = "";
   }
 };
+
 </script>
 
 <template>
-  <div class="p-7 flex flex-col bg-white w-10/12 shadow-lg">
+  <div class="mx-auto w-full p-7 flex flex-col bg-white shadow-lg">
     <Table
-      class="gap-5 items-center border rounded-2xl border-gray-300 shadow-gray-500 p-10 mb-10"
+      class="w-full border rounded-2xl border-gray-300 shadow-gray-500 p-10 mb-10"
     >
       <TableHeader>
         <TableRow>
@@ -192,7 +221,7 @@ const changeAccountStatus = async (id: number, status: string) => {
           <TableCell>
             <Button
               class="bg-indigo-500 text-white mr-2 hover:bg-indigo-300"
-              @click.stop="changeAccountStatus(clerk.id, clerk.status)"
+              @click.stop="showConfirmationDialog(clerk)"
               >{{ clerk.status === "Active" ? "Suspend" : "Unsuspend" }}</Button
             >
           </TableCell>
@@ -258,5 +287,29 @@ const changeAccountStatus = async (id: number, status: string) => {
       </div>
     </div>
   </div>
+  
+  <!-- Confirmation Dialog -->
+  <AlertDialog :open="showConfirmDialog" @update:open="showConfirmDialog = $event">
+    <AlertDialogContent>
+      <AlertDialogHeader>
+        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+        <AlertDialogDescription>
+          Are you sure you want to {{ pendingAction }} 
+          <strong>{{ selectedClerk?.username }}</strong>?
+          {{ pendingAction === 'suspend' ? 'This will prevent them from logging in and cancel all their meetings.' : 'This will allow them to log in again.' }}
+        </AlertDialogDescription>
+      </AlertDialogHeader>
+      <AlertDialogFooter>
+        <AlertDialogCancel>No, cancel</AlertDialogCancel>
+        <AlertDialogAction 
+          @click="confirmAction"
+          :class="'bg-indigo-500 hover:bg-gray-600'"
+        >
+          Yes, {{ pendingAction }}
+        </AlertDialogAction>
+      </AlertDialogFooter>
+    </AlertDialogContent>
+  </AlertDialog>
+  
   <Toaster />
 </template>

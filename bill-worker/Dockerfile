@@ -1,5 +1,7 @@
 FROM golang:latest
 
+RUN apt-get update && apt-get install -y wkhtmltopdf
+
 WORKDIR /usr/src/app
 
 COPY go.mod go.sum ./
@@ -9,4 +11,3 @@ COPY . .
 RUN go build -o /bill-worker
 
 CMD ["/bill-worker"]
-

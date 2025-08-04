@@ -32,7 +32,7 @@ const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
-      path: '/',
+      path: '/login',
       name: 'login',
       component: LoginView
     },
@@ -44,6 +44,12 @@ const router = createRouter({
     {
       path: '/home',
       name: 'home',
+      component: HomeView,
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/',
+      name: 'home-root',
       component: HomeView,
       meta: { requiresAuth: true }
     },

@@ -321,14 +321,14 @@ func generateQueryString(params dto.FluxQueryStatusDto) string {
 
   bounds = array.from(rows: [
     { _time: experimental.subDuration(from: now(), d: 1m),  _value: if last_from_data._value == true then false else true, _field: "value", _measurement: "online_status", device_id: "%s", _stop: now(), _start: now()},
-  
+
   { _time: experimental.subDuration(from: now(), d: %s), _value: false, _field: "value", _measurement: "online_status", device_id: "%s", _stop: now(), _start: now()}
 
     ])
 
 
   all_data = union(tables: [data, bounds])
-    all_data 
+    all_data
     |> group()
     |> sort(columns: ["_time"])
     |> range(start: -%s)
@@ -355,7 +355,7 @@ func generateRangeQueryString(params dto.FluxQueryStatusDto) string {
   data = from(bucket: "device_status")
     |> range(start: %s, stop: %s)
     |> filter(fn: (r) => r._measurement == "online_status" and r._field == "value" and r.device_id=="%s")
-    
+
 
   now = array.from(rows: [
     { _time: %s, _value: false, _field: "value", _measurement: "online_status", device_id: "%s", _stop: now(), _start: now()}
@@ -364,7 +364,7 @@ func generateRangeQueryString(params dto.FluxQueryStatusDto) string {
 
   all_data = union(tables: [data, now])
 
-    all_data 
+    all_data
     |> group()
     |> sort(columns: ["_time"])
     |> range(start: %s, stop: %s)
@@ -411,8 +411,8 @@ func generateConsumptionQueryString(params dto.FluxQueryConsumptionDto) string {
   from(bucket: "power_measurements")
     |> range(start: -%s)
     |> filter(fn: (r) => r._measurement == "power_consumption" and r._field == "value" and r.device_id=="%s")
-    |> aggregateWindow(every: %s, fn: mean, createEmpty: false)
-    |> yield(name: "mean")
+    |> aggregateWindow(every: %s, fn: sum, createEmpty: false)
+    |> yield(name: "sum")
     `, params.TimePeriod, params.DeviceId, params.GroupPeriod)
 	return fluxQuery
 }
@@ -422,8 +422,8 @@ func generateRangeConsumptionQueryString(params dto.FluxQueryConsumptionDto) str
   from(bucket: "power_measurements")
     |> range(start: %s, stop: %s)
     |> filter(fn: (r) => r._measurement == "power_consumption" and r._field == "value" and r.device_id=="%s")
-    |> aggregateWindow(every: %s, fn: mean, createEmpty: false)
-    |> yield(name: "mean")
+    |> aggregateWindow(every: %s, fn: sum, createEmpty: false)
+    |> yield(name: "sum")
     `, params.StartDate.Format(time.RFC3339), params.EndDate.Format(time.RFC3339), params.DeviceId, params.GroupPeriod)
 	return fluxQuery
 }
@@ -485,22 +485,22 @@ func generateCityPowerConsumptionRangeQueryString(params dto.FluxQueryCityConsum
   data = from(bucket: "power_measurements")
     |> range(start: %s, stop: %s)
     |> filter(fn: (r) => r._measurement == "power_consumption" and r._field == "value" and r.city == "%s")
-    
+
   bounds = array.from(rows: [
-    { 
-      _time: %s, 
-      _value: 0.0, 
-      _field: "value", 
-      _measurement: "power_consumption", 
-      city: "%s", 
-      _start: %s, 
-      _stop: %s 
+    {
+      _time: %s,
+      _value: 0.0,
+      _field: "value",
+      _measurement: "power_consumption",
+      city: "%s",
+      _start: %s,
+      _stop: %s
     }
   ])
 
   union(tables: [data, bounds])
     |> group(columns: ["city"])
-    |> sort(columns: ["_time"]) 
+    |> sort(columns: ["_time"])
     |> aggregateWindow(every: %s, fn: sum)
     |> map(fn: (r) => ({
       _time: r._time,
@@ -522,14 +522,14 @@ func generateRealtimeCityPowerConsumptionQuery(params dto.FluxQueryCityConsumpti
   data = from(bucket: "power_measurements")
       |> range(start: startTime)
       |> filter(fn: (r) => r._measurement == "power_consumption" and r._field == "value" and r.city == "%s")
-  
+
   bounds = array.from(rows: [
-    { 
-      _time: startTime, 
-      _value: 0.0, 
-      _field: "value", 
-      _measurement: "power_consumption", 
-      city: "%s", 
+    {
+      _time: startTime,
+      _value: 0.0,
+      _field: "value",
+      _measurement: "power_consumption",
+      city: "%s",
       _start: startTime,
       _stop: now()
     }

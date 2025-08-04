@@ -10,6 +10,7 @@ import (
 	"watt-flow/util"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 type PropertyHandler struct {
@@ -153,7 +154,8 @@ func (p PropertyHandler) AcceptProperty(c *gin.Context) {
 		return
 	}
 
-	err = p.service.AcceptProperty(id)
+	trxHandle := c.MustGet("db_trx").(*gorm.DB)
+	err = p.service.WithTrx(trxHandle).AcceptProperty(id)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update property status"})
 		return

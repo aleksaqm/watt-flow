@@ -1,8 +1,6 @@
 package repository
 
 import (
-	"fmt"
-
 	"watt-flow/db"
 	"watt-flow/model"
 	"watt-flow/util"
@@ -17,24 +15,26 @@ type TimeSlotRepository struct {
 	Logger   util.Logger
 }
 
-func NewTimeSlotRepository(db db.Database, logger util.Logger) TimeSlotRepository {
+func NewTimeSlotRepository(db db.Database, logger util.Logger) *TimeSlotRepository {
 	err := db.AutoMigrate(&model.TimeSlot{})
 	if err != nil {
 		logger.Error("Error migrating timeslot repo", err)
 	}
-	return TimeSlotRepository{
+	return &TimeSlotRepository{
 		Database: db,
 		Logger:   logger,
 	}
 }
 
-func (r TimeSlotRepository) WithTrx(trxHandle *gorm.DB) TimeSlotRepository {
+func (r *TimeSlotRepository) WithTrx(trxHandle *gorm.DB) *TimeSlotRepository {
 	if trxHandle == nil {
 		r.Logger.Error("Transaction Database not found in gin context. ")
 		return r
 	}
-	r.Database.DB = trxHandle
-	return r
+	return &TimeSlotRepository{
+		Database: db.Database{DB: trxHandle},
+		Logger:   r.Logger,
+	}
 }
 
 func (repository *TimeSlotRepository) DeleteSlotsForClerk(clerkId uint64) error {
@@ -43,9 +43,9 @@ func (repository *TimeSlotRepository) DeleteSlotsForClerk(clerkId uint64) error 
 		repository.Logger.Error("Error deleting time slots for clerk", result.Error)
 		return result.Error
 	}
-	if result.RowsAffected == 0 {
-		return fmt.Errorf("no slots found for clerk with ID %d", clerkId)
-	}
+	//if result.RowsAffected == 0 {
+	//	return fmt.Errorf("no slots found for clerk with ID %d", clerkId)
+	//}
 	return nil
 }
 

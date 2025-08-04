@@ -8,11 +8,12 @@ import (
 	"strconv"
 	"time"
 
-	"gorm.io/gorm"
 	"watt-flow/dto"
 	"watt-flow/model"
 	"watt-flow/repository"
 	"watt-flow/util"
+
+	"gorm.io/gorm"
 )
 
 type IBillService interface {
@@ -28,15 +29,15 @@ type IBillService interface {
 }
 
 type BillService struct {
-	billRepository        repository.BillRepository
-	monthlyBillRepository repository.MonthlyBillRepository
+	billRepository        *repository.BillRepository
+	monthlyBillRepository *repository.MonthlyBillRepository
 	householdService      IHouseholdService
 	pricelistService      IPricelistService
 	influxQueryHelper     *util.InfluxQueryHelper
 	emailSender           *util.EmailSender
 }
 
-func NewBillService(billRepository repository.BillRepository, monthlyBillRepository repository.MonthlyBillRepository, householdService IHouseholdService, pricelistService IPricelistService, influxQueryHelper *util.InfluxQueryHelper, emailSender *util.EmailSender) *BillService {
+func NewBillService(billRepository *repository.BillRepository, monthlyBillRepository *repository.MonthlyBillRepository, householdService IHouseholdService, pricelistService IPricelistService, influxQueryHelper *util.InfluxQueryHelper, emailSender *util.EmailSender) *BillService {
 	return &BillService{
 		billRepository:        billRepository,
 		monthlyBillRepository: monthlyBillRepository,
@@ -47,10 +48,15 @@ func NewBillService(billRepository repository.BillRepository, monthlyBillReposit
 	}
 }
 
-func (s BillService) WithTrx(trxHandle *gorm.DB) IBillService {
-	s.billRepository = s.billRepository.WithTrx(trxHandle)
-	s.monthlyBillRepository = s.monthlyBillRepository.WithTrx(trxHandle)
-	return &s
+func (s *BillService) WithTrx(trxHandle *gorm.DB) IBillService {
+	return &BillService{
+		billRepository:        s.billRepository.WithTrx(trxHandle),
+		monthlyBillRepository: s.monthlyBillRepository.WithTrx(trxHandle),
+		householdService:      s.householdService.WithTrx(trxHandle),
+		pricelistService:      s.pricelistService.WithTrx(trxHandle),
+		influxQueryHelper:     s.influxQueryHelper,
+		emailSender:           s.emailSender,
+	}
 }
 
 func (t *BillService) FindById(id uint64, loggedInUserID uint64) (*model.Bill, error) {
@@ -62,21 +68,8 @@ func (t *BillService) FindById(id uint64, loggedInUserID uint64) (*model.Bill, e
 }
 
 func (s *BillService) PayBill(billID uint64, loggedInUserID uint64, loggedInUserEmail string) error {
-	tx := s.billRepository.Database.Begin()
-	if tx.Error != nil {
-		return errors.New("could not start database transaction")
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			tx.Rollback()
-		}
-	}()
-
-	transactionalService := s.WithTrx(tx).(*BillService)
-
-	bill, err := transactionalService.billRepository.FindById(billID, loggedInUserID)
+	bill, err := s.billRepository.FindById(billID, loggedInUserID)
 	if err != nil {
-		tx.Rollback()
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return errors.New("bill not found")
 		}
@@ -84,13 +77,11 @@ func (s *BillService) PayBill(billID uint64, loggedInUserID uint64, loggedInUser
 	}
 
 	if bill.Status == "Paid" {
-		tx.Rollback()
 		return errors.New("this bill has already been paid")
 	}
 
-	err = transactionalService.billRepository.UpdateStatusToPaid(billID, loggedInUserID)
+	err = s.billRepository.UpdateStatusToPaid(billID, loggedInUserID)
 	if err != nil {
-		tx.Rollback()
 		return err
 	}
 
@@ -107,7 +98,7 @@ func (s *BillService) PayBill(billID uint64, loggedInUserID uint64, loggedInUser
 		}
 	}()
 
-	return tx.Commit().Error
+	return nil
 }
 
 func formatMonthKey(month, year uint) string {
@@ -168,41 +159,25 @@ func (service *BillService) QueryMonthly(queryParams *dto.MonthlyBillQueryParams
 }
 
 func (service *BillService) InitiateBillingOffload(year int, month int) (*model.MonthlyBill, error) {
-	// Setup transaction
-	tx := service.billRepository.Database.Begin()
-	defer func() {
-		if r := recover(); r != nil {
-			tx.Rollback()
-		}
-	}()
-
 	mq, err := util.NewMessageQueue("billing_queue")
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize RabbitMQ: %w", err)
 	}
 	defer mq.Close()
 
-	// add all queries to the same transaction
-	billServ := service.WithTrx(tx)
-	householdServ := service.householdService.WithTrx(tx)
-	pricelistServ := service.pricelistService.WithTrx(tx)
-
-	monthlyBill, err := billServ.GenerateMonthlyBill(year, month)
+	monthlyBill, err := service.GenerateMonthlyBill(year, month)
 	if err != nil {
-		tx.Rollback()
 		return nil, fmt.Errorf("failed to generate monthly bill: %w", err)
 	}
 
-	households, err := householdServ.GetOwnedHouseholds()
+	households, err := service.householdService.GetOwnedHouseholds()
 	if err != nil {
-		tx.Rollback()
 		monthlyBill.Status = "Failed"
 		service.monthlyBillRepository.Update(monthlyBill)
 		return nil, fmt.Errorf("failed to fetch households: %w", err)
 	}
-	activePricelist, err := pricelistServ.GetActivePricelist()
+	activePricelist, err := service.pricelistService.GetActivePricelist()
 	if err != nil {
-		tx.Rollback()
 		monthlyBill.Status = "Failed"
 		service.monthlyBillRepository.Update(monthlyBill)
 		return nil, fmt.Errorf("failed to fetch active pricelist: %w", err)
@@ -235,42 +210,23 @@ func (service *BillService) InitiateBillingOffload(year int, month int) (*model.
 			continue
 		}
 	}
-	if err := tx.Commit().Error; err != nil {
-		return nil, fmt.Errorf("transaction commit failed: %w", err)
-	}
 	return monthlyBill, nil
 }
 
 func (service *BillService) InitiateBilling(year int, month int) (*model.MonthlyBill, error) {
-	// Setup transaction
-	tx := service.billRepository.Database.Begin()
-	defer func() {
-		if r := recover(); r != nil {
-			tx.Rollback()
-		}
-	}()
-
-	// add all queries to the same transaction
-	billServ := service.WithTrx(tx)
-	householdServ := service.householdService.WithTrx(tx)
-	pricelistServ := service.pricelistService.WithTrx(tx)
-
-	monthlyBill, err := billServ.GenerateMonthlyBill(year, month)
+	monthlyBill, err := service.GenerateMonthlyBill(year, month)
 	if err != nil {
-		tx.Rollback()
 		return nil, fmt.Errorf("failed to generate monthly bill: %w", err)
 	}
 
-	households, err := householdServ.GetOwnedHouseholds()
+	households, err := service.householdService.GetOwnedHouseholds()
 	if err != nil {
-		tx.Rollback()
 		monthlyBill.Status = "Failed"
 		service.monthlyBillRepository.Update(monthlyBill)
 		return nil, fmt.Errorf("failed to fetch households: %w", err)
 	}
-	activePricelist, err := pricelistServ.GetActivePricelist()
+	activePricelist, err := service.pricelistService.GetActivePricelist()
 	if err != nil {
-		tx.Rollback()
 		monthlyBill.Status = "Failed"
 		service.monthlyBillRepository.Update(monthlyBill)
 		return nil, fmt.Errorf("failed to fetch active pricelist: %w", err)
@@ -327,9 +283,6 @@ func (service *BillService) InitiateBilling(year int, month int) (*model.Monthly
 			fmt.Printf("failed updating bill status for bill %s", strconv.FormatUint(updatedBill.ID, 10))
 			monthlyBillStatus = "Partial"
 		}
-	}
-	if err := tx.Commit().Error; err != nil {
-		return nil, fmt.Errorf("transaction commit failed: %w", err)
 	}
 	monthlyBill.Status = monthlyBillStatus
 	service.monthlyBillRepository.Update(monthlyBill)

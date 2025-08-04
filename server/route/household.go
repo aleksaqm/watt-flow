@@ -23,6 +23,7 @@ func (r HouseholdRoute) Register(server *server.Server) {
 	{
 		api.GET("/household/:id", authMid.RoleMiddleware([]string{"Admin", "SuperAdmin", "Regular"}), cache.CacheByRequestURI(r.store, 2*time.Minute), server.HouseholdHandler.GetById)
 		api.POST("/household/query", authMid.RoleMiddleware([]string{"Admin", "SuperAdmin", "Regular"}), server.HouseholdHandler.Query)
+		api.GET("/household/my/:id", authMid.RoleMiddleware([]string{"Regular"}), server.HouseholdHandler.GetMyHouseholdById)
 
 		api.GET("/household/:id/consumption/monthly", authMid.RoleMiddleware([]string{"Regular"}), cache.CacheByRequestURI(r.store, 2*time.Second), server.ElectricityConsumptionHandler.GetMonthlyConsumption)
 		api.GET("/household/:id/consumption/12months", authMid.RoleMiddleware([]string{"Regular"}), cache.CacheByRequestURI(r.store, 2*time.Second), server.ElectricityConsumptionHandler.Get12MonthsConsumption)

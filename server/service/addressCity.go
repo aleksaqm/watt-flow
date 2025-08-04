@@ -2,19 +2,28 @@ package service
 
 import (
 	"watt-flow/repository"
+
+	"gorm.io/gorm"
 )
 
 type ICityService interface {
 	GetAllCities() ([]string, error)
+	WithTrx(trxHandle *gorm.DB) ICityService
 }
 
 type CityService struct {
-	repository repository.CityRepository
+	repository *repository.CityRepository
 }
 
-func NewCityService(repository repository.CityRepository) *CityService {
+func NewCityService(repository *repository.CityRepository) *CityService {
 	return &CityService{
 		repository: repository,
+	}
+}
+
+func (s *CityService) WithTrx(trxHandle *gorm.DB) ICityService {
+	return &CityService{
+		repository: s.repository.WithTrx(trxHandle),
 	}
 }
 

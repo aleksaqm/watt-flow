@@ -20,6 +20,7 @@ type OwnershipRoute struct {
 func (r OwnershipRoute) Register(server *server.Server) {
 	server.Logger.Info("Setting up ownerships routes")
 	authMid := middleware.NewAuthMiddleware(server.AuthService, server.Logger)
+	txMid := middleware.NewTransactionMiddleware(server.Logger, server.Db)
 
 	getPendingOwnershipsRule := middleware.InvalidationRule{
 		Pattern: "/api/ownership/pending*",
@@ -30,8 +31,9 @@ func (r OwnershipRoute) Register(server *server.Server) {
 		api.POST("/household/owner", authMid.RoleMiddleware([]string{"Regular"}), server.OwnershipHandler.CreateOwnershipRequest)
 		api.GET("/ownership/requests/:id", authMid.RoleMiddleware([]string{"Regular"}), server.OwnershipHandler.GetOwnershipRequestsForUser)
 		api.GET("/ownership/pending", authMid.RoleMiddleware([]string{"Admin", "SuperAdmin"}), cache.CacheByRequestURI(r.store, 2*time.Minute), server.OwnershipHandler.GetPendingRequests)
-		api.PATCH("/ownership/accept/:id", authMid.RoleMiddleware([]string{"Admin", "SuperAdmin"}), middleware.CacheInvalidationMiddleware(r.store, r.redisClient, getPendingOwnershipsRule), server.OwnershipHandler.AcceptOwnershipRequest)
-		api.PUT("/ownership/decline/:id", authMid.RoleMiddleware([]string{"Admin", "SuperAdmin"}), middleware.CacheInvalidationMiddleware(r.store, r.redisClient, getPendingOwnershipsRule), server.OwnershipHandler.DeclineOwnershipRequest)
+		api.PATCH("/ownership/accept/:id", authMid.RoleMiddleware([]string{"Admin", "SuperAdmin"}), txMid.Handler(), middleware.CacheInvalidationMiddleware(r.store, r.redisClient, getPendingOwnershipsRule), server.OwnershipHandler.AcceptOwnershipRequest)
+		api.PUT("/ownership/decline/:id", authMid.RoleMiddleware([]string{"Admin", "SuperAdmin"}), txMid.Handler(), middleware.CacheInvalidationMiddleware(r.store, r.redisClient, getPendingOwnershipsRule), server.OwnershipHandler.DeclineOwnershipRequest)
+
 	}
 }
 

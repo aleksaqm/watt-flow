@@ -18,24 +18,26 @@ type HouseholdRepository struct {
 	Logger   util.Logger
 }
 
-func NewHouseholdRepository(db db.Database, logger util.Logger) HouseholdRepository {
+func NewHouseholdRepository(db db.Database, logger util.Logger) *HouseholdRepository {
 	err := db.AutoMigrate(&model.Household{})
 	if err != nil {
 		logger.Error("Error migrating household", err)
 	}
-	return HouseholdRepository{
+	return &HouseholdRepository{
 		Database: db,
 		Logger:   logger,
 	}
 }
 
-func (r HouseholdRepository) WithTrx(trxHandle *gorm.DB) HouseholdRepository {
+func (r *HouseholdRepository) WithTrx(trxHandle *gorm.DB) *HouseholdRepository {
 	if trxHandle == nil {
 		r.Logger.Error("Transaction Database not found in gin context. ")
 		return r
 	}
-	r.Database.DB = trxHandle
-	return r
+	return &HouseholdRepository{
+		Database: db.Database{DB: trxHandle},
+		Logger:   r.Logger,
+	}
 }
 
 func (repository *HouseholdRepository) Create(household *model.Household) (model.Household, error) {
@@ -53,6 +55,34 @@ func (repository *HouseholdRepository) FindById(id uint64) (*model.Household, er
 		repository.Logger.Error("Error finding household by ID", err)
 		return nil, err
 	}
+	return &household, nil
+}
+
+func (repository *HouseholdRepository) FindMyHouseholdById(id uint64, userId uint64) (*model.Household, error) {
+	var household model.Household
+
+	db := repository.Database.
+		Preload(clause.Associations).
+		Where("id = ?", id).
+		Where(`
+            owner_id = ? OR 
+            EXISTS (
+                SELECT 1 FROM household_accesses ha 
+                WHERE ha.household_id = households.id AND ha.user_id = ?
+            )
+        `, userId, userId)
+
+	err := db.First(&household).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			repository.Logger.Warn("Household not found or user does not have access",
+				map[string]interface{}{"householdID": id, "userID": userId})
+			return nil, gorm.ErrRecordNotFound
+		}
+		repository.Logger.Error("Error finding household by ID with access check", err)
+		return nil, err
+	}
+
 	return &household, nil
 }
 
@@ -92,7 +122,13 @@ func (repository *HouseholdRepository) Query(params *dto.HouseholdQueryParams) (
 	}
 
 	if params.Search.OwnerId != "" {
-		baseQuery = baseQuery.Where("households.owner_id = ?", params.Search.OwnerId)
+		baseQuery = baseQuery.Where(`
+            households.owner_id = ? OR 
+            EXISTS (
+                SELECT 1 FROM household_accesses ha 
+                WHERE ha.household_id = households.id AND ha.user_id = ?
+            )
+        `, params.Search.OwnerId, params.Search.OwnerId)
 	}
 
 	if params.Search.City != "" {

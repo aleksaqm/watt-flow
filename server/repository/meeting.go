@@ -17,24 +17,26 @@ type MeetingRepository struct {
 	Logger   util.Logger
 }
 
-func NewMeetingRepository(db db.Database, logger util.Logger) MeetingRepository {
+func NewMeetingRepository(db db.Database, logger util.Logger) *MeetingRepository {
 	err := db.AutoMigrate(&model.Meeting{})
 	if err != nil {
 		logger.Error("Error migrating meeting repo", err)
 	}
-	return MeetingRepository{
+	return &MeetingRepository{
 		Database: db,
 		Logger:   logger,
 	}
 }
 
-func (r MeetingRepository) WithTrx(trxHandle *gorm.DB) MeetingRepository {
+func (r *MeetingRepository) WithTrx(trxHandle *gorm.DB) *MeetingRepository {
 	if trxHandle == nil {
 		r.Logger.Error("Transaction Database not found in gin context. ")
 		return r
 	}
-	r.Database.DB = trxHandle
-	return r
+	return &MeetingRepository{
+		Database: db.Database{DB: trxHandle},
+		Logger:   r.Logger,
+	}
 }
 
 func (repository *MeetingRepository) CancelMeetingsForClerk(clerkId uint64) error {
@@ -43,9 +45,9 @@ func (repository *MeetingRepository) CancelMeetingsForClerk(clerkId uint64) erro
 		repository.Logger.Error("Error canceling meetings for clerk", result.Error)
 		return result.Error
 	}
-	if result.RowsAffected == 0 {
-		return fmt.Errorf("no meetings found for clerk with ID %d", clerkId)
-	}
+	//if result.RowsAffected == 0 {
+	//	return fmt.Errorf("no meetings found for clerk with ID %d", clerkId)
+	//}
 	return nil
 
 }

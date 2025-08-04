@@ -18,11 +18,13 @@ const onSearch = (query: any) => {
 <template>
   <main>
     <div class="w-10/12 h-screen wrapper">
-      <div class="flex flex-row items-center gap-10">
-        <div class="w-full text-center my-10 text-2xl">
-          Clerks
-        </div>
-        <RouterLink to="/manage/clerks/new"><Button variant="outline">Add new clerk</Button></RouterLink>
+      <div class="w-full text-center mt-10 mb-4 text-2xl">
+        Clerks
+      </div>
+      <div class="flex justify-center mb-6">
+        <RouterLink to="/manage/clerks/new">
+          <Button variant="outline">Add new clerk</Button>
+        </RouterLink>
       </div>
       <UserSearchForm @clerk-search=onSearch></UserSearchForm>
       <ClerksTable :query="searchQuery" :trigger-search="triggerSearch"></ClerksTable>
@@ -32,11 +34,5 @@ const onSearch = (query: any) => {
 <style scoped>
 .wrapper {
   margin: 0 auto;
-  display: flex;
-  flex: flex 1;
-  justify-content: center;
-  align-items: center;
-  flex-direction: column;
-
 }
 </style>

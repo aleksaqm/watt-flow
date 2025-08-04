@@ -4,6 +4,8 @@ import (
 	"watt-flow/db"
 	"watt-flow/model"
 	"watt-flow/util"
+
+	"gorm.io/gorm"
 )
 
 type DeviceStatusRepository struct {
@@ -11,14 +13,25 @@ type DeviceStatusRepository struct {
 	logger   util.Logger
 }
 
-func NewDeviceStatusRepository(db db.Database, logger util.Logger) DeviceStatusRepository {
+func NewDeviceStatusRepository(db db.Database, logger util.Logger) *DeviceStatusRepository {
 	err := db.AutoMigrate(&model.DeviceStatus{})
 	if err != nil {
 		logger.Error("Error migrating device status", err)
 	}
-	return DeviceStatusRepository{
+	return &DeviceStatusRepository{
 		database: db,
 		logger:   logger,
+	}
+}
+
+func (r *DeviceStatusRepository) WithTrx(trxHandle *gorm.DB) *DeviceStatusRepository {
+	if trxHandle == nil {
+		r.logger.Error("Transaction Database not found in gin context. ")
+		return r
+	}
+	return &DeviceStatusRepository{
+		database: db.Database{DB: trxHandle},
+		logger:   r.logger,
 	}
 }
 

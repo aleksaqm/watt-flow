@@ -2,7 +2,9 @@ package handler
 
 import (
 	"errors"
+	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 	"gorm.io/gorm"
 	"net/http"
 	"strconv"
@@ -39,16 +41,33 @@ func (h *HouseholdAccessHandler) GrantAccess(c *gin.Context) {
 		return
 	}
 
-	currentUserID := uint64(14)
+	claims, exists := c.Get("claims")
+	if !exists {
+		h.logger.Error("Claims not found in context, middleware might be missing")
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User claims not found"})
+		c.Abort()
+		return
+	}
 
-	//currentUserID, exists := c.Get("userId")
-	//if !exists {
-	//	h.logger.Error("User ID not found in context")
-	//	c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-	//	return
-	//}
+	claimsMap, ok := claims.(jwt.MapClaims)
+	if !ok {
+		h.logger.Error("Invalid claims format", zap.Any("claims", claims))
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid user claims format"})
+		c.Abort()
+		return
+	}
 
-	err = h.service.GrantAccess(householdId, req.UserID, currentUserID)
+	loggedInUserID, ok := claimsMap["id"]
+	if !ok {
+		h.logger.Error("ID not found in claims")
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User ID not found in claims"})
+		c.Abort()
+		return
+	}
+
+	userIDFloat, ok := loggedInUserID.(float64)
+
+	err = h.service.GrantAccess(householdId, req.UserID, uint64(userIDFloat))
 	if err != nil {
 		h.logger.Error("Failed to grant access", err)
 		if err.Error() == "forbidden: only the owner can grant access" {
@@ -83,16 +102,33 @@ func (h *HouseholdAccessHandler) RevokeAccess(c *gin.Context) {
 		return
 	}
 
-	currentUserID := uint64(14)
+	claims, exists := c.Get("claims")
+	if !exists {
+		h.logger.Error("Claims not found in context, middleware might be missing")
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User claims not found"})
+		c.Abort()
+		return
+	}
 
-	//currentUserID, exists := c.Get("userId")
-	//if !exists {
-	//	h.logger.Error("User ID not found in context")
-	//	c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-	//	return
-	//}
+	claimsMap, ok := claims.(jwt.MapClaims)
+	if !ok {
+		h.logger.Error("Invalid claims format", zap.Any("claims", claims))
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid user claims format"})
+		c.Abort()
+		return
+	}
 
-	err = h.service.RevokeAccess(householdId, userIdToRevoke, currentUserID)
+	loggedInUserID, ok := claimsMap["id"]
+	if !ok {
+		h.logger.Error("ID not found in claims")
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User ID not found in claims"})
+		c.Abort()
+		return
+	}
+
+	userIDFloat, ok := loggedInUserID.(float64)
+
+	err = h.service.RevokeAccess(householdId, userIdToRevoke, uint64(userIDFloat))
 	if err != nil {
 		h.logger.Error("Failed to revoke access", err)
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -121,8 +157,32 @@ func (h *HouseholdAccessHandler) ListAccess(c *gin.Context) {
 		return
 	}
 
-	currentUserID := uint64(14)
-	accesses, err := h.service.GetUsersWithAccess(householdId, currentUserID)
+	claims, exists := c.Get("claims")
+	if !exists {
+		h.logger.Error("Claims not found in context, middleware might be missing")
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User claims not found"})
+		c.Abort()
+		return
+	}
+
+	claimsMap, ok := claims.(jwt.MapClaims)
+	if !ok {
+		h.logger.Error("Invalid claims format", zap.Any("claims", claims))
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid user claims format"})
+		c.Abort()
+		return
+	}
+
+	loggedInUserID, ok := claimsMap["id"]
+	if !ok {
+		h.logger.Error("ID not found in claims")
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User ID not found in claims"})
+		c.Abort()
+		return
+	}
+
+	userIDFloat, ok := loggedInUserID.(float64)
+	accesses, err := h.service.GetUsersWithAccess(householdId, uint64(userIDFloat))
 	h.logger.Info("Accesses: ", accesses)
 	if err != nil {
 		h.logger.Error("Failed to get access list", err)

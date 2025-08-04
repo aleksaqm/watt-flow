@@ -2,29 +2,39 @@ package service
 
 import (
 	"errors"
-	"gorm.io/gorm"
 	"watt-flow/dto"
 	"watt-flow/model"
 	"watt-flow/repository"
+
+	"gorm.io/gorm"
 )
 
 type IHouseholdAccessService interface {
 	GrantAccess(householdID uint64, userIDToGrant uint64, currentUserID uint64) error
 	RevokeAccess(householdID uint64, userIDToRevoke uint64, currentUserID uint64) error
 	GetUsersWithAccess(householdID uint64, currentUserID uint64) ([]dto.UserDto, error)
+	WithTrx(trxHandle *gorm.DB) IHouseholdAccessService
 }
 
 type HouseholdAccessService struct {
-	householdAccessRepository repository.HouseholdAccessRepository
-	householdRepository       repository.HouseholdRepository
-	userRepository            repository.UserRepository
+	householdAccessRepository *repository.HouseholdAccessRepository
+	householdRepository       *repository.HouseholdRepository
+	userRepository            *repository.UserRepository
 }
 
-func NewHouseholdAccessService(accessRepo repository.HouseholdAccessRepository, householdRepo repository.HouseholdRepository, userRepo repository.UserRepository) *HouseholdAccessService {
+func NewHouseholdAccessService(accessRepo *repository.HouseholdAccessRepository, householdRepo *repository.HouseholdRepository, userRepo *repository.UserRepository) *HouseholdAccessService {
 	return &HouseholdAccessService{
 		householdAccessRepository: accessRepo,
 		householdRepository:       householdRepo,
 		userRepository:            userRepo,
+	}
+}
+
+func (s *HouseholdAccessService) WithTrx(trxHandle *gorm.DB) IHouseholdAccessService {
+	return &HouseholdAccessService{
+		householdAccessRepository: s.householdAccessRepository.WithTrx(trxHandle),
+		householdRepository:       s.householdRepository.WithTrx(trxHandle),
+		userRepository:            s.userRepository.WithTrx(trxHandle),
 	}
 }
 

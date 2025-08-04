@@ -8,6 +8,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/google/uuid"
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	_ "github.com/lib/pq"
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -36,7 +37,7 @@ func generateMonthConsumptionQueryString(deviceID string, startMonth string, end
 
 func (worker *Worker) GetTotalConsumptionForMonth(deviceID string, year int, month int) (float64, error) {
 	queryAPI := worker.influxClient.QueryAPI(worker.influxOrg)
-	startTime := time.Date(year-1, time.Month(month), 1, 0, 0, 0, 0, time.UTC)
+	startTime := time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.UTC)
 	endTime := startTime.AddDate(0, 1, 0) // First day of the next month
 
 	fluxQuery := generateMonthConsumptionQueryString(deviceID, startTime.Format(time.RFC3339), endTime.Format(time.RFC3339))
@@ -142,6 +143,9 @@ func (c *Worker) processBills(ctx context.Context, msgs <-chan amqp.Delivery) {
 			return
 		case msg := <-msgs:
 			var billTask BillTaskDto
+			if len(msg.Body) == 0 {
+				continue
+			}
 			err := json.Unmarshal(msg.Body, &billTask)
 			if err != nil {
 				fmt.Printf("Error decoding message: %v\n", err)
@@ -166,27 +170,23 @@ func (c *Worker) processBills(ctx context.Context, msgs <-chan amqp.Delivery) {
 
 			// Save Bill to Database
 			bill := Bill{
-				BillingDate: billTask.BillingDate,
-				IssueDate:   billTask.IssueDate,
-				PricelistID: billTask.Pricelist.ID,
-				OwnerID:     billTask.OwnerID,
-				SpentPower:  spentPower,
-				Price:       calculatedPrice,
-				Status:      "Delivered",
-				HouseholdID: billTask.HouseHoldID,
+				BillingDate:      billTask.BillingDate,
+				IssueDate:        billTask.IssueDate,
+				PricelistID:      billTask.Pricelist.ID,
+				OwnerID:          billTask.OwnerID,
+				SpentPower:       spentPower,
+				Price:            calculatedPrice,
+				Status:           "Delivered",
+				HouseholdID:      billTask.HouseHoldID,
+				PaymentReference: uuid.NewString(),
 			}
 
 			// Send Email
-			emailBody, qrCode, err := GenerateMonthlyBillEmail(bill, billTask.Pricelist, billTask.OwnerUsername, billTask.HouseholdCN)
+			err = c.emailSender.SendMonthlyBillPDF(billTask.OwnerEmail, bill, billTask.Pricelist, billTask.OwnerUsername, billTask.HouseholdCN)
 			if err != nil {
-				fmt.Printf("Failed generating email for %s - %s, %s\n", billTask.PowerMeterID, billTask.OwnerUsername, err.Error())
+				fmt.Printf("Failed sending email for %s - %s, %s\n", billTask.PowerMeterID, billTask.OwnerUsername, err.Error())
 				bill.Status = "Not Delivered"
-			} else {
-				err = c.emailSender.SendEmailWithQRCode(billTask.OwnerEmail, "Electricity Bill", emailBody, qrCode)
-				if err != nil {
-					fmt.Printf("Failed sending email for %s - %s, %s\n", billTask.PowerMeterID, billTask.OwnerUsername, err.Error())
-					bill.Status = "Not Delivered"
-				}
+				continue
 			}
 			err = c.InsertBill(ctx, &bill)
 			if err != nil {
@@ -209,8 +209,8 @@ func (c *Worker) processBills(ctx context.Context, msgs <-chan amqp.Delivery) {
 }
 
 func (c *Worker) InsertBill(ctx context.Context, bill *Bill) error {
-	query := `INSERT INTO bills (issue_date, billing_date, pricelist_id, spent_power, price, owner_id, status, household_id)
-	          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`
+	query := `INSERT INTO bills (issue_date, billing_date, pricelist_id, spent_power, price, owner_id, status, household_id, payment_reference)
+	          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`
 
 	_, err := c.pgDB.ExecContext(ctx, query,
 		bill.IssueDate,
@@ -221,6 +221,7 @@ func (c *Worker) InsertBill(ctx context.Context, bill *Bill) error {
 		bill.OwnerID,
 		bill.Status,
 		bill.HouseholdID,
+		bill.PaymentReference,
 	)
 	if err != nil {
 		log.Printf("Failed to insert bill: %v", err)

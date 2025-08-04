@@ -32,9 +32,9 @@ func newHousehold(seed int64, location *Location) *Household {
 	rng := rand.New(rand.NewSource(seed))
 	return &Household{
 		rng:            rng,
-		baseLoad:       0.3 + (rng.Float64() * 0.2),
+		baseLoad:       0.7 + (rng.Float64() * 0.6),
 		peakMultiplier: 2.5 + rng.Float64(),
-		seasonImpact:   0.3 + (rng.Float64() * 0.2),
+		seasonImpact:   0.3 + (rng.Float64() * 0.6),
 		address:        location,
 	}
 }

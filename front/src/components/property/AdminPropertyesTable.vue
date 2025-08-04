@@ -44,8 +44,21 @@ import {
   DialogTrigger,
   DialogClose
 } from '@/shad/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/shad/components/ui/alert-dialog'
 import Toaster from '@/shad/components/ui/toast/Toaster.vue';
 import { useToast } from '../../shad/components/ui/toast/use-toast'
+import Spinner from '../Spinner.vue'
+import ImageDocumentsDisplay from '@/components/household/ImageDocumentsDisplay.vue'
 
 interface Property {
   id: number
@@ -56,6 +69,8 @@ interface Property {
   created: string
   floors: number
   households: number
+  images: string[]
+  documents: string[]
 }
 
 
@@ -64,6 +79,10 @@ const { toast } = useToast()
 const properties = ref<Property[]>([])
 
 const currentPropertyId = ref<number | null>(null); 
+// Accept confirmation dialog state
+const showAcceptConfirmDialog = ref(false);
+const selectedProperty = ref<Property | null>(null);
+
 const pagination = ref({ page: 1, total: 0, perPage: 5 })
 const searchQuery = ref<{ city?: string; street?: string; number?: string; floors?: number }>({})
 const sortBy = ref("created_at")
@@ -77,6 +96,7 @@ const sortOrder = ref<{ [key: string]: "asc" | "desc" | "" }>({
 })
 const totalPages = computed(() => Math.ceil(pagination.value.total / pagination.value.perPage))
 
+const acceptingPropertyId = ref<number | null>(null);
 
 async function fetchProperties() {
   try {
@@ -89,9 +109,10 @@ async function fetchProperties() {
     }
 
     const response = await axios.get('/api/property/query', { params })
-
+    console.log("RESPONSE", response)
     if (response.data && response.data.properties) {
       properties.value = response.data.properties.map((property: any) => mapToProperty(property))
+          console.log("MAPPED: ", properties.value)
       pagination.value.total = response.data.total
     }
   } catch (error) {
@@ -109,6 +130,8 @@ function mapToProperty(data: any): Property {
     created: data.created_at,
     floors: data.floors,
     households: data.household.length,
+    images: data.images,
+    documents: data.documents
   }
 }
 
@@ -144,7 +167,40 @@ function formatDate(date: string): string {
   return new Date(date).toLocaleString('en-US', options)
 }
 
+const showAcceptConfirmationDialog = (property: Property) => {
+  selectedProperty.value = property;
+  showAcceptConfirmDialog.value = true;
+};
+
+const confirmAccept = async () => {
+  if (!selectedProperty.value) return;
+  
+  acceptingPropertyId.value = selectedProperty.value.id;
+  try {
+    const response = await axios.put(`/api/property/` + selectedProperty.value.id +`/accept`)
+    console.log(`Property accepted successfully`, response.data)
+    fetchProperties()
+    toast({
+      title: 'Property Accepted',
+      description: `Property was accepted successfully.`,
+      variant: "default",
+    });
+  } catch (error) {
+    console.error(`Failed to accept property with ID ${selectedProperty.value.id}:`, error)
+    toast({
+      title: 'Error',
+      description: 'Failed to accept the property.',
+      variant: "destructive",
+    });
+  } finally {
+    acceptingPropertyId.value = null;
+    showAcceptConfirmDialog.value = false;
+    selectedProperty.value = null;
+  }
+};
+
 async function handleAccept(id: number) {
+  acceptingPropertyId.value = id;
   try {
     const response = await axios.put(`/api/property/` + id +`/accept`)
     console.log(`Property accepteded successfully`, response.data)
@@ -156,6 +212,13 @@ async function handleAccept(id: number) {
     });
   } catch (error) {
     console.error(`Failed to accept property with ID ${id}:`, error)
+    toast({
+      title: 'Error',
+      description: 'Failed to accept the property.',
+      variant: "destructive",
+    });
+  } finally {
+    acceptingPropertyId.value = null;
   }
 }
 
@@ -164,10 +227,14 @@ const formSchema = toTypedSchema(z.object({
 }))
 
 async function handleDecline(values: any) {
-  try {
-    if (!currentPropertyId.value) {
+  if (!currentPropertyId.value) {
       throw new Error("No property ID found for declining.");
-    }
+  }
+
+  acceptingPropertyId.value = currentPropertyId.value;
+
+  try {
+
     console.log(`Declining property with ID: ${currentPropertyId.value}`);
     console.log(`Reason: ${values.declineReason}`);
 
@@ -189,7 +256,8 @@ async function handleDecline(values: any) {
       variant: "destructive",
     });
   } finally {
-    currentPropertyId.value = null; 
+    currentPropertyId.value = null;
+    acceptingPropertyId.value = null;
   }
 }
 
@@ -204,10 +272,10 @@ watch(searchQuery, (newVal) => {
 </script>
 
 <template>
-  <div class="p-7 flex flex-col bg-white shadow-lg">
+  <div class="mx-auto w-10/12 p-7 flex flex-col bg-white shadow-lg">
     <div>
       <div class="w-full text-center my-10 text-xl">
-        Search Property
+        Search Property Requests
       </div>
 
       <form class="flex flex-wrap gap-5 items-center border rounded-2xl p-10 mb-10" @submit.prevent="fetchProperties">
@@ -247,7 +315,7 @@ watch(searchQuery, (newVal) => {
       </form>
     </div>
 
-    <Table class="gap-5 items-center border rounded-2xl border-gray-300 shadow-gray-500 p-10 mb-10">
+    <Table class="w-full border rounded-2xl border-gray-300 shadow-gray-500 p-10 mb-10">
       <TableHeader>
         <TableRow>
             <TableHead @click="onSortChange('city')" :orientation="sortOrder.city">City</TableHead>
@@ -256,6 +324,7 @@ watch(searchQuery, (newVal) => {
             <TableHead @click="onSortChange('status')" :orientation="sortOrder.status">Status</TableHead>
             <TableHead @click="onSortChange('created_at')" :orientation="sortOrder.created_at">Creation Time</TableHead>
             <TableHead @click="onSortChange('floors')" :orientation="sortOrder.floors">Floors</TableHead>
+            <TableHead>Documentation</TableHead>
             <TableHead>Households</TableHead>
             <TableHead>Actions</TableHead>
         </TableRow>
@@ -268,41 +337,62 @@ watch(searchQuery, (newVal) => {
           <TableCell>{{ property.status }}</TableCell>
           <TableCell>{{ formatDate(property.created) }}</TableCell>
           <TableCell>{{ property.floors }}</TableCell>
+          <TableCell>
+            <Dialog>
+              <DialogTrigger>
+                <Button class="bg-gray-600 text-white">Details</Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogTitle>Photos & Documents for proof</DialogTitle>
+                <DialogDescription>
+                  Analize documentation for property
+                </DialogDescription>
+                <div class="flex justify-center items-center w-full h-full">
+                  <ImageDocumentsDisplay :images="property.images" :documents="property.documents" />
+                </div>
+              </DialogContent>
+            </Dialog>
+          </TableCell>
           <TableCell>{{ property.households }}</TableCell>
           <TableCell>
-            <Button class="bg-indigo-500 text-white mr-2 hover:bg-indigo-300" @click="handleAccept(property.id)" v-if="property.status === 'Pending'">Accept</Button>
-
-            <Form v-slot="{ handleSubmit }" as="" :validation-schema="formSchema">
-                <Dialog>
-                    <DialogTrigger as-child>
-                        <Button class="bg-red-500 text-white" v-if="property.status === 'Pending'" @click="currentPropertyId = property.id">Decline</Button>
-                    </DialogTrigger>
-                    <DialogContent class="sm:max-w-[425px]">
-                        <DialogHeader>
-                            <DialogTitle>Decline reason</DialogTitle>
-                            <DialogDescription>
-                                Reason for declining property request
-                            </DialogDescription>
-                        </DialogHeader>
-                        <form id="dialogForm" @submit="handleSubmit($event, handleDecline)">
-                            <FormField v-slot="{ componentField }" name="declineReason">
-                                <FormItem>
-                                    <FormLabel>Decline reason</FormLabel>
-                                    <FormControl>
-                                        <Input type="text" placeholder="Reason" v-bind="componentField" />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            </FormField>
-                        </form>
-                        <DialogFooter>
-                            <Button type="submit" form="dialogForm">
-                                Submit
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
-            </Form>
+            <div class="flex items-center gap-2 h-4">
+              <Spinner v-if="acceptingPropertyId === property.id"/>
+              <template v-else>
+                
+                <Button class="bg-indigo-500 text-white mr-2 hover:bg-indigo-300" @click="showAcceptConfirmationDialog(property)" v-if="property.status === 'Pending'">Accept</Button>
+                <Form v-slot="{ handleSubmit }" as="" :validation-schema="formSchema">
+                  <Dialog>
+                      <DialogTrigger as-child>
+                          <Button class="bg-red-500 text-white" v-if="property.status === 'Pending'" @click="currentPropertyId = property.id">Decline</Button>
+                      </DialogTrigger>
+                      <DialogContent class="sm:max-w-[425px]">
+                          <DialogHeader>
+                              <DialogTitle>Decline reason</DialogTitle>
+                              <DialogDescription>
+                                  Reason for declining property request
+                              </DialogDescription>
+                          </DialogHeader>
+                          <form id="dialogForm" @submit="handleSubmit($event, handleDecline)">
+                              <FormField v-slot="{ componentField }" name="declineReason">
+                                  <FormItem>
+                                      <FormLabel>Decline reason</FormLabel>
+                                      <FormControl>
+                                          <Input type="text" placeholder="Reason" v-bind="componentField" />
+                                      </FormControl>
+                                      <FormMessage />
+                                  </FormItem>
+                              </FormField>
+                          </form>
+                          <DialogFooter>
+                              <Button type="submit" form="dialogForm">
+                                  Submit
+                              </Button>
+                          </DialogFooter>
+                      </DialogContent>
+                  </Dialog>
+                </Form>
+              </template>
+            </div>
           </TableCell>
         </TableRow>
       </TableBody>
@@ -341,5 +431,35 @@ watch(searchQuery, (newVal) => {
         </div>
     </div>
   </div>
+  
+  <!-- Accept Confirmation Dialog -->
+  <AlertDialog :open="showAcceptConfirmDialog" @update:open="showAcceptConfirmDialog = $event">
+    <AlertDialogContent>
+      <AlertDialogHeader>
+        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+        <AlertDialogDescription>
+          Are you sure you want to accept this property request?
+          <br><br>
+          <strong>Property Details:</strong><br>
+          • Address: {{ selectedProperty?.street }} {{ selectedProperty?.number }}, {{ selectedProperty?.city }}<br>
+          • Floors: {{ selectedProperty?.floors }}<br>
+          • Households: {{ selectedProperty?.households }}<br>
+          • Status: {{ selectedProperty?.status }}<br>
+          <br>
+          This action will approve the property and make it available for ownership requests.
+        </AlertDialogDescription>
+      </AlertDialogHeader>
+      <AlertDialogFooter>
+        <AlertDialogCancel>No, cancel</AlertDialogCancel>
+        <AlertDialogAction 
+          @click="confirmAccept"
+          class="bg-indigo-500 hover:bg-gray-600"
+        >
+          Yes, accept property
+        </AlertDialogAction>
+      </AlertDialogFooter>
+    </AlertDialogContent>
+  </AlertDialog>
+  
   <Toaster />
 </template>

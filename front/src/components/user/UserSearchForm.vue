@@ -20,7 +20,7 @@ const onSubmit = () => {
 
 </script>
 <template>
-  <div>
+  <div class="mx-auto w-full p-7 flex flex-col bg-white shadow-lg">
 
     <form class="w-full flex flex-wrap gap-5 items-center border rounded-2xl border-gray-300 shadow-gray-500 p-10">
       <FormField name="firstName" v-slot="{ field }">

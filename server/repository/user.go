@@ -16,24 +16,27 @@ type UserRepository struct {
 	Logger   util.Logger
 }
 
-func NewUserRepository(db db.Database, logger util.Logger) UserRepository {
+func NewUserRepository(db db.Database, logger util.Logger) *UserRepository {
 	err := db.AutoMigrate(&model.User{})
 	if err != nil {
 		logger.Error("Error migrating user", err)
 	}
-	return UserRepository{
+	return &UserRepository{
 		Database: db,
 		Logger:   logger,
 	}
 }
 
-func (r UserRepository) WithTrx(trxHandle *gorm.DB) UserRepository {
+func (r *UserRepository) WithTrx(trxHandle *gorm.DB) *UserRepository {
 	if trxHandle == nil {
 		r.Logger.Error("Transaction Database not found in gin context. ")
 		return r
 	}
-	r.Database.DB = trxHandle
-	return r
+	// Create a new repository instance with the transaction
+	return &UserRepository{
+		Database: db.Database{DB: trxHandle},
+		Logger:   r.Logger,
+	}
 }
 
 func (repository *UserRepository) Create(user *model.User) (model.User, error) {
