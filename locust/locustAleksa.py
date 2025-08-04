@@ -7,6 +7,7 @@ import json
 
 class GettingOwnershipRequests(HttpUser):
     token = None
+    wait_time = between(1, 5)
 
     def on_start(self):
         try:
@@ -56,7 +57,7 @@ class GettingOwnershipRequests(HttpUser):
 
 
 class UserRegistration(HttpUser):
-    wait_time = between(1, 2)
+    wait_time = between(1, 5)
     
     def generate_unique_user_data(self):
         timestamp = str(int(time.time()))
@@ -101,6 +102,7 @@ class UserRegistration(HttpUser):
 
 class RegisteringNewAdmin(HttpUser):
     token = None
+    wait_time = between(1, 5)
 
     def on_start(self):
         try:
@@ -151,7 +153,7 @@ class RegisteringNewAdmin(HttpUser):
                 logging.error(f"Error in get_ownership_requests: {e}")
 
 class CreateOwnershipRequest(HttpUser):
-    wait_time = between(1, 3)
+    wait_time = between(1, 5)
     token = None
 
     def on_start(self):
@@ -234,7 +236,7 @@ class CreateOwnershipRequest(HttpUser):
                 logging.error(f"Error in create_ownership_request: {e}")
 
 class DeclineOwnershipRequest(HttpUser):
-    wait_time = between(2, 5)
+    wait_time = between(1, 5)
     token = None
     admin_token = None
     created_request_id = None
@@ -316,8 +318,7 @@ class DeclineOwnershipRequest(HttpUser):
                                          headers=self.get_auth_headers(use_admin=True),
                                          json=reason,
                                          timeout=60,
-                                         catch_response=True,
-                                         name="Decline Ownership Request") as response:
+                                         catch_response=True) as response:
                         if response.status_code == 200:
                             response.success()
                         elif response.status_code == 400:
@@ -332,7 +333,7 @@ class DeclineOwnershipRequest(HttpUser):
                 logging.error("No request ID to approve or no admin token")
     
 class GetAllOwneredHouseholds(HttpUser):
-    wait_time = between(1, 3)
+    wait_time = between(1, 5)
     token = None
 
     def on_start(self):
@@ -386,7 +387,7 @@ class GetAllOwneredHouseholds(HttpUser):
 
 
 class GetHouseholdDetails(HttpUser):
-    wait_time = between(1, 3)
+    wait_time = between(1, 5)
     token = None
 
     def on_start(self):
@@ -462,7 +463,7 @@ class GetHouseholdDetails(HttpUser):
 
 
 class GetDeviceConsumption(HttpUser):
-    wait_time = between(1, 3)
+    wait_time = between(1, 5)
     token = None
 
     def on_start(self):
@@ -529,7 +530,7 @@ class GetDeviceConsumption(HttpUser):
 
 
 class GetAllUsersMeetings(HttpUser):
-    wait_time = between(1, 3)
+    wait_time = between(1, 5)
     token = None
 
     def on_start(self):
@@ -580,7 +581,7 @@ class GetAllUsersMeetings(HttpUser):
     
 
 class CreateMeeting(HttpUser):
-    wait_time = between(1, 3)
+    wait_time = between(1, 5)
     token = None
 
     def on_start(self):
