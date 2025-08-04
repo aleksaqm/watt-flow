@@ -26,6 +26,9 @@ func NewDatabase(env *config.Environment, logger util.Logger) Database {
 		PreferSimpleProtocol: true,
 	}), &gorm.Config{
 		Logger: logger.GetGormLogger(),
+
+		PrepareStmt:                              true,
+		DisableForeignKeyConstraintWhenMigrating: false,
 	})
 	if err != nil {
 		fmt.Println(err)
