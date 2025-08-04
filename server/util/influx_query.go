@@ -6,6 +6,7 @@ import (
 	"log"
 	"strconv"
 	"time"
+
 	"watt-flow/config"
 	"watt-flow/dto"
 
@@ -320,7 +321,7 @@ func generateQueryString(params dto.FluxQueryStatusDto) string {
   last_from_data = data |> last()   |> findRecord(fn: (key) => true, idx: 0)
 
   bounds = array.from(rows: [
-    { _time: experimental.subDuration(from: now(), d: 1m),  _value: if last_from_data._value == true then false else true, _field: "value", _measurement: "online_status", device_id: "%s", _stop: now(), _start: now()},
+    { _time: experimental.subDuration(from: now(), d: 1m),  _value: if exists last_from_data._value and last_from_data._value == true then false else true, _field: "value", _measurement: "online_status", device_id: "%s", _stop: now(), _start: now()},
 
   { _time: experimental.subDuration(from: now(), d: %s), _value: false, _field: "value", _measurement: "online_status", device_id: "%s", _stop: now(), _start: now()}
 
