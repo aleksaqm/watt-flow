@@ -129,13 +129,11 @@ func (service *UserService) Create(userDto *dto.UserCreateDto) (*dto.UserDto, er
 }
 
 func (service *UserService) Login(loginCredentials dto.LoginDto) (string, error) {
-	user, err := service.repository.FindByUsername(loginCredentials.Username)
+	user, err := service.repository.FindForLogin(loginCredentials.Username)
 	if err != nil {
-		user, err = service.repository.FindActiveByEmail(loginCredentials.Username)
-		if err != nil || user == nil {
-			return "", errors.New("invalid credentials")
-		}
+		return "", errors.New("invalid credentials")
 	}
+
 	if user.Status == model.Inactive {
 		return "", errors.New("user is inactive")
 	}
@@ -144,10 +142,10 @@ func (service *UserService) Login(loginCredentials dto.LoginDto) (string, error)
 	}
 	if !util.ComparePasswords(user.Password, loginCredentials.Password) {
 		return "", errors.New("invalid credentials")
-	} else {
-		token := service.authService.CreateToken(user)
-		return token, nil
 	}
+
+	token := service.authService.CreateToken(user)
+	return token, nil
 }
 
 func (service *UserService) Register(registrationDto *dto.RegistrationDto) (*dto.UserDto, error) {
