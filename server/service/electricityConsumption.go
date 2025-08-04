@@ -23,10 +23,10 @@ type IElectricityConsumptionService interface {
 
 type ElectricityConsumptionService struct {
 	influxHelper        *util.InfluxQueryHelper
-	householdRepository repository.HouseholdRepository
+	householdRepository *repository.HouseholdRepository
 }
 
-func NewElectricityConsumptionService(env *config.Environment, householdRepository repository.HouseholdRepository) IElectricityConsumptionService {
+func NewElectricityConsumptionService(env *config.Environment, householdRepository *repository.HouseholdRepository) IElectricityConsumptionService {
 	influxHelper := util.NewInfluxQueryHelper(env)
 	return &ElectricityConsumptionService{
 		influxHelper:        influxHelper,
@@ -34,9 +34,11 @@ func NewElectricityConsumptionService(env *config.Environment, householdReposito
 	}
 }
 
-func (s ElectricityConsumptionService) WithTrx(trxHandle *gorm.DB) IElectricityConsumptionService {
-	s.householdRepository = s.householdRepository.WithTrx(trxHandle)
-	return &s
+func (s *ElectricityConsumptionService) WithTrx(trxHandle *gorm.DB) IElectricityConsumptionService {
+	return &ElectricityConsumptionService{
+		influxHelper:        s.influxHelper,
+		householdRepository: s.householdRepository.WithTrx(trxHandle),
+	}
 }
 
 func (s *ElectricityConsumptionService) GetMonthlyConsumption(householdId string, year int, month int) (*dto.MonthlyConsumptionResult, error) {

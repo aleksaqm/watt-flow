@@ -28,6 +28,7 @@ services:
 
   postgres:
     image: postgres:13
+    command: -c 'max_connections=500'
     environment:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASS}

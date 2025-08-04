@@ -16,24 +16,26 @@ type OwnershipRepository struct {
 	Logger   util.Logger
 }
 
-func NewOwnershipRepository(db db.Database, logger util.Logger) OwnershipRepository {
+func NewOwnershipRepository(db db.Database, logger util.Logger) *OwnershipRepository {
 	err := db.AutoMigrate(&model.OwnershipRequest{})
 	if err != nil {
 		logger.Error("Error migrating Ownership Repository", err)
 	}
-	return OwnershipRepository{
+	return &OwnershipRepository{
 		Database: db,
 		Logger:   logger,
 	}
 }
 
-func (r OwnershipRepository) WithTrx(trxHandle *gorm.DB) OwnershipRepository {
+func (r *OwnershipRepository) WithTrx(trxHandle *gorm.DB) *OwnershipRepository {
 	if trxHandle == nil {
 		r.Logger.Error("Transaction Database not found in gin context. ")
 		return r
 	}
-	r.Database.DB = trxHandle
-	return r
+	return &OwnershipRepository{
+		Database: db.Database{DB: trxHandle},
+		Logger:   r.Logger,
+	}
 }
 
 func (repository *OwnershipRepository) Create(ownershipRequest *model.OwnershipRequest) (model.OwnershipRequest, error) {

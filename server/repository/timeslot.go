@@ -15,24 +15,26 @@ type TimeSlotRepository struct {
 	Logger   util.Logger
 }
 
-func NewTimeSlotRepository(db db.Database, logger util.Logger) TimeSlotRepository {
+func NewTimeSlotRepository(db db.Database, logger util.Logger) *TimeSlotRepository {
 	err := db.AutoMigrate(&model.TimeSlot{})
 	if err != nil {
 		logger.Error("Error migrating timeslot repo", err)
 	}
-	return TimeSlotRepository{
+	return &TimeSlotRepository{
 		Database: db,
 		Logger:   logger,
 	}
 }
 
-func (r TimeSlotRepository) WithTrx(trxHandle *gorm.DB) TimeSlotRepository {
+func (r *TimeSlotRepository) WithTrx(trxHandle *gorm.DB) *TimeSlotRepository {
 	if trxHandle == nil {
 		r.Logger.Error("Transaction Database not found in gin context. ")
 		return r
 	}
-	r.Database.DB = trxHandle
-	return r
+	return &TimeSlotRepository{
+		Database: db.Database{DB: trxHandle},
+		Logger:   r.Logger,
+	}
 }
 
 func (repository *TimeSlotRepository) DeleteSlotsForClerk(clerkId uint64) error {

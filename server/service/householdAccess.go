@@ -2,10 +2,11 @@ package service
 
 import (
 	"errors"
-	"gorm.io/gorm"
 	"watt-flow/dto"
 	"watt-flow/model"
 	"watt-flow/repository"
+
+	"gorm.io/gorm"
 )
 
 type IHouseholdAccessService interface {
@@ -16,12 +17,12 @@ type IHouseholdAccessService interface {
 }
 
 type HouseholdAccessService struct {
-	householdAccessRepository repository.HouseholdAccessRepository
-	householdRepository       repository.HouseholdRepository
-	userRepository            repository.UserRepository
+	householdAccessRepository *repository.HouseholdAccessRepository
+	householdRepository       *repository.HouseholdRepository
+	userRepository            *repository.UserRepository
 }
 
-func NewHouseholdAccessService(accessRepo repository.HouseholdAccessRepository, householdRepo repository.HouseholdRepository, userRepo repository.UserRepository) *HouseholdAccessService {
+func NewHouseholdAccessService(accessRepo *repository.HouseholdAccessRepository, householdRepo *repository.HouseholdRepository, userRepo *repository.UserRepository) *HouseholdAccessService {
 	return &HouseholdAccessService{
 		householdAccessRepository: accessRepo,
 		householdRepository:       householdRepo,
@@ -29,11 +30,12 @@ func NewHouseholdAccessService(accessRepo repository.HouseholdAccessRepository, 
 	}
 }
 
-func (s HouseholdAccessService) WithTrx(trxHandle *gorm.DB) IHouseholdAccessService {
-	s.householdAccessRepository = s.householdAccessRepository.WithTrx(trxHandle)
-	s.householdRepository = s.householdRepository.WithTrx(trxHandle)
-	s.userRepository = s.userRepository.WithTrx(trxHandle)
-	return &s
+func (s *HouseholdAccessService) WithTrx(trxHandle *gorm.DB) IHouseholdAccessService {
+	return &HouseholdAccessService{
+		householdAccessRepository: s.householdAccessRepository.WithTrx(trxHandle),
+		householdRepository:       s.householdRepository.WithTrx(trxHandle),
+		userRepository:            s.userRepository.WithTrx(trxHandle),
+	}
 }
 
 func (s *HouseholdAccessService) GrantAccess(householdID uint64, userIDToGrant uint64, currentUserID uint64) error {

@@ -25,20 +25,22 @@ type IHouseholdService interface {
 }
 
 type HouseholdService struct {
-	repository          repository.HouseholdRepository
-	ownershipRepository repository.OwnershipRepository
+	repository          *repository.HouseholdRepository
+	ownershipRepository *repository.OwnershipRepository
 }
 
-func NewHouseholdService(repository repository.HouseholdRepository, ownershipRepository repository.OwnershipRepository) *HouseholdService {
+func NewHouseholdService(repository *repository.HouseholdRepository, ownershipRepository *repository.OwnershipRepository) *HouseholdService {
 	return &HouseholdService{
 		repository:          repository,
 		ownershipRepository: ownershipRepository,
 	}
 }
 
-func (s HouseholdService) WithTrx(trxHandle *gorm.DB) IHouseholdService {
-	s.repository = s.repository.WithTrx(trxHandle)
-	return &s
+func (s *HouseholdService) WithTrx(trxHandle *gorm.DB) IHouseholdService {
+	return &HouseholdService{
+		repository:          s.repository.WithTrx(trxHandle),
+		ownershipRepository: s.ownershipRepository.WithTrx(trxHandle),
+	}
 }
 
 func (service *HouseholdService) FindById(id uint64) (*dto.HouseholdResultDto, error) {

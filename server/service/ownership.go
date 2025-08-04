@@ -26,12 +26,12 @@ type IOwnershipService interface {
 }
 
 type OwnershipService struct {
-	householdRepository repository.HouseholdRepository
-	ownershipRepository repository.OwnershipRepository
+	householdRepository *repository.HouseholdRepository
+	ownershipRepository *repository.OwnershipRepository
 	emailSender         *util.EmailSender
 }
 
-func NewOwnershipService(householdRepository repository.HouseholdRepository, ownershipRepository repository.OwnershipRepository, emailSender *util.EmailSender) *OwnershipService {
+func NewOwnershipService(householdRepository *repository.HouseholdRepository, ownershipRepository *repository.OwnershipRepository, emailSender *util.EmailSender) *OwnershipService {
 	return &OwnershipService{
 		householdRepository: householdRepository,
 		ownershipRepository: ownershipRepository,
@@ -39,10 +39,12 @@ func NewOwnershipService(householdRepository repository.HouseholdRepository, own
 	}
 }
 
-func (s OwnershipService) WithTrx(trxHandle *gorm.DB) IOwnershipService {
-	s.householdRepository = s.householdRepository.WithTrx(trxHandle)
-	s.ownershipRepository = s.ownershipRepository.WithTrx(trxHandle)
-	return &s
+func (s *OwnershipService) WithTrx(trxHandle *gorm.DB) IOwnershipService {
+	return &OwnershipService{
+		householdRepository: s.householdRepository.WithTrx(trxHandle),
+		ownershipRepository: s.ownershipRepository.WithTrx(trxHandle),
+		emailSender:         s.emailSender,
+	}
 }
 
 func (service *OwnershipService) CreateOwnershipRequest(ownershipRequestDto dto.OwnershipRequestDto) (*dto.OwnershipRequestDto, error) {
@@ -155,7 +157,7 @@ func (service *OwnershipService) AcceptOwnershipRequest(id uint64) error {
 		service.householdRepository.Logger.Error("Error adding owner to household", err)
 		return err
 	}
-	
+
 	emailBody := util.GenerateOwnershipApprovalEmailBody(request.Household.Property.Address.City+", "+request.Household.Property.Address.Street+" "+request.Household.Property.Address.Number+" suite: "+request.Household.Suite,
 		"http://localhost:5173/")
 
@@ -186,7 +188,7 @@ func (service *OwnershipService) DeclineOwnershipRequest(id uint64, reason strin
 		service.ownershipRepository.Logger.Error("Error accepting request", err)
 		return err
 	}
-	
+
 	emailBody := util.GenerateOwnershipDenialEmailBody(request.Household.Property.Address.City+", "+request.Household.Property.Address.Street+" "+request.Household.Property.Address.Number+" suite: "+request.Household.Suite, reason,
 		"http://localhost:5173/")
 	err = service.emailSender.SendEmail(request.Owner.Email, "Ownership declined", emailBody)
