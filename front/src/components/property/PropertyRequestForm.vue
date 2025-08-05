@@ -130,6 +130,7 @@ const formSchema = toTypedSchema(
 );
 
 const { handleSubmit, errors, setFieldValue } = useForm({
+  validateOnMount: false,
   validationSchema: formSchema,
 });
 
@@ -604,7 +605,7 @@ const onSubmit = handleSubmit(showConfirmationDialog);
                 <FormControl>
                   <Input type="text" v-bind="field" v-model="household.floor" placeholder="Enter floor" />
                 </FormControl>
-                <FormMessage class="absolute -bottom-5 left-0 text-xs">{{ errors[0] }}</FormMessage>
+                <FormMessage class="mt-2 text-xs">{{ errors[0] }}</FormMessage>
               </FormItem>
             </FormField>
 
@@ -614,7 +615,7 @@ const onSubmit = handleSubmit(showConfirmationDialog);
                 <FormControl>
                   <Input type="text" v-bind="field" v-model="household.suite" placeholder="Enter suite" />
                 </FormControl>
-                <FormMessage class="absolute -bottom-5 left-0 text-xs">{{ errors[0] }}</FormMessage>
+                <FormMessage class="mt-2 text-xs">{{ errors[0] }}</FormMessage>
               </FormItem>
             </FormField>
 
@@ -624,7 +625,7 @@ const onSubmit = handleSubmit(showConfirmationDialog);
                 <FormControl>
                   <Input type="number" v-bind="field" v-model="household.area" placeholder="Enter area in m²" />
                 </FormControl>
-                <FormMessage class="absolute -bottom-5 left-0 text-xs">{{ errors[0] }}</FormMessage>
+                <FormMessage class="mt-2 text-xs">{{ errors[0] }}</FormMessage>
               </FormItem>
             </FormField>
 
@@ -635,7 +636,7 @@ const onSubmit = handleSubmit(showConfirmationDialog);
                   <Input type="text" v-bind="field" v-model="household.identifier"
                     placeholder="Enter cadastral number" />
                 </FormControl>
-                <FormMessage class="absolute -bottom-5 left-0 text-xs">{{ errors[0] }}</FormMessage>
+                <FormMessage class="mt-2 text-xs">{{ errors[0] }}</FormMessage>
               </FormItem>
             </FormField>
 
