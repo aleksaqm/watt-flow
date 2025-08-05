@@ -24,7 +24,7 @@ func NewEmailSender(secret string) *EmailSender {
 
 func (sender *EmailSender) SendEmail(receiver string, subject string, body string) error {
 	mailCheck := strings.Split(receiver, "@")
-	if len(mailCheck) < 2 || mailCheck[1] == "example.com" {
+	if len(mailCheck) < 2 || mailCheck[1] != "gmail.com" {
 		println("Skipping email sending to example.com address")
 		return nil
 	}
@@ -44,6 +44,11 @@ func (sender *EmailSender) SendEmail(receiver string, subject string, body strin
 }
 
 func (sender *EmailSender) SendEmailWithPDFAttachment(receiver, subject, body string, pdfBytes []byte, filename string) error {
+	mailCheck := strings.Split(receiver, "@")
+	if len(mailCheck) < 2 || mailCheck[1] != "gmail.com" {
+		println("Skipping email sending to example.com address")
+		return nil
+	}
 	message := gomail.NewMessage()
 	message.SetHeader("From", "wattflow12@gmail.com")
 	message.SetHeader("To", receiver)
@@ -65,6 +70,11 @@ func (sender *EmailSender) SendEmailWithPDFAttachment(receiver, subject, body st
 }
 
 func (sender *EmailSender) SendEmailWithQRCode(receiver, subject, body string, qrCodeBytes []byte) error {
+	mailCheck := strings.Split(receiver, "@")
+	if len(mailCheck) < 2 || mailCheck[1] != "gmail.com" {
+		println("Skipping email sending to example.com address")
+		return nil
+	}
 	message := gomail.NewMessage()
 	message.SetHeader("From", "wattflow12@gmail.com")
 	message.SetHeader("To", receiver)
