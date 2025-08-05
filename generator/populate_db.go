@@ -211,6 +211,8 @@ func main() {
 	insertHouseholds(db, households)
 	updateDeviceStatusHouseholdIDs(db)
 
+	resetSequences(db)
+
 	fmt.Println("\nPhase 3: Exporting 1000 random simulators to CSV file...")
 	if err := writeSimulatorsToCSV(deviceStatuses, 1000); err != nil {
 		log.Fatalf("Fatal error while writing simulators to CSV: %v", err)
@@ -338,8 +340,9 @@ func populateUsers(db *sql.DB) []int64 {
 					break
 				}
 			}
+			// password is test123 hashed
 			email := fmt.Sprintf("%s@example.com", username)
-			_, _ = stmt.Exec(userID, username, "hashed_password", email, 0, firstName, lastName, 0)
+			_, _ = stmt.Exec(userID, username, "$2a$10$cxQYz1cuh4inE5Tr/3Xfcu9Rs33FMwcetUsFiYv.TUiqGK704a/Ui", email, 0, firstName, lastName, 0)
 		}
 
 		_, _ = stmt.Exec()
@@ -460,4 +463,48 @@ func updateDeviceStatusHouseholdIDs(db *sql.DB) {
 
 	rowsAffected, _ := result.RowsAffected()
 	fmt.Printf("Update complete. %d device_status records updated in %v.\n", rowsAffected, time.Since(startTime))
+}
+func resetSequences(db *sql.DB) {
+	fmt.Println("Resetting PostgreSQL sequences...")
+
+	tables := map[string]string{
+		"users":       "id",
+		"properties":  "id",
+		"households":  "id",
+		"device_status": "device_id",
+	}
+
+	for tableName, idColumn := range tables {
+		sequenceQuery := `
+			SELECT pg_get_serial_sequence($1, $2)`
+
+		var sequenceName sql.NullString
+		err := db.QueryRow(sequenceQuery, tableName, idColumn).Scan(&sequenceName)
+		if err != nil || !sequenceName.Valid {
+			log.Printf("Warning: Could not find sequence for %s.%s: %v", tableName, idColumn, err)
+			continue
+		}
+
+		// Get the maximum ID from the table
+		var maxID sql.NullInt64
+		maxQuery := fmt.Sprintf("SELECT MAX(%s) FROM %s", idColumn, tableName)
+		err = db.QueryRow(maxQuery).Scan(&maxID)
+		if err != nil {
+			log.Printf("Warning: Failed to get max ID from %s: %v", tableName, err)
+			continue
+		}
+
+		// Only reset if there are records in the table
+		if maxID.Valid {
+			// Reset the sequence to max_id + 1
+			resetQuery := fmt.Sprintf("SELECT setval('%s', %d)", sequenceName.String, maxID.Int64)
+			_, err := db.Exec(resetQuery)
+			if err != nil {
+				log.Printf("Warning: Failed to reset sequence %s: %v", sequenceName.String, err)
+			} else {
+				fmt.Printf("  -> Reset %s to %d\n", sequenceName.String, maxID.Int64+1)
+			}
+		}
+	}
+	fmt.Println("Sequence reset complete.")
 }

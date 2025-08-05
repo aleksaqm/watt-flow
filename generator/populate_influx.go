@@ -13,6 +13,7 @@ import (
 
 	sim "generator/simulator"
 
+	"github.com/influxdata/influxdb-client-go/v2/domain"
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	"github.com/influxdata/influxdb-client-go/v2/api"
 )
@@ -27,7 +28,7 @@ const (
 	csvFile              = "simulators.csv"
 	historyDuration      = 3 * 365 * 24 * time.Hour
 	influxWriteBatchSize = 5000
-	timeoutDuration      = 300 * time.Second
+	timeoutDuration      = 3000 * time.Second
 )
 
 // Struct to hold data from the CSV file
@@ -48,13 +49,13 @@ func main() {
 	client := influxdb2.NewClientWithOptions(influxURI, influxToken, options)
 	fmt.Printf("Successfully connected to InfluxDB at %s\n", influxURI)
 
-	// 2. Delete all existing data in the bucket
-	fmt.Printf("WARNING: Deleting all data from bucket '%s'...\n", influxBucket)
-	err := deleteBucketData(client, influxOrg, influxBucket)
-	if err != nil {
-		log.Fatalf("Failed to delete bucket data: %v", err)
-	}
-	fmt.Printf("Successfully cleared bucket '%s'.\n", influxBucket)
+	// 2. Fast bucket reset (drop and recreate)
+		fmt.Printf("WARNING: Resetting bucket '%s' (drop and recreate)...\n", influxBucket)
+		err := resetBucketFast(client, influxOrg, influxBucket)
+		if err != nil {
+			log.Fatalf("Failed to reset bucket: %v", err)
+		}
+		fmt.Printf("Successfully reset bucket '%s'.\n", influxBucket)
 
 	// 3. Read devices from CSV
 	devices, err := readDevicesFromCSV(csvFile)
@@ -77,6 +78,48 @@ func main() {
 	fmt.Println("\nFlushing all remaining data points to InfluxDB...")
 	writeAPI.Flush()
 	fmt.Println("--- Backfill complete! ---")
+}
+
+// Fast bucket reset by dropping and recreating
+func resetBucketFast(client influxdb2.Client, org, bucket string) error {
+	bucketsAPI := client.BucketsAPI()
+	ctx := context.Background()
+
+	// 1. Find the existing bucket
+	existingBucket, err := bucketsAPI.FindBucketByName(ctx, bucket)
+	if err != nil {
+		return fmt.Errorf("failed to find bucket '%s': %w", bucket, err)
+	}
+
+	if existingBucket != nil {
+		fmt.Printf("Deleting existing bucket '%s'...\n", bucket)
+		// 2. Delete the bucket entirely
+		err = bucketsAPI.DeleteBucket(ctx, existingBucket)
+		if err != nil {
+			return fmt.Errorf("failed to delete bucket '%s': %w", bucket, err)
+		}
+	}
+
+	// 3. Recreate the bucket with same retention policy
+	fmt.Printf("Creating new bucket '%s'...\n", bucket)
+	orgObj, err := client.OrganizationsAPI().FindOrganizationByName(ctx, org)
+	if err != nil {
+		return fmt.Errorf("failed to find organization '%s': %w", org, err)
+	}
+
+	// Create bucket with default retention (30 days) - adjust as needed
+	newBucket := &domain.Bucket{
+		Name:           bucket,
+		OrgID:          orgObj.Id,
+		RetentionRules: []domain.RetentionRule{{EverySeconds: 0}}, // 0 = infinite retention
+	}
+
+	_, err = bucketsAPI.CreateBucket(ctx, newBucket)
+	if err != nil {
+		return fmt.Errorf("failed to create bucket '%s': %w", bucket, err)
+	}
+
+	return nil
 }
 
 // Deletes all data within a specified time range in a bucket.
