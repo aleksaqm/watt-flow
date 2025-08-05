@@ -197,7 +197,7 @@ func main() {
 	}
 	fmt.Println("Successfully connected to PostgreSQL.")
 
-	truncateTables(db)
+	// truncateTables(db)
 	userIDs := populateUsers(db)
 
 	fmt.Println("\nPhase 1: Generating all data in memory...")
@@ -225,6 +225,7 @@ func main() {
 func generateAllData(userIDs []int64) ([]Property, []Household, []DeviceStatus) {
 	var propertyIDCounter, householdIDCounter int64
 	var simulatorHouseholds int64 = 0
+	var isSimulator bool = false
 
 	allProperties := make([]Property, 0, totalHouseholds/5)
 	allHouseholds := make([]Household, 0, totalHouseholds)
@@ -254,6 +255,7 @@ func generateAllData(userIDs []int64) ([]Property, []Household, []DeviceStatus) 
 		for i := 0; i < householdsInProperty && generatedHouseholds < totalHouseholds; i++ {
 			householdID := householdIDCounter + 1
 			householdIDCounter++
+			isSimulator = false
 
 			var householdOwnerID sql.NullInt64
 			var householdStatus int64
@@ -269,6 +271,7 @@ func generateAllData(userIDs []int64) ([]Property, []Household, []DeviceStatus) 
 			cadastralNumber := fmt.Sprintf("CAD-%d-%d", prop.ID, householdID)
 
 			if simulatorHouseholds < 10 {
+				isSimulator = true
 				householdStatus = 1
 				deviceID = simulatorAddresses[simulatorHouseholds]
 				cadastralNumber = fmt.Sprintf("SIM-%d", simulatorHouseholds+1)
@@ -294,7 +297,9 @@ func generateAllData(userIDs []int64) ([]Property, []Household, []DeviceStatus) 
 				Address:     propAddress,
 				HouseholdID: sql.NullInt64{Int64: householdID, Valid: true},
 			}
-			allDeviceStatuses = append(allDeviceStatuses, deviceStatus)
+			if !isSimulator {
+				allDeviceStatuses = append(allDeviceStatuses, deviceStatus)
+			}
 
 			generatedHouseholds++
 		}
@@ -304,7 +309,7 @@ func generateAllData(userIDs []int64) ([]Property, []Household, []DeviceStatus) 
 
 func truncateTables(db *sql.DB) {
 	fmt.Println("Truncating tables...")
-	query := `TRUNCATE TABLE public.device_status, public.households, public.properties RESTART IDENTITY CASCADE;`
+	query := `TRUNCATE TABLE public.households, public.properties RESTART IDENTITY CASCADE;`
 	if _, err := db.Exec(query); err != nil {
 		log.Fatalf("Error truncating tables: %v", err)
 	}
@@ -464,13 +469,14 @@ func updateDeviceStatusHouseholdIDs(db *sql.DB) {
 	rowsAffected, _ := result.RowsAffected()
 	fmt.Printf("Update complete. %d device_status records updated in %v.\n", rowsAffected, time.Since(startTime))
 }
+
 func resetSequences(db *sql.DB) {
 	fmt.Println("Resetting PostgreSQL sequences...")
 
 	tables := map[string]string{
-		"users":       "id",
-		"properties":  "id",
-		"households":  "id",
+		"users":         "id",
+		"properties":    "id",
+		"households":    "id",
 		"device_status": "device_id",
 	}
 
