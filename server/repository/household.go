@@ -65,9 +65,9 @@ func (repository *HouseholdRepository) FindMyHouseholdById(id uint64, userId uin
 		Preload(clause.Associations).
 		Where("id = ?", id).
 		Where(`
-            owner_id = ? OR 
+            owner_id = ? OR
             EXISTS (
-                SELECT 1 FROM household_accesses ha 
+                SELECT 1 FROM household_accesses ha
                 WHERE ha.household_id = households.id AND ha.user_id = ?
             )
         `, userId, userId)
@@ -97,13 +97,33 @@ func (repository *HouseholdRepository) FindByStatus(status model.HouseholdStatus
 }
 
 func (repository *HouseholdRepository) GetOwnedHouseholds() ([]model.Household, error) {
-	var households []model.Household
-	result := repository.Database.Where("status = 1").Preload("Owner").Find(&households)
-	if result.Error != nil {
-		repository.Logger.Error("Error finding households by status", result.Error)
-		return nil, result.Error
-	}
-	return households, nil
+    var allHouseholds []model.Household
+    batchSize := 10000
+    offset := 0
+
+    for {
+        var batch []model.Household
+        result := repository.Database.
+            Where("status = 1").
+            Preload("Owner").
+            Limit(batchSize).
+            Offset(offset).
+            Find(&batch)
+
+        if result.Error != nil {
+            repository.Logger.Error("Error finding households by status", result.Error)
+            return nil, result.Error
+        }
+
+        if len(batch) == 0 {
+            break
+        }
+
+        allHouseholds = append(allHouseholds, batch...)
+        offset += batchSize
+    }
+
+    return allHouseholds, nil
 }
 
 func (repository *HouseholdRepository) Query(params *dto.HouseholdQueryParams) ([]model.Household, int64, error) {
@@ -123,9 +143,9 @@ func (repository *HouseholdRepository) Query(params *dto.HouseholdQueryParams) (
 
 	if params.Search.OwnerId != "" {
 		baseQuery = baseQuery.Where(`
-            households.owner_id = ? OR 
+            households.owner_id = ? OR
             EXISTS (
-                SELECT 1 FROM household_accesses ha 
+                SELECT 1 FROM household_accesses ha
                 WHERE ha.household_id = households.id AND ha.user_id = ?
             )
         `, params.Search.OwnerId, params.Search.OwnerId)
