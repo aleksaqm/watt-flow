@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"watt-flow/dto"
@@ -194,6 +195,11 @@ func (service *BillService) InitiateBillingOffload(year int, month int) (*model.
 		billingDate := fmt.Sprintf("%d-%02d", year, month)
 		if household.Owner == nil || activePricelist == nil {
 			fmt.Printf("failed querying household owner metadata for %s - %s", billingDate, household.DeviceStatusID)
+			continue
+		}
+		testEmail := strings.Split(household.Owner.Email, "@")
+		if len(testEmail) < 2 || testEmail[1] != "gmail.com" {
+			// skip sending to test emails
 			continue
 		}
 
