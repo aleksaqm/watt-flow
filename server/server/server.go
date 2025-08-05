@@ -1,0 +1,85 @@
+package server
+
+import (
+	"watt-flow/db"
+	"watt-flow/handler"
+	"watt-flow/service"
+	"watt-flow/util"
+)
+
+type Server struct {
+	Logger                        util.Logger
+	UserHandler                   *handler.UserHandler
+	userService                   service.IUserService
+	PropertyHandler               *handler.PropertyHandler
+	propertyService               service.IPropertyService
+	HouseholdHandler              *handler.HouseholdHandler
+	householdService              service.IHouseholdService
+	OwnershipHandler              *handler.OwnershipHandler
+	ownershipService              service.IOwnershipService
+	DeviceStatusHandler           *handler.DeviceStatusHandler
+	deviceStatusService           service.IDeviceStatusService
+	AddressHandler                *handler.AddressHandler
+	addressService                service.IAddressService
+	CityHandler                   *handler.CityHandler
+	cityService                   service.ICityService
+	pricelistService              service.IPricelistService
+	PricelistHandler              *handler.PricelistHandler
+	billService                   service.IBillService
+	BillHandler                   *handler.BillHandler
+	RestartService                *service.RestartService
+	AuthService                   *service.AuthService
+	MeetingService                service.IMeetingService
+	MeetingHandler                *handler.MeetingHandler
+	ElectricityConsumptionHandler *handler.ElectricityConsumptionHandler
+	electricityConsumptionService service.IElectricityConsumptionService
+	HouseholdAccessService        service.IHouseholdAccessService
+	HouseholdAccessHandler        *handler.HouseholdAccessHandler
+	Db                            db.Database
+}
+
+func NewServer(logger util.Logger, userService service.IUserService, authService *service.AuthService, restartService *service.RestartService, userHandler *handler.UserHandler,
+	propertyService service.IPropertyService, propertyHandler *handler.PropertyHandler,
+	householdService service.IHouseholdService, householdHandler *handler.HouseholdHandler,
+	ownershipService service.IOwnershipService, ownershipHandler *handler.OwnershipHandler,
+	deviceStatusService service.IDeviceStatusService, deviceStatusHandler *handler.DeviceStatusHandler,
+	addressService service.IAddressService, addressHandler *handler.AddressHandler,
+	meetingService service.IMeetingService, meetingHandler *handler.MeetingHandler,
+	pricelistService service.IPricelistService, PricelistHandler *handler.PricelistHandler,
+	billService service.IBillService, BillHandler *handler.BillHandler,
+	cityService service.ICityService, cityHandler *handler.CityHandler,
+	electricityConsumptionService service.IElectricityConsumptionService, electricityConsumptionHandler *handler.ElectricityConsumptionHandler,
+	householdAccessService service.IHouseholdAccessService, householdAccessHandler *handler.HouseholdAccessHandler,
+	db db.Database,
+) *Server {
+	return &Server{
+		Logger:                        logger,
+		UserHandler:                   userHandler,
+		RestartService:                restartService,
+		userService:                   userService,
+		AuthService:                   authService,
+		PropertyHandler:               propertyHandler,
+		propertyService:               propertyService,
+		HouseholdHandler:              householdHandler,
+		householdService:              householdService,
+		OwnershipHandler:              ownershipHandler,
+		ownershipService:              ownershipService,
+		DeviceStatusHandler:           deviceStatusHandler,
+		deviceStatusService:           deviceStatusService,
+		addressService:                addressService,
+		AddressHandler:                addressHandler,
+		cityService:                   cityService,
+		CityHandler:                   cityHandler,
+		MeetingService:                meetingService,
+		MeetingHandler:                meetingHandler,
+		pricelistService:              pricelistService,
+		PricelistHandler:              PricelistHandler,
+		billService:                   billService,
+		BillHandler:                   BillHandler,
+		ElectricityConsumptionHandler: electricityConsumptionHandler,
+		electricityConsumptionService: electricityConsumptionService,
+		HouseholdAccessService:        householdAccessService,
+		HouseholdAccessHandler:        householdAccessHandler,
+		Db:                            db,
+	}
+}
