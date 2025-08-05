@@ -27,7 +27,7 @@ func NewEmailSender(env *config.Environment) *EmailSender {
 
 func (sender *EmailSender) SendEmail(receiver string, subject string, body string) error {
 	testEmail := strings.Split(receiver, "@")
-	if len(testEmail) < 2 || testEmail[1] == "testemail.com" {
+	if len(testEmail) < 2 || testEmail[1] != "gmail.com" {
 		return nil // Skip sending email for test emails
 	}
 	message := gomail.NewMessage()
@@ -36,17 +36,20 @@ func (sender *EmailSender) SendEmail(receiver string, subject string, body strin
 	message.SetHeader("Subject", subject)
 	message.SetBody("text/html", body)
 
-	// dialer := gomail.NewDialer("smtp.gmail.com", 587, "wattflow12@gmail.com", sender.emailSecret)
+	dialer := gomail.NewDialer("smtp.gmail.com", 587, "wattflow12@gmail.com", sender.emailSecret)
 
-	// if err := dialer.DialAndSend(message); err != nil {
-	// 	return err
-	// } else {
-	// 	return nil
-	// }
-	return nil
+	if err := dialer.DialAndSend(message); err != nil {
+		return err
+	} else {
+		return nil
+	}
 }
 
 func (sender *EmailSender) SendEmailWithQRCode(receiver, subject, body string, qrCodeBytes []byte) error {
+	testEmail := strings.Split(receiver, "@")
+	if len(testEmail) < 2 || testEmail[1] != "gmail.com" {
+		return nil // Skip sending email for test emails
+	}
 	message := gomail.NewMessage()
 	message.SetHeader("From", "wattflow12@gmail.com")
 	message.SetHeader("To", receiver)
@@ -62,11 +65,11 @@ func (sender *EmailSender) SendEmailWithQRCode(receiver, subject, body string, q
 
 	message.SetBody("text/html", body)
 
-	//dialer := gomail.NewDialer("smtp.gmail.com", 587, "wattflow12@gmail.com", sender.emailSecret)
-	//
-	//if err := dialer.DialAndSend(message); err != nil {
-	//	return err
-	//}
+	dialer := gomail.NewDialer("smtp.gmail.com", 587, "wattflow12@gmail.com", sender.emailSecret)
+
+	if err := dialer.DialAndSend(message); err != nil {
+		return err
+	}
 	println("message")
 	return nil
 }
@@ -87,6 +90,10 @@ func GenerateQRCode(link string) ([]byte, error) {
 }
 
 func (sender *EmailSender) SendPaymentConfirmation(userEmail, userName string, bill model.Bill) error {
+	testEmail := strings.Split(userEmail, "@")
+	if len(testEmail) < 2 || testEmail[1] != "gmail.com" {
+		return nil // Skip sending email for test emails
+	}
 	m := gomail.NewMessage()
 	m.SetHeader("From", "wattflow12@gmail.comm")
 	m.SetHeader("To", userEmail)
@@ -112,11 +119,11 @@ func (sender *EmailSender) SendPaymentConfirmation(userEmail, userName string, b
 		"Content-ID": {fmt.Sprintf("<%s>", "pdf")},
 	}))
 
-	//dialer := gomail.NewDialer("smtp.gmail.com", 587, "wattflow12@gmail.com", sender.emailSecret)
-	//
-	//if err := dialer.DialAndSend(m); err != nil {
-	//	return err
-	//}
+	dialer := gomail.NewDialer("smtp.gmail.com", 587, "wattflow12@gmail.com", sender.emailSecret)
+
+	if err := dialer.DialAndSend(m); err != nil {
+		return err
+	}
 	println("poslao mejl")
 	return nil
 }
