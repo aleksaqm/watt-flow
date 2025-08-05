@@ -43,13 +43,13 @@ func (repository *BillRepository) FindById(id uint64, userID uint64) (*model.Bil
 		Preload(clause.Associations).
 		Where("id = ?", id).
 		Where(`
-            owner_id = ? OR 
+            owner_id = ? OR
             EXISTS (
-                SELECT 1 FROM households h 
+                SELECT 1 FROM households h
                 WHERE h.id = bills.household_id AND h.owner_id = ?
             ) OR
             EXISTS (
-                SELECT 1 FROM household_accesses ha 
+                SELECT 1 FROM household_accesses ha
                 WHERE ha.household_id = bills.household_id AND ha.user_id = ?
             )
         `, userID, userID, userID).
@@ -87,13 +87,13 @@ func (repository *BillRepository) FindByPaymentReference(id string, userID uint6
 		Preload(clause.Associations).
 		Where("payment_reference = ?", id).
 		Where(`
-            owner_id = ? OR 
+            owner_id = ? OR
             EXISTS (
-                SELECT 1 FROM households h 
+                SELECT 1 FROM households h
                 WHERE h.id = bills.household_id AND h.owner_id = ?
             ) OR
             EXISTS (
-                SELECT 1 FROM household_accesses ha 
+                SELECT 1 FROM household_accesses ha
                 WHERE ha.household_id = bills.household_id AND ha.user_id = ?
             )
         `, userID, userID, userID).
@@ -102,7 +102,7 @@ func (repository *BillRepository) FindByPaymentReference(id string, userID uint6
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			var billExists int64
-			if countErr := repository.Database.Model(&model.Bill{}).Where("id = ?", id).Count(&billExists).Error; countErr != nil {
+			if countErr := repository.Database.Model(&model.Bill{}).Where("payment_reference = ?", id).Count(&billExists).Error; countErr != nil {
 				repository.Logger.Error("Error checking bill existence", countErr)
 				return nil, countErr
 			}
@@ -131,10 +131,10 @@ func (r *BillRepository) UpdateStatusToPaid(billID string, userID uint64) error 
 		Joins("LEFT JOIN households h ON bills.household_id = h.id").
 		Where("bills.payment_reference = ?", billID).
 		Where(`
-            bills.owner_id = ? OR 
-            h.owner_id = ? OR 
+            bills.owner_id = ? OR
+            h.owner_id = ? OR
             EXISTS (
-                SELECT 1 FROM household_accesses ha 
+                SELECT 1 FROM household_accesses ha
                 WHERE ha.household_id = bills.household_id AND ha.user_id = ?
             )
         `, userID, userID, userID)
@@ -202,13 +202,13 @@ func (r *BillRepository) SearchBills(params *dto.BillQueryParams) ([]model.Bill,
 
 	if searchParams.UserID != 0 {
 		db = db.Where(`
-            owner_id = ? OR 
+            owner_id = ? OR
             EXISTS (
-                SELECT 1 FROM households h 
+                SELECT 1 FROM households h
                 WHERE h.id = bills.household_id AND h.owner_id = ?
             ) OR
             EXISTS (
-                SELECT 1 FROM household_accesses ha 
+                SELECT 1 FROM household_accesses ha
                 WHERE ha.household_id = bills.household_id AND ha.user_id = ?
             )
         `, searchParams.UserID, searchParams.UserID, searchParams.UserID)
