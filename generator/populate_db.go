@@ -50,6 +50,13 @@ var nameReplacer = strings.NewReplacer(
 	"Š", "s", "Đ", "dj", "Č", "c", "Ć", "c", "Ž", "z",
 )
 
+var simulatorAddresses = []string{
+	"b78f12f3-6e6d-4a18-9dc2-b0b3b2bdea18", "6f8c4d5a-3d69-46a0-9161-17a0740de53d", "a2d55f19-f390-4b3a-9fb8-8459016b4de0", "570c2e53-8cd1-4508-b36f-bdf7c8340b09", "b1e5218a-65ee-4866-9edc-4e0f7f60b2db", "43d827b7-e850-4280-894e-6ea208f5c674",
+	"f8c58e71-a407-4e90-ab1f-9ecca92545e1",
+	"65baf674-3c5e-495a-8237-695ccc22229a",
+	"55f55fc9-dd9c-46d4-bab0-b7610b137f0d", "d0856422-b53e-42fc-9a64-d85efaaee3b0",
+}
+
 func cleanAndFormatName(name string) string {
 	asciiName := nameReplacer.Replace(name)
 	return strings.ToLower(asciiName)
@@ -215,6 +222,7 @@ func main() {
 
 func generateAllData(userIDs []int64) ([]Property, []Household, []DeviceStatus) {
 	var propertyIDCounter, householdIDCounter int64
+	var simulatorHouseholds int64 = 0
 
 	allProperties := make([]Property, 0, totalHouseholds/5)
 	allHouseholds := make([]Household, 0, totalHouseholds)
@@ -256,6 +264,14 @@ func generateAllData(userIDs []int64) ([]Property, []Household, []DeviceStatus) 
 			}
 
 			deviceID := fmt.Sprintf("household_%d", householdID)
+			cadastralNumber := fmt.Sprintf("CAD-%d-%d", prop.ID, householdID)
+
+			if simulatorHouseholds < 10 {
+				householdStatus = 1
+				deviceID = simulatorAddresses[simulatorHouseholds]
+				cadastralNumber = fmt.Sprintf("SIM-%d", simulatorHouseholds+1)
+				simulatorHouseholds++
+			}
 
 			household := Household{
 				ID:              householdID,
@@ -265,7 +281,7 @@ func generateAllData(userIDs []int64) ([]Property, []Household, []DeviceStatus) 
 				SqFootage:       30.0 + rand.Float64()*120.0,
 				OwnerID:         householdOwnerID,
 				PropertyID:      prop.ID,
-				CadastralNumber: fmt.Sprintf("CAD-%d-%d", prop.ID, householdID),
+				CadastralNumber: cadastralNumber,
 				DeviceStatusID:  deviceID,
 			}
 			allHouseholds = append(allHouseholds, household)
