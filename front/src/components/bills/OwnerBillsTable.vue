@@ -228,7 +228,7 @@ const clearPeriod = () => {
 };
 
 
-const onPay = (bill: number) => {
+const onPay = (bill: string) => {
   router.push('/bills/pay/' + bill)
 }
 
@@ -398,7 +398,7 @@ const onPay = (bill: number) => {
           {{ bill.status }}
         </TableCell>
         <TableCell>
-          <Button v-if="bill.status !== 'Paid'" size="sm" @click="onPay(bill.id)">
+          <Button v-if="bill.status !== 'Paid'" size="sm" @click="onPay(bill.payment_reference)">
             Plati
           </Button>
         </TableCell>
