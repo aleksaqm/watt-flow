@@ -142,12 +142,13 @@ func (h *BillHandler) SearchBills(c *gin.Context) {
 	var billsDto []dto.BillResponseDto
 	for _, bill := range bills {
 		billsDto = append(billsDto, dto.BillResponseDto{
-			ID:          bill.ID,
-			IssueDate:   bill.IssueDate,
-			BillingDate: bill.BillingDate,
-			SpentPower:  bill.SpentPower,
-			Price:       bill.Price,
-			Status:      bill.Status,
+			ID:               bill.ID,
+			IssueDate:        bill.IssueDate,
+			BillingDate:      bill.BillingDate,
+			SpentPower:       bill.SpentPower,
+			Price:            bill.Price,
+			Status:           bill.Status,
+			PaymentReference: bill.PaymentReference,
 			Pricelist: dto.PricelistDto{
 				ID:           bill.Pricelist.ID,
 				ValidFrom:    bill.Pricelist.ValidFrom,
@@ -184,13 +185,6 @@ func (h *BillHandler) GetBill(c *gin.Context) {
 		return
 	}
 
-	idInt, err := strconv.ParseUint(id, 10, 64)
-	if err != nil {
-		h.logger.Error(err)
-		c.JSON(400, gin.H{"error": "Invalid id"})
-		return
-	}
-
 	claims, exists := c.Get("claims")
 	if !exists {
 		h.logger.Error("Claims not found in context, middleware might be missing")
@@ -223,8 +217,8 @@ func (h *BillHandler) GetBill(c *gin.Context) {
 		return
 	}
 
-	h.logger.Info("Get bill", idInt)
-	bill, err := h.service.FindById(idInt, uint64(userIDFloat))
+	h.logger.Info("Get bill", id)
+	bill, err := h.service.FindByPaymentReference(id, uint64(userIDFloat))
 	if err != nil {
 		h.logger.Error(err)
 		c.JSON(400, gin.H{"error": err.Error()})
@@ -260,14 +254,7 @@ func (h *BillHandler) GetBill(c *gin.Context) {
 }
 
 func (h *BillHandler) PayBill(c *gin.Context) {
-	billIdStr := c.Param("id")
-
-	billId, err := strconv.ParseUint(billIdStr, 10, 64)
-	if err != nil {
-		h.logger.Error("Invalid bill ID format", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid bill ID format"})
-		return
-	}
+	billId := c.Param("id")
 
 	claims, exists := c.Get("claims")
 	if !exists {
@@ -311,7 +298,7 @@ func (h *BillHandler) PayBill(c *gin.Context) {
 
 	h.logger.Info("SENDING EMAIL : ", loggedInUserEmail.(string))
 	trxHandle := c.MustGet("db_trx").(*gorm.DB)
-	err = h.service.WithTrx(trxHandle).PayBill(billId, uint64(userIDFloat), loggedInUserEmail.(string))
+	err := h.service.WithTrx(trxHandle).PayBill(billId, uint64(userIDFloat), loggedInUserEmail.(string))
 	if err != nil {
 		h.logger.Error("Failed to process payment", err)
 		if err.Error() == "bill not found" {

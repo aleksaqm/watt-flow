@@ -25,6 +25,7 @@ export interface SearchBill {
   owner: User;
   status: 'Delivered' | 'Paid'
   household: Household;
+  payment_reference: string;
 }
 
 export interface PriceListSearch {

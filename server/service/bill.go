@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"strconv"
 	"time"
 
@@ -18,6 +17,7 @@ import (
 
 type IBillService interface {
 	FindById(id uint64, loggedInUserID uint64) (*model.Bill, error)
+	FindByPaymentReference(reference string, loggedInUserID uint64) (*model.Bill, error)
 	GenerateMonthlyBill(year int, month int) (*model.MonthlyBill, error)
 	QueryMonthly(params *dto.MonthlyBillQueryParams) ([]model.MonthlyBill, int64, error)
 	GetUnsentMonthlyBills() ([]string, error)
@@ -25,7 +25,7 @@ type IBillService interface {
 	InitiateBillingOffload(year int, month int) (*model.MonthlyBill, error)
 	WithTrx(trx *gorm.DB) IBillService
 	SearchBills(params *dto.BillQueryParams) ([]model.Bill, int64, error)
-	PayBill(billID uint64, loggedInUserID uint64, loggedInUserEmail string) error
+	PayBill(billID string, loggedInUserID uint64, loggedInUserEmail string) error
 }
 
 type BillService struct {
@@ -67,8 +67,16 @@ func (t *BillService) FindById(id uint64, loggedInUserID uint64) (*model.Bill, e
 	return bill, nil
 }
 
-func (s *BillService) PayBill(billID uint64, loggedInUserID uint64, loggedInUserEmail string) error {
-	bill, err := s.billRepository.FindById(billID, loggedInUserID)
+func (t *BillService) FindByPaymentReference(id string, loggedInUserID uint64) (*model.Bill, error) {
+	bill, err := t.billRepository.FindByPaymentReference(id, loggedInUserID)
+	if err != nil {
+		return nil, err
+	}
+	return bill, nil
+}
+
+func (s *BillService) PayBill(billID string, loggedInUserID uint64, loggedInUserEmail string) error {
+	bill, err := s.billRepository.FindByPaymentReference(billID, loggedInUserID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return errors.New("bill not found")
@@ -87,16 +95,16 @@ func (s *BillService) PayBill(billID uint64, loggedInUserID uint64, loggedInUser
 
 	// email
 
-	go func() {
-		err := s.emailSender.SendPaymentConfirmation(
-			loggedInUserEmail,
-			bill.Owner.FirstName,
-			*bill,
-		)
-		if err != nil {
-			log.Printf("ERROR: Failed to send confirmation email for bill %d: %v", billID, err)
-		}
-	}()
+	//go func() {
+	//	err := s.emailSender.SendPaymentConfirmation(
+	//		loggedInUserEmail,
+	//		bill.Owner.FirstName,
+	//		*bill,
+	//	)
+	//	if err != nil {
+	//		log.Printf("ERROR: Failed to send confirmation email for bill %d: %v", billID, err)
+	//	}
+	//}()
 
 	return nil
 }

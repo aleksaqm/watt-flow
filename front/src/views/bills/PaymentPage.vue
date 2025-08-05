@@ -172,7 +172,7 @@ const onSubmit = handleSubmit(async (formData) => {
   isLoading.value = true;
   
   try {
-    await new Promise((resolve) => setTimeout(resolve, 1500)); // simulate bank transaction
+    await new Promise((resolve) => setTimeout(resolve, 1500));
 
     const response = await axios.put('/api/bills/pay/' + route.params.billId);
     

@@ -6,12 +6,13 @@ import (
 )
 
 type BillSearchParams struct {
-	UserID      uint64  `json:"userId"`
-	MinPrice    float64 `json:"minPrice"`
-	MaxPrice    float64 `json:"maxPrice"`
-	Status      string  `json:"status"`
-	BillingDate string  `json:"billingDate"`
-	HouseholdID uint64  `json:"householdId"`
+	UserID           uint64  `json:"userId"`
+	MinPrice         float64 `json:"minPrice"`
+	MaxPrice         float64 `json:"maxPrice"`
+	Status           string  `json:"status"`
+	BillingDate      string  `json:"billingDate"`
+	HouseholdID      uint64  `json:"householdId"`
+	PaymentReference string  `json:"paymentReference"`
 }
 
 type BillQueryParams struct {
@@ -39,13 +40,14 @@ type PricelistDto struct {
 }
 
 type BillResponseDto struct {
-	ID          uint64             `json:"id"`
-	IssueDate   time.Time          `json:"issue_date"`
-	BillingDate string             `json:"billing_date"`
-	SpentPower  float64            `json:"spent_power"`
-	Price       float64            `json:"price"`
-	Status      string             `json:"status"`
-	Pricelist   PricelistDto       `json:"pricelist"`
-	Owner       OwnerDto           `json:"owner"`
-	Household   HouseholdResultDto `json:"household"`
+	ID               uint64             `json:"id"`
+	IssueDate        time.Time          `json:"issue_date"`
+	BillingDate      string             `json:"billing_date"`
+	SpentPower       float64            `json:"spent_power"`
+	Price            float64            `json:"price"`
+	Status           string             `json:"status"`
+	Pricelist        PricelistDto       `json:"pricelist"`
+	Owner            OwnerDto           `json:"owner"`
+	Household        HouseholdResultDto `json:"household"`
+	PaymentReference string             `json:"payment_reference"`
 }
