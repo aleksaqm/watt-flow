@@ -4,6 +4,7 @@ import string
 from locust import HttpUser, task, between, constant
 import uuid
 import json
+import time
 
 logging.basicConfig(level=logging.INFO)
 
@@ -26,7 +27,6 @@ class PropertySearchUser(HttpUser):
         except Exception as e:
             self.token = None
             logging.error(f"Login failed: {e}")
-            self.environment.runner.quit() 
 
     def get_auth_headers(self):
         return {"Authorization": f"Bearer {self.token}"} if self.token else {}
@@ -105,7 +105,7 @@ class PropertySearchUser(HttpUser):
         )
 
 class PropertyRegistrationUser(HttpUser):
-    wait_time = between(2, 5)
+    wait_time = between(3, 5)
     token = None
     user_id = 14
 
@@ -121,7 +121,6 @@ class PropertyRegistrationUser(HttpUser):
         except Exception as e:
             self.token = None
             logging.error(f"Login failed: {e}")
-            self.environment.runner.quit() 
 
     def get_auth_headers(self):
         if not self.token:
@@ -200,7 +199,7 @@ class PropertyRegistrationUser(HttpUser):
 
 
 class AdminPropertyAcceptor(HttpUser):
-    wait_time = between(2, 5)
+    wait_time = between(5, 10)
     admin_token = None
     
     admin_credentials = {"username": "admin", "password": "password"}
@@ -216,7 +215,6 @@ class AdminPropertyAcceptor(HttpUser):
         except Exception as e:
             self.admin_token = None
             logging.error(f"Admin login failed: {e}")
-            self.environment.runner.quit()
 
     def get_auth_headers(self, token):
         return {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
@@ -282,7 +280,7 @@ class AdminPropertyAcceptor(HttpUser):
 
 
 class AdminPropertyDecliner(HttpUser):
-    wait_time = between(2, 5)
+    wait_time = between(5, 10)
     admin_token = None
     
     admin_credentials = {"username": "admin", "password": "password"}
@@ -298,7 +296,6 @@ class AdminPropertyDecliner(HttpUser):
         except Exception as e:
             self.admin_token = None
             logging.error(f"Admin login failed: {e}")
-            self.environment.runner.quit()
 
     def get_auth_headers(self, token):
         return {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
@@ -389,7 +386,7 @@ class HouseholdAccessGranter(HttpUser):
                 response.raise_for_status()
                 login_data = response.json()
                 self.token = login_data.get("token")
-                self.owner_id = '14'
+                self.owner_id = '3'
                 if not self.token or not self.owner_id:
                     raise Exception("Token or User ID not found in login response.")
             
@@ -419,7 +416,6 @@ class HouseholdAccessGranter(HttpUser):
         except Exception as e:
             self.token = None
             logging.error(f"Setup failed for owner: {e}")
-            self.environment.runner.quit()
 
     def get_auth_headers(self):
         return {"Authorization": f"Bearer {self.token}"} if self.token else {}
@@ -436,7 +432,7 @@ class HouseholdAccessGranter(HttpUser):
         
         search_payload = {
             "Role": "Regular",
-            "Username": "LT"
+            "Username": "an"
         }
         
         params = {
@@ -504,25 +500,20 @@ class HouseholdAccessRevoker(HttpUser):
     token = None
     
     owner_credentials = {"username": "vladimir", "password": "password"}
-    owner_id = '14'
+    owner_id = '3'
     owned_household_ids = []
-    
-    grantable_user_ids = []
-    granted_access_pairs = []
 
-    @task(5)
-    def search_for_users(self):
-        if not self.token:
+    @task
+    def grant_and_revoke_access(self):
+        if not self.token or not self.owned_household_ids:
             return
 
+        # 1. Search for grantable users
         search_payload = {
             "Role": "Regular",
-            "Username": "LT"
+            "Username": "an"
         }
-        
-        params = {
-            "sortBy": "username"
-        }
+        params = {"sortBy": "username"}
 
         try:
             with self.client.post(
@@ -530,31 +521,27 @@ class HouseholdAccessRevoker(HttpUser):
                 json=search_payload,
                 params=params,
                 headers=self.get_auth_headers(),
-                name="/api/user/query (Search and Prepare)",
+                name="/api/user/query (Search)",
                 catch_response=True
             ) as response:
                 response.raise_for_status()
-                
                 response_data = response.json()
                 found_users = response_data.get("users", [])
-                self.grantable_user_ids = [user['id'] for user in found_users if 'id' in user]
-                if not self.grantable_user_ids:
-                    response.success() 
+                grantable_user_ids = [user['id'] for user in found_users if 'id' in user]
+                
+                if not grantable_user_ids:
+                    logging.info("No users found to grant access.")
+                    response.success()
                     return
 
         except Exception as e:
-            logging.error(f"Failed during user search step: {e}")
+            logging.error(f"User search failed: {e}")
             if 'response' in locals():
                 response.failure(str(e))
             return
 
-    @task(3)
-    def grant_access(self):
-        if not self.token or not self.owned_household_ids or not self.grantable_user_ids:
-            return
-            
+        user_id = random.choice(grantable_user_ids)
         household_id = random.choice(self.owned_household_ids)
-        user_id = random.choice(self.grantable_user_ids)
 
         grant_payload = {"userId": user_id}
         with self.client.post(
@@ -563,41 +550,35 @@ class HouseholdAccessRevoker(HttpUser):
             headers=self.get_auth_headers(),
             name="/api/household/[id]/access (Grant)",
             catch_response=True
-        ) as response:
-            if response.status_code in [200, 201, 400, 409]:
-                response.success()
-                logging.info(f"Grant access for user {user_id} to household {household_id}")
-                if response.status_code in [200, 201]:
-                    self.granted_access_pairs.append((user_id, household_id))
+        ) as grant_response:
+            if grant_response.status_code in [200, 201, 400, 409]:
+                grant_response.success()
+                logging.info(f"Access granted to user {user_id} for household {household_id}")
             else:
-                response.failure(f"Grant failed unexpectedly. Status: {response.status_code}")
+                grant_response.failure(f"Grant failed. Status: {grant_response.status_code}")
+                return
 
-    @task(2)
-    def revoke_access(self):
-        if not self.token or not self.granted_access_pairs:
-            return
-            
-        user_id, household_id = random.choice(self.granted_access_pairs)
-        
+        time.sleep(2)
+
         with self.client.delete(
             f"/api/household/{household_id}/access/revoke/{user_id}",
             headers=self.get_auth_headers(),
             name="/api/household/[id]/access/revoke/[userId]",
             catch_response=True
-        ) as response:
-            if response.status_code in [200, 204]:
-                response.success()
-                logging.info(f"Access revoked successfully for user {user_id} from household {household_id}")
-                self.granted_access_pairs.remove((user_id, household_id))
+        ) as revoke_response:
+            if revoke_response.status_code in [200, 204]:
+                revoke_response.success()
+                logging.info(f"Access revoked from user {user_id} for household {household_id}")
             else:
-                response.failure(f"Revoke failed. Status: {response.status_code}")
+                revoke_response.failure(f"Revoke failed. Status: {revoke_response.status_code}")
 
     def on_start(self):
         try:
             with self.client.post("/api/login", json=self.owner_credentials, name="/api/login") as response:
                 response.raise_for_status()
                 self.token = response.json().get("token")
-                if not self.token: raise Exception("Token not found")
+                if not self.token:
+                    raise Exception("Token not found")
             
             with self.client.post(
                 "/api/household/query",
@@ -610,11 +591,10 @@ class HouseholdAccessRevoker(HttpUser):
                 households = res.json().get("households", [])
                 self.owned_household_ids = [h['id'] for h in households]
                 if not self.owned_household_ids:
-                    logging.warning(f"Owner {self.owner_id} has no households for this test")
+                    logging.warning(f"Owner {self.owner_id} has no households.")
 
         except Exception as e:
-            logging.error(f"Setup failed for E2E tester: {e}")
-            self.environment.runner.quit()
+            logging.error(f"Login/setup failed: {e}")
 
     def get_auth_headers(self):
         return {"Authorization": f"Bearer {self.token}"} if self.token else {}
@@ -734,7 +714,6 @@ class BillDetailsViewer(HttpUser):
 
         except Exception as e:
             logging.error(f"Setup failed for BillDetailsViewer: {e}")
-            self.environment.runner.quit()
 
     def get_auth_headers(self):
         return {"Authorization": f"Bearer {self.token}"} if self.token else {}
@@ -801,7 +780,7 @@ class BillSearchUser(HttpUser):
         if not self.token: return
         
         search_params = {
-            "status": "UNPAID"
+            "status": "Delivered"
         }
         
         params = {
@@ -824,7 +803,7 @@ class BillSearchUser(HttpUser):
         if not self.token: return
 
         search_params = {
-            "status": random.choice(["PAID", "UNPAID"]),
+            "status": random.choice(["Paid", "Delivered"]),
             "minPrice": random.randint(1000, 5000),
             "maxPrice": random.randint(6000, 10000),
             "billingDate": f"2024-{random.randint(1, 12):02d}"
@@ -865,7 +844,6 @@ class BillPayerUser(HttpUser):
 
         except Exception as e:
             logging.error(f"Setup failed for BillPayerUser: {e}")
-            self.environment.runner.quit()
 
     def get_auth_headers(self):
         return {"Authorization": f"Bearer {self.token}"} if self.token else {}
